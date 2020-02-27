@@ -1857,39 +1857,39 @@ void HumanDynamicsEstimator::run()
                                                                                    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates,
                                                                                    pImpl->task1);
 
-//        // Express the dummy sources wrench esitmates with orientation of base frame
-//        if (pImpl->expressDummyWrenchEstimatesInWorldOrientation) {
+        // Express the dummy sources wrench esitmates with orientation of base frame
+        if (pImpl->expressDummyWrenchEstimatesInWorldOrientation) {
 
-//            for (auto& element : pImpl->wrenchSourceNameAndType) {
+            for (auto& element : pImpl->wrenchSourceNameAndType) {
 
-////                // Iterate over all the dummy wrench sources
-////                if (element.second == WrenchSourceType::Dummy) {
+//                // Iterate over all the dummy wrench sources
+//                if (element.second == WrenchSourceType::Dummy) {
 
-//                    // Get link index
-//                    std::string linkName = element.first;
-//                    int linkIndex = pImpl->humanModel.getLinkIndex(element.first);
+                    // Get link index
+                    std::string linkName = element.first;
+                    int linkIndex = pImpl->humanModel.getLinkIndex(element.first);
 
-//                    // Get link to base transform
-//                    iDynTree::Transform world_H_link = kinDynComputations.getWorldTransform(linkName);
-//                    iDynTree::Transform world_H_base = kinDynComputations.getWorldTransform("Pelvis");
+                    // Get link to base transform
+                    iDynTree::Transform world_H_link = kinDynComputations.getWorldTransform(linkName);
+                    iDynTree::Transform world_H_base = kinDynComputations.getWorldTransform("Pelvis");
 
-//                    iDynTree::Transform base_H_link = world_H_base.inverse() * world_H_link;
+                    iDynTree::Transform base_H_link = world_H_base.inverse() * world_H_link;
 
-//                    // Get extracted wrench
-//                    iDynTree::Wrench linkWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates(linkIndex);
+                    // Get extracted wrench
+                    iDynTree::Wrench linkWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates(linkIndex);
 
-//                    // Transform extracted wrench estimate with orietation of world frame
-//                    Eigen::Matrix<double,6,1> transformedWrenchEigen = iDynTree::toEigen(base_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkWrench.asVector());
+                    // Transform extracted wrench estimate with orietation of world frame
+                    Eigen::Matrix<double,6,1> transformedWrenchEigen = iDynTree::toEigen(base_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkWrench.asVector());
 
-//                    iDynTree::Wrench transformedLinkWrench;
-//                    iDynTree::fromEigen(transformedLinkWrench, transformedWrenchEigen);
+                    iDynTree::Wrench transformedLinkWrench;
+                    iDynTree::fromEigen(transformedLinkWrench, transformedWrenchEigen);
 
-//                    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates(linkIndex) = transformedLinkWrench;
+                    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates(linkIndex) = transformedLinkWrench;
 
-////                }
-//            }
+//                }
+            }
 
-//        }
+        }
 
         // Check to ensure all the links net external wrenches are extracted correctly
         if (!pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates.isConsistent(pImpl->humanModel))
