@@ -1466,20 +1466,18 @@ void HumanStateProvider::run()
         // Compute CoM proper acceleration
         iDynTree::SpatialAcc comSpatialAccExpressedInWorld;
 
-        if (pImpl->humanSensorData.accelerometerSensorMeasurementsOption == "proper") {
+        // Set the linear part of com spatial acceleartion
+        comSpatialAccExpressedInWorld.setVal(0, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[0] - pImpl->worldGravity(0)));
+        comSpatialAccExpressedInWorld.setVal(1, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[1] - pImpl->worldGravity(1)));
+        comSpatialAccExpressedInWorld.setVal(2, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[2] - pImpl->worldGravity(2)));
 
-            // Set the linear part of com spatial acceleartion
-            comSpatialAccExpressedInWorld.setVal(0, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[0] - pImpl->worldGravity(0)));
-            comSpatialAccExpressedInWorld.setVal(1, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[1] - pImpl->worldGravity(1)));
-            comSpatialAccExpressedInWorld.setVal(2, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[2] - pImpl->worldGravity(2)));
-        }
-        else if (pImpl->humanSensorData.accelerometerSensorMeasurementsOption == "gravity") {
 
-            // Set the linear part of com spatial acceleartion
-            comSpatialAccExpressedInWorld.setVal(0,  - pImpl->worldGravity(0) * pImpl->humanModel.getTotalMass());
-            comSpatialAccExpressedInWorld.setVal(1,  - pImpl->worldGravity(1) * pImpl->humanModel.getTotalMass());
-            comSpatialAccExpressedInWorld.setVal(2,  - pImpl->worldGravity(2) * pImpl->humanModel.getTotalMass());
-        }
+//        auto angularMomentum = -iDynTree::skew(iDynTree::toEigen(pImpl->kinDynComputations->getCenterOfMassPosition())) * pImpl->humanModel.getTotalMass() * iDynTree::toEigen(pImpl->worldGravity);
+
+//        // Set the angular part of com spatial acceleration to zero
+//        comSpatialAccExpressedInWorld.setVal(3, angularMomentum[0]);
+//        comSpatialAccExpressedInWorld.setVal(4, angularMomentum[1]);
+//        comSpatialAccExpressedInWorld.setVal(5, angularMomentum[2]);
 
         // Set the angular part of com spatial acceleration to zero
         comSpatialAccExpressedInWorld.setVal(3, 0.0);
@@ -1487,7 +1485,14 @@ void HumanStateProvider::run()
         comSpatialAccExpressedInWorld.setVal(5, 0.0);
 
         // Compute com proper acceleration and multiply with the total model mass
-        iDynTree::SpatialAcc CoMProperAccelerationExpressedInBaseFrame = pImpl->baseTransformSolution.getRotation().inverse() * comSpatialAccExpressedInWorld;
+
+        iDynTree::SpatialAcc CoMProperAccelerationExpressedInBaseFrame;
+        CoMProperAccelerationExpressedInBaseFrame.zero();
+
+        // TODO: Double check if the CoM Bias acceleration is in mixed representation of COM[I]
+        Eigen::Matrix<double,6,1> transformedAcc = iDynTree::toEigen(pImpl->baseTransformSolution.inverse().asAdjointTransformWrench())
+                        * iDynTree::toEigen(comSpatialAccExpressedInWorld.asVector());
+                iDynTree::fromEigen(CoMProperAccelerationExpressedInBaseFrame, transformedAcc);
 
         // Expose proper com acceleration for IHumanState interface
         {
@@ -1497,9 +1502,9 @@ void HumanStateProvider::run()
             pImpl->CoMProperAccelerationExpressedInBaseFrame = {CoMProperAccelerationExpressedInBaseFrame.getVal(0),
                                                                 CoMProperAccelerationExpressedInBaseFrame.getVal(1),
                                                                 CoMProperAccelerationExpressedInBaseFrame.getVal(2),
-                                                                0.0,
-                                                                0.0,
-                                                                0.0};
+                                                                CoMProperAccelerationExpressedInBaseFrame.getVal(3),
+                                                                CoMProperAccelerationExpressedInBaseFrame.getVal(4),
+                                                                CoMProperAccelerationExpressedInBaseFrame.getVal(5)};
 
             pImpl->CoMProperAccelerationExpressedInWorldFrame = {comSpatialAccExpressedInWorld.getVal(0),
                                                                  comSpatialAccExpressedInWorld.getVal(1),
