@@ -250,7 +250,9 @@ struct BerdyData
     struct DynamicEstimates
     {
         iDynTree::JointDOFsDoubleArray jointTorqueEstimates;
-        iDynTree::LinkNetExternalWrenches task1_linkNetExternalWrenchEstimates;
+        iDynTree::LinkNetExternalWrenches task1_linkNetExternalWrenchEstimatesInLinkFrame;
+        iDynTree::LinkNetExternalWrenches task1_linkNetExternalWrenchEstimatesInBaseFrame;
+        iDynTree::LinkNetExternalWrenches task1_linkNetExternalWrenchEstimatesInWorldFrame;
         iDynTree::LinkNetExternalWrenches linkNetExternalWrenchEstimates;
         iDynTree::LinkAccArray linkClassicalProperAccelerationEstimates; // This is also called sensor proper acceleration in Traversaro's PhD Thesis
     } estimates;    
@@ -1260,9 +1262,10 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
         pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
         pImpl->linkExternalWrenchMeasurementAnalogSensorData.numberOfChannels = 6 * pImpl->wrenchSensorsLinkNames.size();
 
-        pImpl->allWrenchAnalogSensorData.measurements.resize(pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements.size() +
+        // NOTE: multiplying by 3 because the estimates are expressed in link, base and world frames
+        pImpl->allWrenchAnalogSensorData.measurements.resize(3 * pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements.size() +
                                                              pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements.size(), 0);
-        pImpl->allWrenchAnalogSensorData.numberOfChannels = pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.numberOfChannels +
+        pImpl->allWrenchAnalogSensorData.numberOfChannels = 3 *pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.numberOfChannels +
                                                             pImpl->linkExternalWrenchMeasurementAnalogSensorData.numberOfChannels;
     }
 
@@ -1456,8 +1459,14 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
     pImpl->berdyData.estimates.jointTorqueEstimates.zero();
 
     // Set the links net external wrench estimates size and initialize to zero
-    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates = iDynTree::LinkWrenches(pImpl->berdyData.helper.model().getNrOfLinks());
-    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates.zero();
+    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame = iDynTree::LinkWrenches(pImpl->berdyData.helper.model().getNrOfLinks());
+    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame.zero();
+
+    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInBaseFrame = iDynTree::LinkWrenches(pImpl->berdyData.helper.model().getNrOfLinks());
+    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInBaseFrame.zero();
+
+    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInWorldFrame = iDynTree::LinkWrenches(pImpl->berdyData.helper.model().getNrOfLinks());
+    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInWorldFrame.zero();
 
     pImpl->berdyData.estimates.linkNetExternalWrenchEstimates = iDynTree::LinkWrenches(pImpl->berdyData.helper.model().getNrOfLinks());
     pImpl->berdyData.estimates.linkNetExternalWrenchEstimates.zero();
@@ -1608,7 +1617,7 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
 
     // Extract links net external wrench from estimated dynamic variables of task1
     pImpl->berdyData.helper.extractLinkNetExternalWrenchesFromDynamicVariables(task1_estimatedDynamicVariables,
-                                                                               pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates,
+                                                                               pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame,
                                                                                pImpl->task1);
     // Set the priors to berdy solver
     pImpl->berdyData.solver->setDynamicsRegularizationPriorExpectedValue(pImpl->berdyData.priors.dynamicsRegularizationExpectedValueVector);
@@ -1879,45 +1888,48 @@ void HumanDynamicsEstimator::run()
 
         // Extract links net external wrench from  task1 estimated dynamic variables
         pImpl->berdyData.helper.extractLinkNetExternalWrenchesFromDynamicVariables(task1_estimatedDynamicVariables,
-                                                                                   pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates,
+                                                                                   pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame,
                                                                                    pImpl->task1);
 
-        // Express the dummy sources wrench esitmates with orientation of base frame
-        if (pImpl->expressDummyWrenchEstimatesInWorldOrientation) {
+        // Get base to world transform
+        iDynTree::Transform world_H_base = kinDynComputations.getWorldTransform(pImpl->humanModel.getLinkName(pImpl->berdyData.state.floatingBaseFrameIndex));
 
-            for (auto& element : pImpl->wrenchSourceNameAndType) {
+        // Express task1 link net external wrenches in base and world frames buffers
+        for (iDynTree::LinkIndex l = 0; l < pImpl->humanModel.getNrOfLinks(); l++)
+        {
+            // get link name
+            std::string linkName = pImpl->humanModel.getLinkName(l);
 
-//                // Iterate over all the dummy wrench sources
-//                if (element.second == WrenchSourceType::Dummy) {
+            // Get link to world transform
+            iDynTree::Transform world_H_link = kinDynComputations.getWorldTransform(linkName);
 
-                    // Get link index
-                    std::string linkName = element.first;
-                    int linkIndex = pImpl->humanModel.getLinkIndex(element.first);
+            // Get task1 estimated wrench in link frame
+            iDynTree::Wrench linkWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame(l);
 
-                    // Get link to base transform
-                    iDynTree::Transform world_H_link = kinDynComputations.getWorldTransform(linkName);
-                    iDynTree::Transform world_H_base = kinDynComputations.getWorldTransform("Pelvis");
+            // Compute
+            iDynTree::Transform base_H_link = world_H_base.inverse() * world_H_link;
 
-                    iDynTree::Transform base_H_link = world_H_base.inverse() * world_H_link;
+            // Transform wrench to base frame
+            Eigen::Matrix<double,6,1> transformedWrenchInBaseFrameEigen = iDynTree::toEigen(base_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkWrench.asVector());
 
-                    // Get extracted wrench
-                    iDynTree::Wrench linkWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates(linkIndex);
+            iDynTree::Wrench transformedLinkWrenchInBaseFrame;
+            iDynTree::fromEigen(transformedLinkWrenchInBaseFrame, transformedWrenchInBaseFrameEigen);
 
-                    // Transform extracted wrench estimate with orietation of world frame
-                    Eigen::Matrix<double,6,1> transformedWrenchEigen = iDynTree::toEigen(base_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkWrench.asVector());
+            // Set estimated wrench in base frame buffer
+            pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInBaseFrame(l) = transformedLinkWrenchInBaseFrame;
 
-                    iDynTree::Wrench transformedLinkWrench;
-                    iDynTree::fromEigen(transformedLinkWrench, transformedWrenchEigen);
+            // Transform wrench to world frame
+            Eigen::Matrix<double,6,1> transformedWrenchInWorldFrameEigen = iDynTree::toEigen(world_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkWrench.asVector());
 
-                    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates(linkIndex) = transformedLinkWrench;
+            iDynTree::Wrench transformedLinkWrenchInWorldFrame;
+            iDynTree::fromEigen(transformedLinkWrenchInWorldFrame, transformedWrenchInWorldFrameEigen);
 
-//                }
-            }
-
+            // Set estimated wrench in base frame buffer
+            pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInWorldFrame(l) = transformedLinkWrenchInWorldFrame;
         }
 
         // Check to ensure all the links net external wrenches are extracted correctly
-        if (!pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates.isConsistent(pImpl->humanModel))
+        if (!pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame.isConsistent(pImpl->humanModel))
         {
             yError() << LogPrefix << "Links net external wrench estimates extracted from dynamic variables are not consistent with the model provided";
         }
@@ -1947,7 +1959,7 @@ void HumanDynamicsEstimator::run()
 
             // Expose net link external wrench estimates to analog sensor data variable
             std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
-            iDynTree::Wrench linkNetExternalWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimates(pImpl->humanModel.getLinkIndex(linkName));
+            iDynTree::Wrench linkNetExternalWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame(pImpl->humanModel.getLinkIndex(linkName));
 
             pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements[6 * i + 0] = linkNetExternalWrench.getLinearVec3()(0);
             pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements[6 * i + 1] = linkNetExternalWrench.getLinearVec3()(1);
@@ -1963,6 +1975,32 @@ void HumanDynamicsEstimator::run()
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 9] = linkNetExternalWrench.getAngularVec3()(0);
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 10] = linkNetExternalWrench.getAngularVec3()(1);
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 11] = linkNetExternalWrench.getAngularVec3()(2);
+
+        }
+
+        for (int i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
+
+            std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
+
+            // Expose net link external wrench estimates in base frame to analog sensor data variable
+            iDynTree::Wrench linkNetExternalWrenchInBaseFrame = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInBaseFrame(pImpl->humanModel.getLinkIndex(linkName));
+
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 0] = linkNetExternalWrenchInBaseFrame.getLinearVec3()(0);
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 1] = linkNetExternalWrenchInBaseFrame.getLinearVec3()(1);
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 2] = linkNetExternalWrenchInBaseFrame.getLinearVec3()(2);
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 3] = linkNetExternalWrenchInBaseFrame.getAngularVec3()(0);
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 4] = linkNetExternalWrenchInBaseFrame.getAngularVec3()(1);
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 5] = linkNetExternalWrenchInBaseFrame.getAngularVec3()(2);
+
+            // Expose net link external wrench estimates in world frame to analog sensor data variable
+            iDynTree::Wrench linkNetExternalWrenchInWorldFrame = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInWorldFrame(pImpl->humanModel.getLinkIndex(linkName));
+
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 6] = linkNetExternalWrenchInWorldFrame.getLinearVec3()(0);
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 7] = linkNetExternalWrenchInWorldFrame.getLinearVec3()(1);
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 8] = linkNetExternalWrenchInWorldFrame.getLinearVec3()(2);
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 9] = linkNetExternalWrenchInWorldFrame.getAngularVec3()(0);
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 10] = linkNetExternalWrenchInWorldFrame.getAngularVec3()(1);
+            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 11] = linkNetExternalWrenchInWorldFrame.getAngularVec3()(2);
 
         }
 

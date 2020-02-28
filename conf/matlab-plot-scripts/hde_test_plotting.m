@@ -7,7 +7,7 @@ fontSize = 20;
 lineWidth = 2;
 
 %% Load data
-load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estimation/conf/xml/testData/matLogFileWrenchInLinkFrame.mat');
+load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estimation/conf/xml/testData/matLogFile.mat');
 % plotSuffix = "HandEstimatesInLinkOrientation";
 % plotSuffix = " - Expressed in Link Frame";=
 % plotSuffix = " - Measurements in World Orientation & Estimates in Link Orientation";
@@ -15,7 +15,9 @@ load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estim
 %% Sum of offsetRemovedWrench measurements
 
 sumOfOffsetRemovedMeasurements = data.wrenchEstimates(1:6,:)' + data.wrenchEstimates(13:18,:)' + data.wrenchEstimates(25:30,:)' + data.wrenchEstimates(37:42,:)';
-sumOfEstimatedWrench = data.wrenchEstimates(7:12,:)' + data.wrenchEstimates(19:24,:)' + data.wrenchEstimates(31:36,:)' + data.wrenchEstimates(43:48,:)';
+sumOfEstimatedWrenchInLinkFrame = data.wrenchEstimates(7:12,:)' + data.wrenchEstimates(19:24,:)' + data.wrenchEstimates(31:36,:)' + data.wrenchEstimates(43:48,:)';
+sumOfEstimatedWrenchInBaseFrame = data.wrenchEstimates(49:54,:)' + data.wrenchEstimates(61:66,:)' + data.wrenchEstimates(73:78,:)' + data.wrenchEstimates(85:90,:)';
+sumOfEstimatedWrenchInWorldFrame = data.wrenchEstimates(55:60,:)' + data.wrenchEstimates(67:72,:)' + data.wrenchEstimates(79:84,:)' + data.wrenchEstimates(91:96,:)';
 
 % % figure;
 % % plot(sumOfOffsetRemovedMeasurements);
@@ -24,9 +26,9 @@ sumOfEstimatedWrench = data.wrenchEstimates(7:12,:)' + data.wrenchEstimates(19:2
 % % legend('$f_x [N]$', '$f_y [N]$', '$f_z [N]$','$m_x [Nm]$', '$m_y [Nm]$', '$m_z [Nm]$', 'Interpreter', 'latex', 'FontSize', 12);
 % % 
 % % figure;
-% % plot(sumOfEstimatedWrench);
+% % plot(sumOfEstimatedWrenchInLinkFrame);
 % % hold on;
-% % title('sumOfEstimatedWrench');
+% % title('sumOfEstimatedWrenchInLinkFrame');
 % % legend('$f_x [N]$', '$f_y [N]$', '$f_z [N]$','$m_x [Nm]$', '$m_y [Nm]$', '$m_z [Nm]$', 'Interpreter', 'latex', 'FontSize', 12);
 
 %% Legend or Title Index
@@ -69,30 +71,30 @@ for i = 1:numberOfWrenchSources
 end
 
 
-% % properRateOfChangeOfMomentumInWorldFrame = data.comProperAccelerationInWorldFrame;
-% % properRateOfChangeOfMomentumInBaseFrame = data.comProperAccelerationInBaseFrame;
-% % 
-% % %% %% Proper Rate of Change of Momentum In Base Frame Vs Sum of External Wrenches In Base Frame
-% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
-% % 
-% % for s = 1:6 
-% %     
-% %     subplot(2,3,s);
-% %     plot(properRateOfChangeOfMomentumInBaseFrame(s,:)', 'LineWidth', lineWidth);
-% %     hold on;
-% %     plot(sumOfEstimatedWrench(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
-% %     hold on;    
-% %     xlabel('Samples', 'FontSize', fontSize);
-% %     legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
-% %     
-% % end
-% % 
-% % a = axes;
-% % t = title ("Proper Rate of Change of Momentum - Sum of External Wrenches In Base Frame");
-% % t.FontSize = fontSize;
-% % a.Visible = 'off' ;
-% % t.Visible = 'on' ;
-% % 
+properRateOfChangeOfMomentumInWorldFrame = data.comProperAccelerationInWorldFrame;
+properRateOfChangeOfMomentumInBaseFrame = data.comProperAccelerationInBaseFrame;
+
+%% %% Proper Rate of Change of Momentum In Base Frame Vs Sum of External Wrenches In Base Frame
+fH = figure('units','normalized','outerposition',[0 0 1 1]);
+
+for s = 1:6 
+    
+    subplot(2,3,s);
+    plot(properRateOfChangeOfMomentumInBaseFrame(s,:)', 'LineWidth', lineWidth);
+    hold on;
+    plot(sumOfEstimatedWrenchInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+    hold on;    
+    xlabel('Samples', 'FontSize', fontSize);
+    legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+    
+end
+
+a = axes;
+t = title ("Proper Rate of Change of Momentum - Sum of External Wrenches In Base Frame");
+t.FontSize = fontSize;
+a.Visible = 'off' ;
+t.Visible = 'on' ;
+
 % % % % % % save2pdf("rateOfMomentumVsWrenchesInBaseFrame.pdf", fH,300);
 
 
@@ -125,7 +127,7 @@ end
 % % rightHandSimulatedWrenchEstimates = task1simulatedy(:,235:240);
 % % rightFootSimulatedWrenchEstimates = task1simulatedy(:,313:318);
 % % leftFootSimulatedWrenchEstimates = task1simulatedy(:,379:384);
-% % sumofestimatedWrenchInBaseFrame = task1simulatedy(:,403:408);
+% % sumOfEstimatedWrenchInLinkFrameInBaseFrame = task1simulatedy(:,403:408);
 % % 
 % % %% Comparison from the simulated y and the input y for task1
 % % fH = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -135,7 +137,7 @@ end
 % %     subplot(2,3,s);
 % %     plot(properRateOfChangeOfMomentumInBaseFrame(s,:)', 'LineWidth', lineWidth);
 % %     hold on;
-% %     plot(sumOfEstimatedWrench(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+% %     plot(sumOfEstimatedWrenchInLinkFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
 % %     hold on;    
 % %     xlabel('Samples', 'FontSize', fontSize);
 % %     legend(strcat("Base - " + momentumLegendString(s)), strcat("Base - " + wrenchLegendString(s)), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
@@ -148,7 +150,7 @@ end
 % % rightHandSimulatedWrenchEstimatestask1Diff = task1Diff(:,235:240);
 % % rightFootSimulatedWrenchEstimatestask1Diff = task1Diff(:,313:318);
 % % leftFootSimulatedWrenchEstimatestask1Diff = task1Diff(:,379:384);
-% % sumofestimatedWrenchInBaseFrametask1Diff = task1Diff(:,403:408);
+% % sumOfEstimatedWrenchInLinkFrameInBaseFrametask1Diff = task1Diff(:,403:408);
 % % 
 % % diffWrenches = [leftFootSimulatedWrenchEstimatestask1Diff  rightFootSimulatedWrenchEstimatestask1Diff leftHandSimulatedWrenchEstimatestask1Diff rightHandSimulatedWrenchEstimatestask1Diff];
 % % 
@@ -158,7 +160,7 @@ end
 % % for s = 1:6 
 % %     
 % %     subplot(2,3,s);
-% %     plot(sumofestimatedWrenchInBaseFrametask1Diff(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+% %     plot(sumOfEstimatedWrenchInLinkFrameInBaseFrametask1Diff(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
 % %     hold on;    
 % %     xlabel('Samples', 'FontSize', fontSize);
 % %     ylim([-100 100]); 

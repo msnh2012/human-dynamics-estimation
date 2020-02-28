@@ -563,7 +563,7 @@ void HumanDataCollector::run()
     if (pImpl->isAttached.dynamicsEstimator) {
 
         // Get data from IHumanWrench interface of HumanDynamicsEstimator
-        // NOTE: The wrench values coming from HumanDynamicsEstimators are (offsetRemovedWrenchMeasurements & WrenchEstimates) of each link
+        // NOTE: The wrench values coming from HumanDynamicsEstimators are (offsetRemovedWrenchMeasurements, WrenchEstimatesInLinkFrame, WrenchEstimatesInBaseFrame, WrenchEstimatesInWorldFrame) of each link
         pImpl->numberOfWrenchEstimateSources = pImpl->iHumanWrenchEstimates->getNumberOfWrenchSources();
         pImpl->wrenchEstimateSourceNames = pImpl->iHumanWrenchEstimates->getWrenchSourceNames();
         pImpl->wrenchEstimateValuesVec = pImpl->iHumanWrenchEstimates->getWrenches();
