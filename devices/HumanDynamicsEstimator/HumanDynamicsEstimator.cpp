@@ -980,6 +980,8 @@ public:
     std::ofstream task1DynamicVariablesFile;
     std::ofstream measurementsFile;
     std::ofstream dynamicVariablesFile;
+    std::ofstream task1simulatedyFile;
+    std::ofstream task1DifferenceInyd;
 
     // Attached interfaces
     hde::interfaces::IHumanState* iHumanState = nullptr;
@@ -1653,6 +1655,8 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
         pImpl->task1DynamicVariablesFile.open("task1DynamicVariablesVector.txt", std::ios::trunc);
         pImpl->measurementsFile.open("measurementsVector.txt", std::ios::trunc);
         pImpl->dynamicVariablesFile.open("dynamicVariablesVector.txt", std::ios::trunc);
+        pImpl->task1simulatedyFile.open("task1simulatedy.txt", std::ios::trunc);
+        pImpl->task1DifferenceInyd.open("task1DifferenceInyd.txt", std::ios::trunc);
     }
 
     return true;
@@ -1665,6 +1669,8 @@ bool HumanDynamicsEstimator::close()
         pImpl->task1DynamicVariablesFile.close();
         pImpl->measurementsFile.close();
         pImpl->dynamicVariablesFile.close();
+        pImpl->task1simulatedyFile.close();
+        pImpl->task1DifferenceInyd.close();
     }
 
     return true;
@@ -1672,6 +1678,9 @@ bool HumanDynamicsEstimator::close()
 
 void HumanDynamicsEstimator::run()
 {
+//    yInfo() << LogPrefix << "Size of task 1 dynamic variables : " << pImpl->berdyData.helper.getNrOfDynamicVariables(true);
+//    yInfo() << LogPrefix << "Size of task 1 measurements : " << pImpl->berdyData.helper.getNrOfSensorsMeasurements(true);
+
     // Get state data from the attached IHumanState interface
     std::vector<double> jointsPosition    = pImpl->iHumanState->getJointPositions();
     std::vector<double> jointsVelocity    = pImpl->iHumanState->getJointVelocities();
@@ -1834,6 +1843,22 @@ void HumanDynamicsEstimator::run()
     // Do task1 berdy estimation
     if (!pImpl->berdyData.solver->doEstimate(pImpl->task1)) {
         yError() << LogPrefix << "Failed to do task1 berdy estimation";
+    }
+
+    // Get simulated y1
+    iDynTree::VectorDynSize simulatedy1;
+    pImpl->berdyData.solver->getSimulatedMeasurementVector(simulatedy1, true);
+
+    if (pImpl->saveStateToFile) {
+        pImpl->task1simulatedyFile << simulatedy1.toString().c_str() << std::endl;
+    }
+
+    // Compute the difference between input meausrement y1 and the simulated y1
+    if (pImpl->saveStateToFile) {
+        iDynTree::VectorDynSize diff;
+        diff.resize(pImpl->berdyData.helper.getNrOfSensorsMeasurements(true));
+        iDynTree::toEigen(diff) = iDynTree::toEigen(pImpl->berdyData.buffers.task1_measurements) - iDynTree::toEigen(simulatedy1);
+        pImpl->task1DifferenceInyd << diff.toString().c_str() << std::endl;
     }
 
     // ===========================

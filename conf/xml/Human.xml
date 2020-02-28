@@ -319,7 +319,7 @@
         <param name="number_of_wrench_sensors">4</param>
         <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHand RightHand)</param>
         <param name="comConstraintIncludeAllLinks">false</param>
-        <param name="saveStateToFile">false</param>
+        <param name="saveStateToFile">true</param>
         <param name="removeOffsetOption">source</param>
         <param name="dynamicWrenchOffsetSD">30.0</param>
         <param name="wrenchEstimationForceLowerThreshold">10</param>
@@ -331,14 +331,14 @@
            <param name="cov_measurements_ACCELEROMETER_SENSOR">(0.0011 0.0011 0.0011)</param>
            <param name="cov_measurements_THREE_AXIS_ANGULAR_ACCELEROMETER_SENSOR">(1e-3 1e-3 1e-3)</param>
            <param name="cov_measurements_DOF_ACCELERATION_SENSOR">0.666e-5</param>
-           <param name="cov_measurements_COM_ACCELEROMETER_SENSOR">(1e-2 1e-2 1e-2 1e-2 1e-2 1e-2)</param>
+           <param name="cov_measurements_COM_ACCELEROMETER_SENSOR">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
            <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
                <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
                <param name="LeftFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
                <param name="RightFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="LeftHand">(1e1 1e1 1e1 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e1 1e1 1e1 1e-6 1e-6 1e-6)</param>
+               <param name="LeftHand">(1e8 1e8 1e8 1e-4 1e-4 1e-4)</param>
+               <param name="RightHand">(1e8 1e8 1e8 1e-4 1e-4 1e-4)</param>
                <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
            </group>
            <param name="cov_task1_measurements_NET_EXT_WRENCH_SENSOR">1e-6</param>
