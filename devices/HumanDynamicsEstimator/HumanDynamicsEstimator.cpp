@@ -1598,7 +1598,8 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
     yInfo() << LogPrefix << "Task1 Berdy solver MeasurementsPriorCovariance set successfully";
 
     // Update estimator with task1 information
-    pImpl->berdyData.solver->updateEstimateInformationFloatingBase(pImpl->berdyData.state.jointsPosition,
+    pImpl->berdyData.solver->updateEstimateInformationFloatingBase(iDynTree::Transform::Identity(),
+                                                                   pImpl->berdyData.state.jointsPosition,
                                                                    pImpl->berdyData.state.jointsVelocity,
                                                                    pImpl->berdyData.state.floatingBaseFrameIndex,
                                                                    pImpl->berdyData.state.baseAngularVelocity,
@@ -1843,7 +1844,8 @@ void HumanDynamicsEstimator::run()
     }
 
     // Update estimator information
-    pImpl->berdyData.solver->updateEstimateInformationFloatingBase(pImpl->berdyData.state.jointsPosition,
+    pImpl->berdyData.solver->updateEstimateInformationFloatingBase(baseTransform,
+                                                                   pImpl->berdyData.state.jointsPosition,
                                                                    pImpl->berdyData.state.jointsVelocity,
                                                                    pImpl->berdyData.state.floatingBaseFrameIndex,
                                                                    pImpl->berdyData.state.baseAngularVelocity,

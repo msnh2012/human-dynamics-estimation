@@ -1472,13 +1472,6 @@ void HumanStateProvider::run()
         comSpatialAccExpressedInWorld.setVal(2, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[2] - pImpl->worldGravity(2)));
 
 
-//        auto angularMomentum = -iDynTree::skew(iDynTree::toEigen(pImpl->kinDynComputations->getCenterOfMassPosition())) * pImpl->humanModel.getTotalMass() * iDynTree::toEigen(pImpl->worldGravity);
-
-//        // Set the angular part of com spatial acceleration to zero
-//        comSpatialAccExpressedInWorld.setVal(3, angularMomentum[0]);
-//        comSpatialAccExpressedInWorld.setVal(4, angularMomentum[1]);
-//        comSpatialAccExpressedInWorld.setVal(5, angularMomentum[2]);
-
         // Set the angular part of com spatial acceleration to zero
         comSpatialAccExpressedInWorld.setVal(3, 0.0);
         comSpatialAccExpressedInWorld.setVal(4, 0.0);
