@@ -84,7 +84,7 @@ momentumLegendString = ["$\dot{H}_{L_x}$", "$\dot{H}_{L_y}$", "$\dot{H}_{L_z}$",
 properRateOfChangeOfMomentumInWorldFrame = data.comProperAccelerationInWorldFrame;
 properRateOfChangeOfMomentumInBaseFrame = data.comProperAccelerationInBaseFrame;
 
-%% %% Proper Rate of Change of Momentum In Base Frame Vs Sum of External Feet Wrenches Measurements In Base Frame
+%% %% Proper Rate of Change of Momentum In Base Frame Vs Sum of External Wrenches Measurements In Base Frame
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
 
 for s = 1:6 
@@ -107,7 +107,7 @@ t.Visible = 'on' ;
 
 save2pdf("rateOfMomentumVsMeasuredWrenchesInBaseFrame.pdf", fH,300);
 
-%% %% Proper Rate of Change of Momentum In World Frame Vs Sum of External Feet Wrenches Measurements In World Frame
+%% %% Proper Rate of Change of Momentum In World Frame Vs Sum of External Wrenches Measurements In World Frame
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
 
 for s = 1:6 
