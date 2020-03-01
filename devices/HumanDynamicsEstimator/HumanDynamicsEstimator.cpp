@@ -255,7 +255,7 @@ struct BerdyData
         iDynTree::LinkNetExternalWrenches task1_linkNetExternalWrenchEstimatesInWorldFrame;
         iDynTree::LinkNetExternalWrenches linkNetExternalWrenchEstimates;
         iDynTree::LinkAccArray linkClassicalProperAccelerationEstimates; // This is also called sensor proper acceleration in Traversaro's PhD Thesis
-    } estimates;    
+    } estimates;
 };
 
 // Creates an iDynTree sparse matrix (set of triplets) from a vector
@@ -1053,6 +1053,15 @@ public:
     // Model wrench offset
     iDynTree::Wrench modelWrenchOffset;
 
+    // Offset wrench
+    iDynTree::Wrench wrenchOffset;
+
+    // Sum of wrench measurements in base frame
+    iDynTree::Wrench sumOfWrenchMeasurementInBaseFrame;
+
+    // Sum of wrench measurements in world frame
+    iDynTree::Wrench sumOfWrenchMeasurementInWorldFrame;
+
     // Link net external wrench analog sensor variable
     LinkNetExternalWrenchEstimatesAnalogSensorData linkNetExternalWrenchEstimatesAnalogSensorData;
 
@@ -1263,9 +1272,9 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
         pImpl->linkExternalWrenchMeasurementAnalogSensorData.numberOfChannels = 6 * pImpl->wrenchSensorsLinkNames.size();
 
         // NOTE: multiplying by 3 because the estimates are expressed in link, base and world frames
-        pImpl->allWrenchAnalogSensorData.measurements.resize(5 * pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements.size() +
+        pImpl->allWrenchAnalogSensorData.measurements.resize(5 * pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements.size() + 6 +
                                                              pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements.size(), 0);
-        pImpl->allWrenchAnalogSensorData.numberOfChannels = 5 *pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.numberOfChannels +
+        pImpl->allWrenchAnalogSensorData.numberOfChannels = 5 *pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.numberOfChannels + 6 +
                                                             pImpl->linkExternalWrenchMeasurementAnalogSensorData.numberOfChannels;
     }
 
@@ -1580,6 +1589,15 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
     // Set the model wrench offset to zero
     pImpl->modelWrenchOffset = iDynTree::Wrench::Zero();
 
+    // Set Offset wrench to zero
+    pImpl->wrenchOffset.zero();
+
+    // Set sum of wrench measurements in base frame
+    pImpl->sumOfWrenchMeasurementInBaseFrame.zero();
+
+    // Set sum of wrench measurements in world frame
+    pImpl->sumOfWrenchMeasurementInWorldFrame.zero();
+
     // ----------------------------
     // Run a first dummy estimation
     // ----------------------------
@@ -1806,6 +1824,8 @@ void HumanDynamicsEstimator::run()
         iDynTree::Wrench transformedLinkWrenchInBaseFrame;
         iDynTree::fromEigen(transformedLinkWrenchInBaseFrame, transformedWrenchInBaseFrameEigen);
 
+        pImpl->sumOfWrenchMeasurementInBaseFrame = pImpl->sumOfWrenchMeasurementInBaseFrame + transformedLinkWrenchInBaseFrame;
+
         // Set estimated wrench in base frame buffer
         wrenchMeasurementValuesInBaseFrame.at(6 * i + 0) = transformedLinkWrenchInBaseFrame.getVal(0);
         wrenchMeasurementValuesInBaseFrame.at(6 * i + 1) = transformedLinkWrenchInBaseFrame.getVal(1);
@@ -1820,6 +1840,8 @@ void HumanDynamicsEstimator::run()
         iDynTree::Wrench transformedLinkWrenchInWorldFrame;
         iDynTree::fromEigen(transformedLinkWrenchInWorldFrame, transformedWrenchInWorldFrameEigen);
 
+        pImpl->sumOfWrenchMeasurementInWorldFrame = pImpl->sumOfWrenchMeasurementInWorldFrame + transformedLinkWrenchInWorldFrame;
+
         // Set estimated wrench in base frame buffer
         wrenchMeasurementValuesInWorldFrame.at(6 * i + 0) = transformedLinkWrenchInWorldFrame.getVal(0);
         wrenchMeasurementValuesInWorldFrame.at(6 * i + 1) = transformedLinkWrenchInWorldFrame.getVal(1);
@@ -1829,6 +1851,9 @@ void HumanDynamicsEstimator::run()
         wrenchMeasurementValuesInWorldFrame.at(6 * i + 5) = transformedLinkWrenchInWorldFrame.getVal(5);
 
     }
+
+//    yInfo() << LogPrefix << "sumOfWrenchMeasurementInBaseFrame is " <<  pImpl->sumOfWrenchMeasurementInBaseFrame.toString().c_str();
+//    yInfo() << LogPrefix << "sumOfWrenchMeasurementInWorldFrame is " << pImpl->sumOfWrenchMeasurementInWorldFrame.toString().c_str();
 
     // Get the task1 berdy sensors following its internal order
     std::vector<iDynTree::BerdySensor> task1BerdySensors = pImpl->berdyData.helper.getSensorsOrdering(pImpl->task1);
@@ -1851,13 +1876,21 @@ void HumanDynamicsEstimator::run()
             {
                 case iDynTree::COM_ACCELEROMETER_SENSOR:
                 {
+                    // Transform offset wrench in world to base
+                    iDynTree::Wrench offsetWrenchInBaseFrame;
+                    offsetWrenchInBaseFrame.zero();
+
+                    Eigen::Matrix<double,6,1> offsetWrenchInBaseFrameEigen = iDynTree::toEigen(baseTransform.inverse().asAdjointTransformWrench()) * iDynTree::toEigen(pImpl->wrenchOffset.asVector());
+                    iDynTree::fromEigen(offsetWrenchInBaseFrame, offsetWrenchInBaseFrameEigen);
+
                     // Set com proper acceleration measurements with offsets
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = comProperAccelerationInBaseFrame[0];
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = comProperAccelerationInBaseFrame[1];
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = comProperAccelerationInBaseFrame[2];
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = comProperAccelerationInBaseFrame[3];
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = comProperAccelerationInBaseFrame[4];
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = comProperAccelerationInBaseFrame[5];
+                    yInfo() << LogPrefix << "Offset wrench being removed " << pImpl->wrenchOffset.toString().c_str();
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = comProperAccelerationInBaseFrame[0] - offsetWrenchInBaseFrame.getVal(0);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = comProperAccelerationInBaseFrame[1] - offsetWrenchInBaseFrame.getVal(1);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = comProperAccelerationInBaseFrame[2] - offsetWrenchInBaseFrame.getVal(2);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = comProperAccelerationInBaseFrame[3] - offsetWrenchInBaseFrame.getVal(3);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = comProperAccelerationInBaseFrame[4] - offsetWrenchInBaseFrame.getVal(4);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = comProperAccelerationInBaseFrame[5] - offsetWrenchInBaseFrame.getVal(5);
                 }
                 break;
                 case iDynTree::NET_EXT_WRENCH_SENSOR:
@@ -1929,6 +1962,45 @@ void HumanDynamicsEstimator::run()
         iDynTree::toEigen(diff) = iDynTree::toEigen(pImpl->berdyData.buffers.task1_measurements) - iDynTree::toEigen(simulatedy1);
         pImpl->task1DifferenceInyd << diff.toString().c_str() << std::endl;
     }
+
+    // Check for rpc command status for the offset, and in case update or reset the offsets
+    if (pImpl->commandPro->cmdOffsetStatus && !pImpl->commandPro->resetOffset) {
+        if (pImpl->removeOffsetOption == "source") {
+
+            // Compute offset to be removed at the rate of change of momentum level
+            pImpl->wrenchOffset.setVal(0, comProperAccelerationInWorldFrame.at(0) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(0));
+            pImpl->wrenchOffset.setVal(1, comProperAccelerationInWorldFrame.at(1) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(1));
+            pImpl->wrenchOffset.setVal(2, comProperAccelerationInWorldFrame.at(2) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(2));
+            pImpl->wrenchOffset.setVal(3, comProperAccelerationInWorldFrame.at(3) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(3));
+            pImpl->wrenchOffset.setVal(4, comProperAccelerationInWorldFrame.at(4) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(4));
+            pImpl->wrenchOffset.setVal(5, comProperAccelerationInWorldFrame.at(5) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(5));
+
+            yInfo() << LogPrefix << "Offset wrench " << pImpl->wrenchOffset.toString().c_str();
+
+        }
+        else {
+            yWarning() << LogPrefix << "The choosen removeOffsetOption " << pImpl->removeOffsetOption << " is not valid";
+        }
+    }
+    else if (pImpl->commandPro->cmdOffsetStatus && pImpl->commandPro->resetOffset) {
+
+        yInfo() << LogPrefix << "Clearing offsets";
+        pImpl->wrenchOffset.zero();
+
+    }
+
+    // Reset sum of wrench measurements
+    pImpl->sumOfWrenchMeasurementInBaseFrame.zero();
+    pImpl->sumOfWrenchMeasurementInWorldFrame.zero();
+
+
+    // Set rpc command status to false
+    pImpl->commandPro->cmdOffsetStatus = false;
+    pImpl->commandPro->cmdDynamicStatus = false;
+    pImpl->commandPro->resetOffset = false;
+    pImpl->commandPro->cmdTask1Status = false;
+    pImpl->commandPro->resetTask1 = false;
+    pImpl->commandPro->zeroWrench = false;
 
     // ===========================
     // EXPOSE DATA FOR IHUMANSTATE
@@ -2085,6 +2157,16 @@ void HumanDynamicsEstimator::run()
 
 
         }
+
+        yInfo() << LogPrefix << "Offset wrench exposed is " << pImpl->wrenchOffset.toString().c_str();
+        // Expose offset wrench in world frame to analog sensor data variable
+        pImpl->allWrenchAnalogSensorData.measurements[144 + 0] = pImpl->wrenchOffset.getVal(0);
+        pImpl->allWrenchAnalogSensorData.measurements[144 + 1] = pImpl->wrenchOffset.getVal(1);
+        pImpl->allWrenchAnalogSensorData.measurements[144 + 2] = pImpl->wrenchOffset.getVal(2);
+        pImpl->allWrenchAnalogSensorData.measurements[144 + 3] = pImpl->wrenchOffset.getVal(3);
+        pImpl->allWrenchAnalogSensorData.measurements[144 + 4] = pImpl->wrenchOffset.getVal(4);
+        pImpl->allWrenchAnalogSensorData.measurements[144 + 5] = pImpl->wrenchOffset.getVal(5);
+
 
     }
 
