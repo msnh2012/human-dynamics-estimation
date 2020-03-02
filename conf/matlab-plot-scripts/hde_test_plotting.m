@@ -45,7 +45,7 @@ sumOfHandsEstimatedWrenchInWorldFrame = data.wrenchEstimates(79:84,:)' + data.wr
 
 %% Legend or Title Index
 wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y [Nm]$", "$m_z [Nm]$"];
-wrenchSourceName = {'Left Foot Wrench In Link Frame', 'Right Foot Wrench In Link Frame', 'Left Hand Wrench In Link Frame', 'Right Hand Wrench In Link Frame'};
+wrenchSourceName = ["Left Foot Wrench", "Right Foot Wrench", "Left Hand Wrench", "Right Hand Wrench"];
 momentumLegendString = ["$\dot{H}_{L_x}$", "$\dot{H}_{L_y}$", "$\dot{H}_{L_z}$", "$\dot{H}_{\omega_x}$", "$\dot{H}_{\omega_y}$", "$\dot{H}_{\omega_z}$"];
 
 %% Measurement Vs Estimates Wrench In Link Frame
@@ -71,7 +71,7 @@ for i = 1:numberOfWrenchSources
     end
     
     a = axes;
-    t = title (wrenchSourceName(i));
+    t = title (strcat(wrenchSourceName(i) + "- Estimate In Link Frame"));
     t.FontSize = fontSize;
     a.Visible = 'off' ;
     t.Visible = 'on' ;
@@ -81,31 +81,58 @@ for i = 1:numberOfWrenchSources
     
 end
 
-properRateOfChangeOfMomentumInWorldFrame = data.comProperAccelerationInWorldFrame;
-properRateOfChangeOfMomentumInBaseFrame = data.comProperAccelerationInBaseFrame;
+%% Hands Estimates Wrench In World Frame
 
-%% %% Proper Rate of Change of Momentum In Base Frame Vs Sum of External Wrenches Measurements In Base Frame
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
 
-for s = 1:6 
+for s = 1:6
     
     subplot(2,3,s);
-    plot(properRateOfChangeOfMomentumInBaseFrame(s,:)', 'LineWidth', lineWidth);
+    plot(data.wrenchEstimates(78 + s,:)', 'LineWidth', lineWidth);
     hold on;
-    plot(sumMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
-    hold on;    
+    plot(data.wrenchEstimates(90 + s,:)', 'LineWidth', lineWidth);
+    hold on;
     xlabel('Samples', 'FontSize', fontSize);
-    legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+    ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
+    set (gca, 'FontSize' , fontSize)
+    legend(wrenchSourceName(3), wrenchSourceName(4), 'FontSize', fontSize, 'Location', 'Best');
     
 end
 
 a = axes;
-t = title ("Proper Rate of Change of Momentum - Sum of External Wrenches Measurements In Base Frame");
+t = title ('Hands Estimated Wrench In World Frame');
 t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
 
-save2pdf("rateOfMomentumVsMeasuredWrenchesInBaseFrame.pdf", fH,300);
+%% Save figure
+save2pdf(strcat(t.String + ".pdf"), fH,300);
+
+properRateOfChangeOfMomentumInWorldFrame = data.comProperAccelerationInWorldFrame;
+properRateOfChangeOfMomentumInBaseFrame = data.comProperAccelerationInBaseFrame;
+
+% % %% %% Proper Rate of Change of Momentum In Base Frame Vs Sum of External Wrenches Measurements In Base Frame
+% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
+% % 
+% % for s = 1:6 
+% %     
+% %     subplot(2,3,s);
+% %     plot(properRateOfChangeOfMomentumInBaseFrame(s,:)', 'LineWidth', lineWidth);
+% %     hold on;
+% %     plot(sumMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+% %     hold on;    
+% %     xlabel('Samples', 'FontSize', fontSize);
+% %     legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% %     
+% % end
+% % 
+% % a = axes;
+% % t = title ("Proper Rate of Change of Momentum - Sum of External Wrenches Measurements In Base Frame");
+% % t.FontSize = fontSize;
+% % a.Visible = 'off' ;
+% % t.Visible = 'on' ;
+% % 
+% % save2pdf("rateOfMomentumVsMeasuredWrenchesInBaseFrame.pdf", fH,300);
 
 %% Proper Rate of Change of Momentum In World Frame Vs Sum of External Wrenches Measurements In World Frame
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -154,29 +181,29 @@ save2pdf("rateOfMomentumVsMeasuredWrenchesInWorldFrame.pdf", fH,300);
 % % t.Visible = 'on' ;
 % % 
 % % save2pdf("rateOfMomentumVsEstimatedWrenchesInBaseFrame.pdf", fH,300);
-% % 
-% % %% %% Proper Rate of Change of Momentum In World Frame Vs Sum of External Estimated Wrenches In World Frame
-% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
-% % 
-% % for s = 1:6 
-% %     
-% %     subplot(2,3,s);
-% %     plot(properRateOfChangeOfMomentumInWorldFrame(s,:)', 'LineWidth', lineWidth);
-% %     hold on;
-% %     plot(sumOfEstimatedWrenchInWorldFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
-% %     hold on;    
-% %     xlabel('Samples', 'FontSize', fontSize);
-% %     legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
-% %     
-% % end
-% % 
-% % a = axes;
-% % t = title ("Proper Rate of Change of Momentum - Sum of External Estimated Wrenches In World Frame");
-% % t.FontSize = fontSize;
-% % a.Visible = 'off' ;
-% % t.Visible = 'on' ;
-% % 
-% % save2pdf("rateOfMomentumVsEstimatedWrenchesInWorldFrame.pdf", fH,300);
+
+%% %% Proper Rate of Change of Momentum In World Frame Vs Sum of External Estimated Wrenches In World Frame
+fH = figure('units','normalized','outerposition',[0 0 1 1]);
+
+for s = 1:6 
+    
+    subplot(2,3,s);
+    plot(properRateOfChangeOfMomentumInWorldFrame(s,:)', 'LineWidth', lineWidth);
+    hold on;
+    plot(sumOfEstimatedWrenchInWorldFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+    hold on;    
+    xlabel('Samples', 'FontSize', fontSize);
+    legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+    
+end
+
+a = axes;
+t = title ("Proper Rate of Change of Momentum - Sum of External Estimated Wrenches In World Frame");
+t.FontSize = fontSize;
+a.Visible = 'off' ;
+t.Visible = 'on' ;
+
+save2pdf("rateOfMomentumVsEstimatedWrenchesInWorldFrame.pdf", fH,300);
 
 
 
