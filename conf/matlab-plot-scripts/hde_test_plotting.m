@@ -71,13 +71,13 @@ for i = 1:numberOfWrenchSources
     end
     
     a = axes;
-    t = title (strcat(wrenchSourceName(i) + "- Estimate In Link Frame"));
+    t = title (strcat(wrenchSourceName(i) + " - Estimate In Link Frame"));
     t.FontSize = fontSize;
     a.Visible = 'off' ;
     t.Visible = 'on' ;
     
     %% Save figure
-    save2pdf(strcat(wrenchSourceName(i) + ".pdf"), fH,300);
+    save2pdf(strcat(t.String + ".pdf"), fH,300);
     
 end
 
