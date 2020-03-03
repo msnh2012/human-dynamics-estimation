@@ -1720,8 +1720,8 @@ void HumanDynamicsEstimator::run()
     std::vector<std::string> accelerometerSensorNames = pImpl->iHumanState->getAccelerometerNames();
     std::vector<std::array<double, 6>> properAccelerations = pImpl->iHumanState->getProperAccelerations();
 
-    std::array<double, 6> comProperAccelerationInBaseFrame = pImpl->iHumanState->getCoMProperAccelerationExpressedInBaseFrame();
-    std::array<double, 6> comProperAccelerationInWorldFrame = pImpl->iHumanState->getCoMProperAccelerationExpressedInWorldFrame();
+    std::array<double, 6> rateOfChangeOfMomentumInBaseFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInBaseFrame();
+    std::array<double, 6> rateOfChangeOfMomentumInWorldFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInWorldFrame();
 
     // Set base angular velocity
     pImpl->berdyData.state.baseAngularVelocity.setVal(0, baseVelocity.at(3));
@@ -1883,14 +1883,13 @@ void HumanDynamicsEstimator::run()
                     Eigen::Matrix<double,6,1> offsetWrenchInBaseFrameEigen = iDynTree::toEigen(baseTransform.inverse().asAdjointTransformWrench()) * iDynTree::toEigen(pImpl->wrenchOffset.asVector());
                     iDynTree::fromEigen(offsetWrenchInBaseFrame, offsetWrenchInBaseFrameEigen);
 
-                    // Set com proper acceleration measurements with offsets
-                    yInfo() << LogPrefix << "Offset wrench being removed " << pImpl->wrenchOffset.toString().c_str();
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = comProperAccelerationInBaseFrame[0] - offsetWrenchInBaseFrame.getVal(0);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = comProperAccelerationInBaseFrame[1] - offsetWrenchInBaseFrame.getVal(1);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = comProperAccelerationInBaseFrame[2] - offsetWrenchInBaseFrame.getVal(2);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = comProperAccelerationInBaseFrame[3] - offsetWrenchInBaseFrame.getVal(3);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = comProperAccelerationInBaseFrame[4] - offsetWrenchInBaseFrame.getVal(4);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = comProperAccelerationInBaseFrame[5] - offsetWrenchInBaseFrame.getVal(5);
+                    // Set rate of change of momentum measurements with offset removal
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = rateOfChangeOfMomentumInBaseFrame[0] - offsetWrenchInBaseFrame.getVal(0);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = rateOfChangeOfMomentumInBaseFrame[1] - offsetWrenchInBaseFrame.getVal(1);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = rateOfChangeOfMomentumInBaseFrame[2] - offsetWrenchInBaseFrame.getVal(2);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = rateOfChangeOfMomentumInBaseFrame[3] - offsetWrenchInBaseFrame.getVal(3);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = rateOfChangeOfMomentumInBaseFrame[4] - offsetWrenchInBaseFrame.getVal(4);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = rateOfChangeOfMomentumInBaseFrame[5] - offsetWrenchInBaseFrame.getVal(5);
                 }
                 break;
                 case iDynTree::NET_EXT_WRENCH_SENSOR:
@@ -1968,14 +1967,12 @@ void HumanDynamicsEstimator::run()
         if (pImpl->removeOffsetOption == "source") {
 
             // Compute offset to be removed at the rate of change of momentum level
-            pImpl->wrenchOffset.setVal(0, comProperAccelerationInWorldFrame.at(0) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(0));
-            pImpl->wrenchOffset.setVal(1, comProperAccelerationInWorldFrame.at(1) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(1));
-            pImpl->wrenchOffset.setVal(2, comProperAccelerationInWorldFrame.at(2) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(2));
-            pImpl->wrenchOffset.setVal(3, comProperAccelerationInWorldFrame.at(3) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(3));
-            pImpl->wrenchOffset.setVal(4, comProperAccelerationInWorldFrame.at(4) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(4));
-            pImpl->wrenchOffset.setVal(5, comProperAccelerationInWorldFrame.at(5) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(5));
-
-            yInfo() << LogPrefix << "Offset wrench " << pImpl->wrenchOffset.toString().c_str();
+            pImpl->wrenchOffset.setVal(0, rateOfChangeOfMomentumInWorldFrame.at(0) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(0));
+            pImpl->wrenchOffset.setVal(1, rateOfChangeOfMomentumInWorldFrame.at(1) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(1));
+            pImpl->wrenchOffset.setVal(2, rateOfChangeOfMomentumInWorldFrame.at(2) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(2));
+            pImpl->wrenchOffset.setVal(3, rateOfChangeOfMomentumInWorldFrame.at(3) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(3));
+            pImpl->wrenchOffset.setVal(4, rateOfChangeOfMomentumInWorldFrame.at(4) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(4));
+            pImpl->wrenchOffset.setVal(5, rateOfChangeOfMomentumInWorldFrame.at(5) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(5));
 
         }
         else {
@@ -2158,7 +2155,6 @@ void HumanDynamicsEstimator::run()
 
         }
 
-        yInfo() << LogPrefix << "Offset wrench exposed is " << pImpl->wrenchOffset.toString().c_str();
         // Expose offset wrench in world frame to analog sensor data variable
         pImpl->allWrenchAnalogSensorData.measurements[144 + 0] = pImpl->wrenchOffset.getVal(0);
         pImpl->allWrenchAnalogSensorData.measurements[144 + 1] = pImpl->wrenchOffset.getVal(1);

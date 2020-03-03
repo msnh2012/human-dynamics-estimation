@@ -196,10 +196,10 @@ public:
     std::vector<double> comPositionVec;
     std::array<double, 3> comVelocity;
     std::vector<double> comVelocityVec;
-    std::array<double, 6> comProperAccInBaseFrame;
-    std::vector<double> comProperAccInBaseFrameVec;
-    std::array<double, 6> comProperAccInWorldFrame;
-    std::vector<double> comProperAccInWorldFrameVec;
+    std::array<double, 6> rateOfChangeOfMomentumInBaseFrame;
+    std::vector<double> rateOfChangeOfMomentumInBaseFrameVec;
+    std::array<double, 6> rateOfChangeOfMomentumInWorldFrame;
+    std::vector<double> rateOfChangeOfMomentumInWorldFrameVec;
 
     // Wrench Measurements
     size_t numberOfWrenchMeasurementSources;
@@ -224,8 +224,8 @@ public:
     yarp::os::BufferedPort<yarp::sig::Vector> jointVelocitiesDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> comPositionDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> comVelocityDataPort;
-    yarp::os::BufferedPort<yarp::sig::Vector> comProperAccelerationInBaseFrameDataPort;
-    yarp::os::BufferedPort<yarp::sig::Vector> comProperAccelerationInWorldFrameDataPort;
+    yarp::os::BufferedPort<yarp::sig::Vector> rateOfChangeOfMomentumInBaseFrameDataPort;
+    yarp::os::BufferedPort<yarp::sig::Vector> rateOfChangeOfMomentumInWorldFrameDataPort;
 
     // Yarp ports for streaming data from IHumanWrench interface of HumanWrenchProvider
     yarp::os::BufferedPort<yarp::os::Bottle> wrenchMeasurementSourceNamesDataPort;
@@ -382,17 +382,17 @@ void HumanDataCollector::run()
             }
 
             // Open CoM acceleration in base frame data port
-            const std::string comProperAccelerationInBaseFramePortName = pImpl->portPrefix + DeviceName + "/comProperAccelerationInBaseFrame:o";
-            if (!pImpl->comProperAccelerationInBaseFrameDataPort.open(comProperAccelerationInBaseFramePortName)) {
-                yError() << LogPrefix << "Failed to open port " << comProperAccelerationInBaseFramePortName;
+            const std::string rateOfChangeOfMomentumInBaseFramePortName = pImpl->portPrefix + DeviceName + "/rateOfChangeOfMomentumInBaseFrame:o";
+            if (!pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.open(rateOfChangeOfMomentumInBaseFramePortName)) {
+                yError() << LogPrefix << "Failed to open port " << rateOfChangeOfMomentumInBaseFramePortName;
                 askToStop();
                 return;
             }
 
             // Open CoM acceleration in world frame data port
-            const std::string comProperAccelerationInWorldFramePortName = pImpl->portPrefix + DeviceName + "/comProperAccelerationInWorldFrame:o";
-            if (!pImpl->comProperAccelerationInWorldFrameDataPort.open(comProperAccelerationInWorldFramePortName)) {
-                yError() << LogPrefix << "Failed to open port " << comProperAccelerationInWorldFramePortName;
+            const std::string rateOfChangeOfMomentumInWorldFramePortName = pImpl->portPrefix + DeviceName + "/rateOfChangeOfMomentumInWorldFrame:o";
+            if (!pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.open(rateOfChangeOfMomentumInWorldFramePortName)) {
+                yError() << LogPrefix << "Failed to open port " << rateOfChangeOfMomentumInWorldFramePortName;
                 askToStop();
                 return;
             }
@@ -484,8 +484,8 @@ void HumanDataCollector::run()
 
                 pImpl->humanDataStruct.data["comPosition"] = std::vector<std::vector<double>>();
                 pImpl->humanDataStruct.data["comVelocity"] = std::vector<std::vector<double>>();
-                pImpl->humanDataStruct.data["comProperAccelerationInBaseFrame"] = std::vector<std::vector<double>>();
-                pImpl->humanDataStruct.data["comProperAccelerationInWorldFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["rateOfChangeOfMomentumInBaseFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["rateOfChangeOfMomentumInWorldFrame"] = std::vector<std::vector<double>>();
 
                 pImpl->humanDataStruct.data["jointPositions"] = std::vector<std::vector<double>>();
                 pImpl->humanDataStruct.data["jointVelocities"] = std::vector<std::vector<double>>();
@@ -546,8 +546,8 @@ void HumanDataCollector::run()
         // CoM Quantities
         pImpl->comPosition = pImpl->iHumanState->getCoMPosition();
         pImpl->comVelocity = pImpl->iHumanState->getCoMVelocity();
-        pImpl->comProperAccInBaseFrame = pImpl->iHumanState->getCoMProperAccelerationExpressedInBaseFrame();
-        pImpl->comProperAccInWorldFrame = pImpl->iHumanState->getCoMProperAccelerationExpressedInWorldFrame();
+        pImpl->rateOfChangeOfMomentumInBaseFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInBaseFrame();
+        pImpl->rateOfChangeOfMomentumInWorldFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInWorldFrame();
 
     }
 
@@ -595,9 +595,9 @@ void HumanDataCollector::run()
 
         pImpl->comVelocityVec = std::vector<double>(pImpl->comVelocity.begin(), pImpl->comVelocity.end());
 
-        pImpl->comProperAccInBaseFrameVec = std::vector<double>(pImpl->comProperAccInBaseFrame.begin(), pImpl->comProperAccInBaseFrame.end());
+        pImpl->rateOfChangeOfMomentumInBaseFrameVec = std::vector<double>(pImpl->rateOfChangeOfMomentumInBaseFrame.begin(), pImpl->rateOfChangeOfMomentumInBaseFrame.end());
 
-        pImpl->comProperAccInWorldFrameVec = std::vector<double>(pImpl->comProperAccInWorldFrame.begin(), pImpl->comProperAccInWorldFrame.end());
+        pImpl->rateOfChangeOfMomentumInWorldFrameVec = std::vector<double>(pImpl->rateOfChangeOfMomentumInWorldFrame.begin(), pImpl->rateOfChangeOfMomentumInWorldFrame.end());
 
     }
 
@@ -617,8 +617,8 @@ void HumanDataCollector::run()
 
             pImpl->humanDataStruct.data.at("comPosition").push_back(pImpl->comPositionVec);
             pImpl->humanDataStruct.data.at("comVelocity").push_back(pImpl->comVelocityVec);
-            pImpl->humanDataStruct.data.at("comProperAccelerationInBaseFrame").push_back(pImpl->comProperAccInBaseFrameVec);
-            pImpl->humanDataStruct.data.at("comProperAccelerationInWorldFrame").push_back(pImpl->comProperAccInWorldFrameVec);
+            pImpl->humanDataStruct.data.at("rateOfChangeOfMomentumInBaseFrame").push_back(pImpl->rateOfChangeOfMomentumInBaseFrameVec);
+            pImpl->humanDataStruct.data.at("rateOfChangeOfMomentumInWorldFrame").push_back(pImpl->rateOfChangeOfMomentumInWorldFrameVec);
 
             pImpl->humanDataStruct.data.at("jointPositions").push_back(pImpl->jointPositionsVec);
             pImpl->humanDataStruct.data.at("jointVelocities").push_back(pImpl->jointVelocitiesVec);
@@ -691,13 +691,13 @@ void HumanDataCollector::run()
         YarpConversionsHelper::toYarp(comVelocityYarpVector, pImpl->comVelocityVec);
 
         // Prepare com proper acceleration in base frame
-        yarp::sig::Vector& comProperAccelerationInBaseFrameYarpVector = pImpl->comProperAccelerationInBaseFrameDataPort.prepare();
-        YarpConversionsHelper::toYarp(comProperAccelerationInBaseFrameYarpVector, pImpl->comProperAccInBaseFrameVec);
+        yarp::sig::Vector& rateOfChangeOfMomentumInBaseFrameYarpVector = pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.prepare();
+        YarpConversionsHelper::toYarp(rateOfChangeOfMomentumInBaseFrameYarpVector, pImpl->rateOfChangeOfMomentumInBaseFrameVec);
 
 
         // Prepare com proper acceleration in world frame
-        yarp::sig::Vector& comProperAccelerationInWorldFrameYarpVector = pImpl->comProperAccelerationInWorldFrameDataPort.prepare();
-        YarpConversionsHelper::toYarp(comProperAccelerationInWorldFrameYarpVector, pImpl->comProperAccInWorldFrameVec);
+        yarp::sig::Vector& comProperAccelerationInWorldFrameYarpVector = pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.prepare();
+        YarpConversionsHelper::toYarp(comProperAccelerationInWorldFrameYarpVector, pImpl->rateOfChangeOfMomentumInWorldFrameVec);
 
         // Send data through yarp ports
         pImpl->basePoseDataPort.write(true);
@@ -707,8 +707,8 @@ void HumanDataCollector::run()
         pImpl->jointVelocitiesDataPort.write(true);
         pImpl->comPositionDataPort.write(true);
         pImpl->comVelocityDataPort.write(true);
-        pImpl->comProperAccelerationInBaseFrameDataPort.write(true);
-        pImpl->comProperAccelerationInWorldFrameDataPort.write(true);
+        pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.write(true);
+        pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.write(true);
     }
 
     if (pImpl->isAttached.wrenchProvider) {
@@ -920,12 +920,12 @@ bool HumanDataCollector::detach()
             pImpl->comVelocityDataPort.close();
         }
 
-        if (!pImpl->comProperAccelerationInBaseFrameDataPort.isClosed()) {
-            pImpl->comProperAccelerationInBaseFrameDataPort.close();
+        if (!pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.isClosed()) {
+            pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.close();
         }
 
-        if (!pImpl->comProperAccelerationInWorldFrameDataPort.isClosed()) {
-            pImpl->comProperAccelerationInWorldFrameDataPort.close();
+        if (!pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.isClosed()) {
+            pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.close();
         }
 
         pImpl->iHumanState = nullptr;
