@@ -1062,6 +1062,9 @@ public:
     // Sum of wrench measurements in world frame
     iDynTree::Wrench sumOfWrenchMeasurementInWorldFrame;
 
+    // Sum of wrench measurements in centroidal frame
+    iDynTree::Wrench sumOfWrenchMeasurementInCentroidalFrame;
+
     // Link net external wrench analog sensor variable
     LinkNetExternalWrenchEstimatesAnalogSensorData linkNetExternalWrenchEstimatesAnalogSensorData;
 
@@ -1272,9 +1275,9 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
         pImpl->linkExternalWrenchMeasurementAnalogSensorData.numberOfChannels = 6 * pImpl->wrenchSensorsLinkNames.size();
 
         // NOTE: multiplying by 3 because the estimates are expressed in link, base and world frames
-        pImpl->allWrenchAnalogSensorData.measurements.resize(5 * pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements.size() + 6 +
+        pImpl->allWrenchAnalogSensorData.measurements.resize(6 * pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements.size() + 6 +
                                                              pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements.size(), 0);
-        pImpl->allWrenchAnalogSensorData.numberOfChannels = 5 *pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.numberOfChannels + 6 +
+        pImpl->allWrenchAnalogSensorData.numberOfChannels = 6 * pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.numberOfChannels + 6 +
                                                             pImpl->linkExternalWrenchMeasurementAnalogSensorData.numberOfChannels;
     }
 
@@ -1592,11 +1595,14 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
     // Set Offset wrench to zero
     pImpl->wrenchOffset.zero();
 
-    // Set sum of wrench measurements in base frame
+    // Set sum of wrench measurements in base frame to zero
     pImpl->sumOfWrenchMeasurementInBaseFrame.zero();
 
-    // Set sum of wrench measurements in world frame
+    // Set sum of wrench measurements in world frame to zero
     pImpl->sumOfWrenchMeasurementInWorldFrame.zero();
+
+    // Set sum of wrench measurements in centroidal frame to zero
+    pImpl->sumOfWrenchMeasurementInCentroidalFrame.zero();
 
     // ----------------------------
     // Run a first dummy estimation
@@ -1717,9 +1723,12 @@ void HumanDynamicsEstimator::run()
     std::array<double, 4> baseOrientation = pImpl->iHumanState->getBaseOrientation();
     std::array<double, 6> baseVelocity    = pImpl->iHumanState->getBaseVelocity();
 
+    std::array<double, 3> comPosition = pImpl->iHumanState->getCoMPosition();
+
     std::vector<std::string> accelerometerSensorNames = pImpl->iHumanState->getAccelerometerNames();
     std::vector<std::array<double, 6>> properAccelerations = pImpl->iHumanState->getProperAccelerations();
 
+    std::array<double, 6> rateOfChangeOfMomentumInCentroidalFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInCentroidalFrame();
     std::array<double, 6> rateOfChangeOfMomentumInBaseFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInBaseFrame();
     std::array<double, 6> rateOfChangeOfMomentumInWorldFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInWorldFrame();
 
@@ -1795,6 +1804,9 @@ void HumanDynamicsEstimator::run()
     std::vector<double> wrenchMeasurementValuesInWorldFrame;
     wrenchMeasurementValuesInWorldFrame.resize(wrenchValues.size(), 0.0);
 
+    std::vector<double> wrenchMeasurementValuesInCentroidalFrame;
+    wrenchMeasurementValuesInCentroidalFrame.resize(wrenchValues.size(), 0.0);
+
     // Transform wrench measurement values from link frames to base frame
     for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
 
@@ -1826,7 +1838,7 @@ void HumanDynamicsEstimator::run()
 
         pImpl->sumOfWrenchMeasurementInBaseFrame = pImpl->sumOfWrenchMeasurementInBaseFrame + transformedLinkWrenchInBaseFrame;
 
-        // Set estimated wrench in base frame buffer
+        // Set measured wrench in base frame buffer
         wrenchMeasurementValuesInBaseFrame.at(6 * i + 0) = transformedLinkWrenchInBaseFrame.getVal(0);
         wrenchMeasurementValuesInBaseFrame.at(6 * i + 1) = transformedLinkWrenchInBaseFrame.getVal(1);
         wrenchMeasurementValuesInBaseFrame.at(6 * i + 2) = transformedLinkWrenchInBaseFrame.getVal(2);
@@ -1842,13 +1854,38 @@ void HumanDynamicsEstimator::run()
 
         pImpl->sumOfWrenchMeasurementInWorldFrame = pImpl->sumOfWrenchMeasurementInWorldFrame + transformedLinkWrenchInWorldFrame;
 
-        // Set estimated wrench in base frame buffer
+        // Set measured wrench in base frame buffer
         wrenchMeasurementValuesInWorldFrame.at(6 * i + 0) = transformedLinkWrenchInWorldFrame.getVal(0);
         wrenchMeasurementValuesInWorldFrame.at(6 * i + 1) = transformedLinkWrenchInWorldFrame.getVal(1);
         wrenchMeasurementValuesInWorldFrame.at(6 * i + 2) = transformedLinkWrenchInWorldFrame.getVal(2);
         wrenchMeasurementValuesInWorldFrame.at(6 * i + 3) = transformedLinkWrenchInWorldFrame.getVal(3);
         wrenchMeasurementValuesInWorldFrame.at(6 * i + 4) = transformedLinkWrenchInWorldFrame.getVal(4);
         wrenchMeasurementValuesInWorldFrame.at(6 * i + 5) = transformedLinkWrenchInWorldFrame.getVal(5);
+
+        // Compute centroidal frame (G[I]) to inertial frame transform
+        iDynTree::Transform world_H_centroidal = iDynTree::Transform::Identity();
+        iDynTree::Position pos(comPosition[0], comPosition[1], comPosition[2]);
+        world_H_centroidal.setPosition(pos);
+
+        // Compute link to centroidal frame transform
+        iDynTree::Transform centroidal_H_link = iDynTree::Transform::Identity();
+        centroidal_H_link = world_H_centroidal.inverse() * world_H_link;
+
+        // Transform wrench to centroidal frame
+        Eigen::Matrix<double,6,1> transformedWrenchInCentroidalFrameEigen = iDynTree::toEigen(centroidal_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkMeasuredWrench.asVector());
+
+        iDynTree::Wrench transformedLinkWrenchInCentroidalFrame;
+        iDynTree::fromEigen(transformedLinkWrenchInCentroidalFrame, transformedWrenchInCentroidalFrameEigen);
+
+        pImpl->sumOfWrenchMeasurementInCentroidalFrame = pImpl->sumOfWrenchMeasurementInCentroidalFrame + transformedLinkWrenchInCentroidalFrame;
+
+        // Set measured wrench in centroidal frame buffer
+        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 0) = transformedLinkWrenchInCentroidalFrame.getVal(0);
+        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 1) = transformedLinkWrenchInCentroidalFrame.getVal(1);
+        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 2) = transformedLinkWrenchInCentroidalFrame.getVal(2);
+        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 3) = transformedLinkWrenchInCentroidalFrame.getVal(3);
+        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 4) = transformedLinkWrenchInCentroidalFrame.getVal(4);
+        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 5) = transformedLinkWrenchInCentroidalFrame.getVal(5);
 
     }
 
@@ -1966,13 +2003,35 @@ void HumanDynamicsEstimator::run()
     if (pImpl->commandPro->cmdOffsetStatus && !pImpl->commandPro->resetOffset) {
         if (pImpl->removeOffsetOption == "source") {
 
-            // Compute offset to be removed at the rate of change of momentum level
+            // Compute offset to be removed at the rate of change of momentum level in world frame
             pImpl->wrenchOffset.setVal(0, rateOfChangeOfMomentumInWorldFrame.at(0) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(0));
             pImpl->wrenchOffset.setVal(1, rateOfChangeOfMomentumInWorldFrame.at(1) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(1));
             pImpl->wrenchOffset.setVal(2, rateOfChangeOfMomentumInWorldFrame.at(2) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(2));
             pImpl->wrenchOffset.setVal(3, rateOfChangeOfMomentumInWorldFrame.at(3) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(3));
             pImpl->wrenchOffset.setVal(4, rateOfChangeOfMomentumInWorldFrame.at(4) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(4));
             pImpl->wrenchOffset.setVal(5, rateOfChangeOfMomentumInWorldFrame.at(5) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(5));
+
+            // Compute offset to be removed at the rate of change of momentum level in centroidal frame
+            iDynTree::Wrench offset;
+            offset.zero();
+
+            yInfo() << LogPrefix << "rateOfChangeOfMomentumInCentroidalFrame is " << rateOfChangeOfMomentumInCentroidalFrame.at(0)
+                                                                                  << " " << rateOfChangeOfMomentumInCentroidalFrame.at(1)
+                                                                                  << " " << rateOfChangeOfMomentumInCentroidalFrame.at(2)
+                                                                                  << " " << rateOfChangeOfMomentumInCentroidalFrame.at(3)
+                                                                                  << " " << rateOfChangeOfMomentumInCentroidalFrame.at(4)
+                                                                                  << " " << rateOfChangeOfMomentumInCentroidalFrame.at(5);
+
+            yInfo() << LogPrefix << "sumOfWrenchMeasurementInCentroidalFrame is " << pImpl->sumOfWrenchMeasurementInCentroidalFrame.toString().c_str();
+
+            offset.setVal(0, rateOfChangeOfMomentumInCentroidalFrame.at(0) - pImpl->sumOfWrenchMeasurementInCentroidalFrame.getVal(0));
+            offset.setVal(1, rateOfChangeOfMomentumInCentroidalFrame.at(1) - pImpl->sumOfWrenchMeasurementInCentroidalFrame.getVal(1));
+            offset.setVal(2, rateOfChangeOfMomentumInCentroidalFrame.at(2) - pImpl->sumOfWrenchMeasurementInCentroidalFrame.getVal(2));
+            offset.setVal(3, rateOfChangeOfMomentumInCentroidalFrame.at(3) - pImpl->sumOfWrenchMeasurementInCentroidalFrame.getVal(3));
+            offset.setVal(4, rateOfChangeOfMomentumInCentroidalFrame.at(4) - pImpl->sumOfWrenchMeasurementInCentroidalFrame.getVal(4));
+            offset.setVal(5, rateOfChangeOfMomentumInCentroidalFrame.at(5) - pImpl->sumOfWrenchMeasurementInCentroidalFrame.getVal(5));
+
+            yInfo() << LogPrefix << "Offset in centroidal frame is " << offset.toString().c_str();
 
         }
         else {
@@ -1989,7 +2048,7 @@ void HumanDynamicsEstimator::run()
     // Reset sum of wrench measurements
     pImpl->sumOfWrenchMeasurementInBaseFrame.zero();
     pImpl->sumOfWrenchMeasurementInWorldFrame.zero();
-
+    pImpl->sumOfWrenchMeasurementInCentroidalFrame.zero();
 
     // Set rpc command status to false
     pImpl->commandPro->cmdOffsetStatus = false;
@@ -2137,31 +2196,38 @@ void HumanDynamicsEstimator::run()
         for (int i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
 
             // Expose link measured wrench in base frame to analog sensor data variable
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 0] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 0);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 1] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 1);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 2] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 2);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 3] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 3);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 4] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 4);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 5] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 5);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 0] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 0);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 1] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 1);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 2] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 2);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 3] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 3);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 4] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 4);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 5] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 5);
 
             // Expose link measured wrench in world frame to analog sensor data variable
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 6] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 0);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 7] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 1);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 8] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 2);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 9] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 3);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 10] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 4);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 2 * 6 * i + 11] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 5);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 6] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 0);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 7] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 1);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 8] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 2);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 9] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 3);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 10] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 4);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 11] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 5);
 
+            // Expose link measured wrench in centroidal frame to analog sensor data variable
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 12] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 0);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 13] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 1);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 14] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 2);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 15] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 3);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 16] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 4);
+            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 17] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 5);
 
         }
 
         // Expose offset wrench in world frame to analog sensor data variable
-        pImpl->allWrenchAnalogSensorData.measurements[144 + 0] = pImpl->wrenchOffset.getVal(0);
-        pImpl->allWrenchAnalogSensorData.measurements[144 + 1] = pImpl->wrenchOffset.getVal(1);
-        pImpl->allWrenchAnalogSensorData.measurements[144 + 2] = pImpl->wrenchOffset.getVal(2);
-        pImpl->allWrenchAnalogSensorData.measurements[144 + 3] = pImpl->wrenchOffset.getVal(3);
-        pImpl->allWrenchAnalogSensorData.measurements[144 + 4] = pImpl->wrenchOffset.getVal(4);
-        pImpl->allWrenchAnalogSensorData.measurements[144 + 5] = pImpl->wrenchOffset.getVal(5);
+        pImpl->allWrenchAnalogSensorData.measurements[168 + 0] = pImpl->wrenchOffset.getVal(0);
+        pImpl->allWrenchAnalogSensorData.measurements[168 + 1] = pImpl->wrenchOffset.getVal(1);
+        pImpl->allWrenchAnalogSensorData.measurements[168 + 2] = pImpl->wrenchOffset.getVal(2);
+        pImpl->allWrenchAnalogSensorData.measurements[168 + 3] = pImpl->wrenchOffset.getVal(3);
+        pImpl->allWrenchAnalogSensorData.measurements[168 + 4] = pImpl->wrenchOffset.getVal(4);
+        pImpl->allWrenchAnalogSensorData.measurements[168 + 5] = pImpl->wrenchOffset.getVal(5);
 
 
     }

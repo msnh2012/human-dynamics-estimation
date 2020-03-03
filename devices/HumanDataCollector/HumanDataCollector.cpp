@@ -196,10 +196,15 @@ public:
     std::vector<double> comPositionVec;
     std::array<double, 3> comVelocity;
     std::vector<double> comVelocityVec;
+
+    // Rate of change of momentum quantities
     std::array<double, 6> rateOfChangeOfMomentumInBaseFrame;
-    std::vector<double> rateOfChangeOfMomentumInBaseFrameVec;
     std::array<double, 6> rateOfChangeOfMomentumInWorldFrame;
+    std::array<double, 6> rateOfChangeOfMomentumInCentroidalFrame;
+
+    std::vector<double> rateOfChangeOfMomentumInBaseFrameVec;
     std::vector<double> rateOfChangeOfMomentumInWorldFrameVec;
+    std::vector<double> rateOfChangeOfMomentumInCentroidalFrameVec;
 
     // Wrench Measurements
     size_t numberOfWrenchMeasurementSources;
@@ -226,6 +231,7 @@ public:
     yarp::os::BufferedPort<yarp::sig::Vector> comVelocityDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> rateOfChangeOfMomentumInBaseFrameDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> rateOfChangeOfMomentumInWorldFrameDataPort;
+    yarp::os::BufferedPort<yarp::sig::Vector> rateOfChangeOfMomentumInCentroidalFrameDataPort;
 
     // Yarp ports for streaming data from IHumanWrench interface of HumanWrenchProvider
     yarp::os::BufferedPort<yarp::os::Bottle> wrenchMeasurementSourceNamesDataPort;
@@ -381,7 +387,7 @@ void HumanDataCollector::run()
                 return;
             }
 
-            // Open CoM acceleration in base frame data port
+            // Open rate of change of momentum in base frame data port
             const std::string rateOfChangeOfMomentumInBaseFramePortName = pImpl->portPrefix + DeviceName + "/rateOfChangeOfMomentumInBaseFrame:o";
             if (!pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.open(rateOfChangeOfMomentumInBaseFramePortName)) {
                 yError() << LogPrefix << "Failed to open port " << rateOfChangeOfMomentumInBaseFramePortName;
@@ -389,10 +395,18 @@ void HumanDataCollector::run()
                 return;
             }
 
-            // Open CoM acceleration in world frame data port
+            // Open rate of change of momentum in world frame data port
             const std::string rateOfChangeOfMomentumInWorldFramePortName = pImpl->portPrefix + DeviceName + "/rateOfChangeOfMomentumInWorldFrame:o";
             if (!pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.open(rateOfChangeOfMomentumInWorldFramePortName)) {
                 yError() << LogPrefix << "Failed to open port " << rateOfChangeOfMomentumInWorldFramePortName;
+                askToStop();
+                return;
+            }
+
+            // Open rate of change of momentum in centroidal frame data port
+            const std::string rateOfChangeOfMomentumInCentroidalFramePortName = pImpl->portPrefix + DeviceName + "/rateOfChangeOfMomentumInCentroidalFrame:o";
+            if (!pImpl->rateOfChangeOfMomentumInCentroidalFrameDataPort.open(rateOfChangeOfMomentumInCentroidalFramePortName)) {
+                yError() << LogPrefix << "Failed to open port " << rateOfChangeOfMomentumInCentroidalFramePortName;
                 askToStop();
                 return;
             }
@@ -486,6 +500,7 @@ void HumanDataCollector::run()
                 pImpl->humanDataStruct.data["comVelocity"] = std::vector<std::vector<double>>();
                 pImpl->humanDataStruct.data["rateOfChangeOfMomentumInBaseFrame"] = std::vector<std::vector<double>>();
                 pImpl->humanDataStruct.data["rateOfChangeOfMomentumInWorldFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["rateOfChangeOfMomentumInCentroidalFrame"] = std::vector<std::vector<double>>();
 
                 pImpl->humanDataStruct.data["jointPositions"] = std::vector<std::vector<double>>();
                 pImpl->humanDataStruct.data["jointVelocities"] = std::vector<std::vector<double>>();
@@ -546,8 +561,11 @@ void HumanDataCollector::run()
         // CoM Quantities
         pImpl->comPosition = pImpl->iHumanState->getCoMPosition();
         pImpl->comVelocity = pImpl->iHumanState->getCoMVelocity();
+
+        // Rate of change of momentum Quantities
         pImpl->rateOfChangeOfMomentumInBaseFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInBaseFrame();
         pImpl->rateOfChangeOfMomentumInWorldFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInWorldFrame();
+        pImpl->rateOfChangeOfMomentumInCentroidalFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInCentroidalFrame();
 
     }
 
@@ -599,6 +617,8 @@ void HumanDataCollector::run()
 
         pImpl->rateOfChangeOfMomentumInWorldFrameVec = std::vector<double>(pImpl->rateOfChangeOfMomentumInWorldFrame.begin(), pImpl->rateOfChangeOfMomentumInWorldFrame.end());
 
+        pImpl->rateOfChangeOfMomentumInCentroidalFrameVec = std::vector<double>(pImpl->rateOfChangeOfMomentumInCentroidalFrame.begin(), pImpl->rateOfChangeOfMomentumInCentroidalFrame.end());
+
     }
 
     // Update interface data to matio buffers
@@ -617,8 +637,10 @@ void HumanDataCollector::run()
 
             pImpl->humanDataStruct.data.at("comPosition").push_back(pImpl->comPositionVec);
             pImpl->humanDataStruct.data.at("comVelocity").push_back(pImpl->comVelocityVec);
+
             pImpl->humanDataStruct.data.at("rateOfChangeOfMomentumInBaseFrame").push_back(pImpl->rateOfChangeOfMomentumInBaseFrameVec);
             pImpl->humanDataStruct.data.at("rateOfChangeOfMomentumInWorldFrame").push_back(pImpl->rateOfChangeOfMomentumInWorldFrameVec);
+            pImpl->humanDataStruct.data.at("rateOfChangeOfMomentumInCentroidalFrame").push_back(pImpl->rateOfChangeOfMomentumInCentroidalFrameVec);
 
             pImpl->humanDataStruct.data.at("jointPositions").push_back(pImpl->jointPositionsVec);
             pImpl->humanDataStruct.data.at("jointVelocities").push_back(pImpl->jointVelocitiesVec);
@@ -690,14 +712,17 @@ void HumanDataCollector::run()
         yarp::sig::Vector& comVelocityYarpVector = pImpl->comVelocityDataPort.prepare();
         YarpConversionsHelper::toYarp(comVelocityYarpVector, pImpl->comVelocityVec);
 
-        // Prepare com proper acceleration in base frame
+        // Rate of change of momentum in base frame
         yarp::sig::Vector& rateOfChangeOfMomentumInBaseFrameYarpVector = pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.prepare();
         YarpConversionsHelper::toYarp(rateOfChangeOfMomentumInBaseFrameYarpVector, pImpl->rateOfChangeOfMomentumInBaseFrameVec);
 
+        // Rate of change of momentum in world frame
+        yarp::sig::Vector& rateOfChangeOfMomentumInWorldFrameYarpVector = pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.prepare();
+        YarpConversionsHelper::toYarp(rateOfChangeOfMomentumInWorldFrameYarpVector, pImpl->rateOfChangeOfMomentumInWorldFrameVec);
 
-        // Prepare com proper acceleration in world frame
-        yarp::sig::Vector& comProperAccelerationInWorldFrameYarpVector = pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.prepare();
-        YarpConversionsHelper::toYarp(comProperAccelerationInWorldFrameYarpVector, pImpl->rateOfChangeOfMomentumInWorldFrameVec);
+        // Rate of change of momentum in centroidal frame
+        yarp::sig::Vector& rateOfChangeOfMomentumInCentroidalFrameYarpVector = pImpl->rateOfChangeOfMomentumInCentroidalFrameDataPort.prepare();
+        YarpConversionsHelper::toYarp(rateOfChangeOfMomentumInCentroidalFrameYarpVector, pImpl->rateOfChangeOfMomentumInCentroidalFrameVec);
 
         // Send data through yarp ports
         pImpl->basePoseDataPort.write(true);
@@ -709,6 +734,7 @@ void HumanDataCollector::run()
         pImpl->comVelocityDataPort.write(true);
         pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.write(true);
         pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.write(true);
+        pImpl->rateOfChangeOfMomentumInCentroidalFrameDataPort.write(true);
     }
 
     if (pImpl->isAttached.wrenchProvider) {
@@ -926,6 +952,10 @@ bool HumanDataCollector::detach()
 
         if (!pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.isClosed()) {
             pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.close();
+        }
+
+        if (!pImpl->rateOfChangeOfMomentumInCentroidalFrameDataPort.isClosed()) {
+            pImpl->rateOfChangeOfMomentumInCentroidalFrameDataPort.close();
         }
 
         pImpl->iHumanState = nullptr;

@@ -19,13 +19,19 @@ LeftHandMeasuredWrenchInLinkFrame = data.wrenchEstimates(25:30,:)';
 RightHandMeasuredWrenchInLinkFrame = data.wrenchEstimates(37:42,:)';
 
 %% Sum of measurements wrenches in base frame
-sumMeasurementsInBaseFrame = data.wrenchEstimates(97:102,:)' + data.wrenchEstimates(109:114,:)' + data.wrenchEstimates(121:126,:)' + data.wrenchEstimates(133:138,:)';
-sumFeetMeasurementsInBaseFrame = data.wrenchEstimates(97:102,:)' + data.wrenchEstimates(109:114,:)';
-sumHandsMeasurementsInBaseFrame = data.wrenchEstimates(121:126,:)' + data.wrenchEstimates(133:138,:)';
+sumMeasurementsInBaseFrame = data.wrenchEstimates(97:102,:)' + data.wrenchEstimates(115:120,:)' + data.wrenchEstimates(133:138,:)' + data.wrenchEstimates(151:156,:)';
+sumFeetMeasurementsInBaseFrame = data.wrenchEstimates(97:102,:)' + data.wrenchEstimates(121:126,:)';
+sumHandsMeasurementsInBaseFrame = data.wrenchEstimates(139:144,:)' + data.wrenchEstimates(157:162,:)';
 
-sumMeasurementsInWorldFrame = data.wrenchEstimates(103:108,:)' + data.wrenchEstimates(115:120,:)' + data.wrenchEstimates(127:132,:)' + data.wrenchEstimates(139:144,:)';
-sumFeetMeasurementsInWorldFrame = data.wrenchEstimates(103:108,:)' + data.wrenchEstimates(115:120,:)';
-sumHandsMeasurementsInWorldFrame = data.wrenchEstimates(127:132,:)' + data.wrenchEstimates(139:144,:)';
+%% Sum of measurements wrenches in world frame
+sumMeasurementsInWorldFrame = data.wrenchEstimates(103:108,:)' + data.wrenchEstimates(121:126,:)' + data.wrenchEstimates(139:144,:)' + data.wrenchEstimates(157:162,:)';
+sumFeetMeasurementsInWorldFrame = data.wrenchEstimates(103:108,:)' + data.wrenchEstimates(127:132,:)';
+sumHandsMeasurementsInWorldFrame = data.wrenchEstimates(145:150,:)' + data.wrenchEstimates(163:168,:)';
+
+%% Sum of measurements wrenches in centroidal frame
+sumMeasurementsInCentroidalFrame = data.wrenchEstimates(109:114,:)' + data.wrenchEstimates(127:132,:)' + data.wrenchEstimates(145:150,:)' + data.wrenchEstimates(163:168,:)';
+sumFeetMeasurementsInCentroidalFrame = data.wrenchEstimates(109:114,:)' + data.wrenchEstimates(133:138,:)';
+sumHandsMeasurementsIncentroidalFrame = data.wrenchEstimates(151:156,:)' + data.wrenchEstimates(169:174,:)';
 
 %% Estimated wrenches in link frame
 LeftFootEstimatedWrenchInLinkFrame = data.wrenchEstimates(7:12,:)';
@@ -110,16 +116,17 @@ momentumLegendString = ["$\dot{H}_{L_x}$", "$\dot{H}_{L_y}$", "$\dot{H}_{L_z}$",
 
  RateOfChangeOfMomentumInWorldFrame = data.rateOfChangeOfMomentumInWorldFrame;
  RateOfChangeOfMomentumInBaseFrame = data.rateOfChangeOfMomentumInBaseFrame;
-
-%% %%   Rate of Change of Momentum In Base Frame Vs Sum of External Wrenches Measurements In Base Frame
+ RateOfChangeOfMomentumInCentroidalFrame = data.rateOfChangeOfMomentumInCentroidalFrame;
+ 
+ %% %%   Rate of Change of Momentum In Base Frame Vs Sum of External Wrenches Measurements In Centroidal Frame
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
 
 for s = 1:6 
     
     subplot(2,3,s);
-    plot( RateOfChangeOfMomentumInBaseFrame(s,:)', 'LineWidth', lineWidth);
+    plot( RateOfChangeOfMomentumInCentroidalFrame(s,:)', 'LineWidth', lineWidth);
     hold on;
-    plot(sumMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+    plot(sumMeasurementsInCentroidalFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
     hold on;    
     xlabel('Samples', 'FontSize', fontSize);
     legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
@@ -127,37 +134,61 @@ for s = 1:6
 end
 
 a = axes;
-t = title ("  Rate of Change of Momentum - Sum of External Wrenches Measurements In Base Frame");
+t = title ("  Rate of Change of Momentum - Sum of External Wrenches Measurements In Centroidal Frame");
 t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
 
-save2pdf("rateOfMomentumVsMeasuredWrenchesInBaseFrame.pdf", fH,300);
+save2pdf("rateOfMomentumVsMeasuredWrenchesInCentroidalFrame.pdf", fH,300);
 
-%%   Rate of Change of Momentum In World Frame Vs Sum of External Wrenches Measurements In World Frame
-fH = figure('units','normalized','outerposition',[0 0 1 1]);
 
-for s = 1:6 
-    
-    subplot(2,3,s);
-    plot( RateOfChangeOfMomentumInWorldFrame(s,:)', 'LineWidth', lineWidth);
-    hold on;
-    plot(sumMeasurementsInWorldFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
-    hold on;    
-    plot(data.wrenchEstimates(144 + s,:)', 'LineWidth', lineWidth, 'LineStyle', '-');
-    hold on;
-    xlabel('Samples', 'FontSize', fontSize);
-    legend(momentumLegendString(s), wrenchLegendString(s), strcat("offset-"+wrenchLegendString(s)), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
-    
-end
-
-a = axes;
-t = title ("  Rate of Change of Momentum - Sum of External Wrenches Measurements In World Frame");
-t.FontSize = fontSize;
-a.Visible = 'off' ;
-t.Visible = 'on' ;
-
-save2pdf("rateOfMomentumVsMeasuredWrenchesInWorldFrame.pdf", fH,300);
+% % %% %%   Rate of Change of Momentum In Base Frame Vs Sum of External Wrenches Measurements In Base Frame
+% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
+% % 
+% % for s = 1:6 
+% %     
+% %     subplot(2,3,s);
+% %     plot( RateOfChangeOfMomentumInBaseFrame(s,:)', 'LineWidth', lineWidth);
+% %     hold on;
+% %     plot(sumMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+% %     hold on;    
+% %     xlabel('Samples', 'FontSize', fontSize);
+% %     legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% %     
+% % end
+% % 
+% % a = axes;
+% % t = title ("  Rate of Change of Momentum - Sum of External Wrenches Measurements In Base Frame");
+% % t.FontSize = fontSize;
+% % a.Visible = 'off' ;
+% % t.Visible = 'on' ;
+% % 
+% % save2pdf("rateOfMomentumVsMeasuredWrenchesInBaseFrame.pdf", fH,300);
+% % 
+% % %%   Rate of Change of Momentum In World Frame Vs Sum of External Wrenches Measurements In World Frame
+% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
+% % 
+% % for s = 1:6 
+% %     
+% %     subplot(2,3,s);
+% %     plot( RateOfChangeOfMomentumInWorldFrame(s,:)', 'LineWidth', lineWidth);
+% %     hold on;
+% %     plot(sumMeasurementsInWorldFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+% %     hold on;    
+% %     plot(data.wrenchEstimates(144 + s,:)', 'LineWidth', lineWidth, 'LineStyle', '-');
+% %     hold on;
+% %     xlabel('Samples', 'FontSize', fontSize);
+% %     legend(momentumLegendString(s), wrenchLegendString(s), strcat("offset-"+wrenchLegendString(s)), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% %     
+% % end
+% % 
+% % a = axes;
+% % t = title ("  Rate of Change of Momentum - Sum of External Wrenches Measurements In World Frame");
+% % t.FontSize = fontSize;
+% % a.Visible = 'off' ;
+% % t.Visible = 'on' ;
+% % 
+% % save2pdf("rateOfMomentumVsMeasuredWrenchesInWorldFrame.pdf", fH,300);
 
 % % %% %%   Rate of Change of Momentum In World Frame Vs Sum of External Estimated Wrenches In Base Frame
 % % fH = figure('units','normalized','outerposition',[0 0 1 1]);

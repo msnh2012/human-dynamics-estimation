@@ -212,6 +212,7 @@ public:
     HumanSensorData humanSensorData;
 
     // Rate of change of momentum buffers
+    std::array<double, 6> rateOfChangeOfMomentumInCentroidalFrame;
     std::array<double, 6> rateOfChangeOfMomentumInBaseFrame;
     std::array<double, 6> rateOfChangeOfMomentumInWorldFrame;
 
@@ -1000,7 +1001,8 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
 
     }
 
-    // Initialize CoM proper acceleration to zero
+    // Initialize rate of change of momentum buffers to zero
+    pImpl->rateOfChangeOfMomentumInCentroidalFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     pImpl->rateOfChangeOfMomentumInBaseFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     pImpl->rateOfChangeOfMomentumInWorldFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
@@ -1511,6 +1513,13 @@ void HumanStateProvider::run()
         {
 
             std::lock_guard<std::mutex> lock(pImpl->mutex);
+
+            pImpl->rateOfChangeOfMomentumInCentroidalFrame = {rateOfChangeOfMomentumInCentroidalFrame.getVal(0),
+                                                              rateOfChangeOfMomentumInCentroidalFrame.getVal(1),
+                                                              rateOfChangeOfMomentumInCentroidalFrame.getVal(2),
+                                                              rateOfChangeOfMomentumInCentroidalFrame.getVal(3),
+                                                              rateOfChangeOfMomentumInCentroidalFrame.getVal(4),
+                                                              rateOfChangeOfMomentumInCentroidalFrame.getVal(5)};
 
             pImpl->rateOfChangeOfMomentumInBaseFrame = {rateOfChangeOfMomentumInBaseFrame.getVal(0),
                                                         rateOfChangeOfMomentumInBaseFrame.getVal(1),
@@ -2955,6 +2964,12 @@ std::array<double, 3> HumanStateProvider::getCoMBiasAcceleration() const
 {
     std::lock_guard<std::mutex> lock(pImpl->mutex);
     return pImpl->solution.CoMBiasAcceleration;
+}
+
+std::array<double, 6> HumanStateProvider::getRateOfChangeOfMomentumInCentroidalFrame() const
+{
+    std::lock_guard<std::mutex> lock(pImpl->mutex);
+    return pImpl->rateOfChangeOfMomentumInCentroidalFrame;
 }
 
 std::array<double, 6> HumanStateProvider::getRateOfChangeOfMomentumInBaseFrame() const

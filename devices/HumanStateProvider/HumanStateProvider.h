@@ -66,6 +66,7 @@ public:
     std::array<double, 3> getCoMPosition() const override;
     std::array<double, 3> getCoMVelocity() const override;
     std::array<double, 3> getCoMBiasAcceleration() const override;
+    std::array<double, 6> getRateOfChangeOfMomentumInCentroidalFrame() const override;
     std::array<double, 6> getRateOfChangeOfMomentumInBaseFrame() const override;
     std::array<double, 6> getRateOfChangeOfMomentumInWorldFrame() const override;
 
