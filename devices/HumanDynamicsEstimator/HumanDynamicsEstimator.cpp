@@ -72,6 +72,14 @@ struct AllWrenchAnalogSensorData
     std::vector<double> measurements;
 };
 
+struct WrenchInDifferentFrames
+{
+    std::vector<double> wrenchesInLinkFrame;
+    std::vector<double> wrenchesInCentroidalFrame;
+    std::vector<double> wrenchesInBaseFrame;
+    std::vector<double> wrenchesInWorldFrame;
+};
+
 static bool parseYarpValueToStdVector(const yarp::os::Value& option, std::vector<double>& output)
 {
     bool isList = option.isList();
@@ -251,8 +259,6 @@ struct BerdyData
     {
         iDynTree::JointDOFsDoubleArray jointTorqueEstimates;
         iDynTree::LinkNetExternalWrenches task1_linkNetExternalWrenchEstimatesInLinkFrame;
-        iDynTree::LinkNetExternalWrenches task1_linkNetExternalWrenchEstimatesInBaseFrame;
-        iDynTree::LinkNetExternalWrenches task1_linkNetExternalWrenchEstimatesInWorldFrame;
         iDynTree::LinkNetExternalWrenches linkNetExternalWrenchEstimates;
         iDynTree::LinkAccArray linkClassicalProperAccelerationEstimates; // This is also called sensor proper acceleration in Traversaro's PhD Thesis
     } estimates;
@@ -1071,12 +1077,16 @@ public:
     // Link external wrench measurements analog sensor variable
     LinkExternalWrenchMeasurementsAnalogSensorData linkExternalWrenchMeasurementAnalogSensorData;
 
+    // Wrench buffers
+    std::unordered_map<hde::interfaces::IHumanWrench::WrenchType, WrenchInDifferentFrames> allWrenchesMap;
+
     // TODO: In case of using multiple analog sensor usage in the future, we can remove this variable
     // Analog sensor variable containing the offset removed wrench measurements and the extimates link net external wrench estimates
     AllWrenchAnalogSensorData allWrenchAnalogSensorData;
 
     // Constructor
     Impl();
+
 };
 
 // ===============
@@ -1265,6 +1275,25 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
         pImpl->wrenchSensorsLinkNames.at(i) = linkNames->get(i).asString();
     }
 
+    // Initialize measured wrench buffers to map
+    WrenchInDifferentFrames allMeasuredWrench;
+    allMeasuredWrench.wrenchesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    allMeasuredWrench.wrenchesInCentroidalFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    allMeasuredWrench.wrenchesInBaseFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    allMeasuredWrench.wrenchesInWorldFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+
+    pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured] = allMeasuredWrench;
+
+    // Initialize estimated wrench buffers to map
+    WrenchInDifferentFrames allEstimatedWrench;
+    allEstimatedWrench.wrenchesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    allEstimatedWrench.wrenchesInCentroidalFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    allEstimatedWrench.wrenchesInBaseFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    allEstimatedWrench.wrenchesInWorldFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+
+    pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Estimated] = allMeasuredWrench;
+
+
     // Initialize the number of channels of the equivalent IAnalogSensor
     {
         std::lock_guard<std::mutex> lock(pImpl->mutex);
@@ -1275,9 +1304,9 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
         pImpl->linkExternalWrenchMeasurementAnalogSensorData.numberOfChannels = 6 * pImpl->wrenchSensorsLinkNames.size();
 
         // NOTE: multiplying by 3 because the estimates are expressed in link, base and world frames
-        pImpl->allWrenchAnalogSensorData.measurements.resize(6 * pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements.size() + 6 +
+        pImpl->allWrenchAnalogSensorData.measurements.resize(pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements.size() +
                                                              pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements.size(), 0);
-        pImpl->allWrenchAnalogSensorData.numberOfChannels = 6 * pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.numberOfChannels + 6 +
+        pImpl->allWrenchAnalogSensorData.numberOfChannels = pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.numberOfChannels +
                                                             pImpl->linkExternalWrenchMeasurementAnalogSensorData.numberOfChannels;
     }
 
@@ -1473,12 +1502,6 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
     // Set the links net external wrench estimates size and initialize to zero
     pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame = iDynTree::LinkWrenches(pImpl->berdyData.helper.model().getNrOfLinks());
     pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame.zero();
-
-    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInBaseFrame = iDynTree::LinkWrenches(pImpl->berdyData.helper.model().getNrOfLinks());
-    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInBaseFrame.zero();
-
-    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInWorldFrame = iDynTree::LinkWrenches(pImpl->berdyData.helper.model().getNrOfLinks());
-    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInWorldFrame.zero();
 
     pImpl->berdyData.estimates.linkNetExternalWrenchEstimates = iDynTree::LinkWrenches(pImpl->berdyData.helper.model().getNrOfLinks());
     pImpl->berdyData.estimates.linkNetExternalWrenchEstimates.zero();
@@ -1710,11 +1733,95 @@ bool HumanDynamicsEstimator::close()
     return true;
 }
 
+void HumanDynamicsEstimator::expressWrenchInDifferentFrames(const std::vector<double>& wrenchesInLinkFrame,
+                                                            hde::interfaces::IHumanWrench::WrenchType wrenchType,
+                                                            iDynTree::KinDynComputations& kinDyn) {
+
+    // Set wrench in link frame
+    pImpl->allWrenchesMap[wrenchType].wrenchesInLinkFrame = wrenchesInLinkFrame;
+
+    // Transform wrench measurement values from link frames to base frame
+    for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
+
+        // Get link name
+        std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
+
+        // Get link to world transform
+        iDynTree::Transform world_H_link = kinDyn.getWorldTransform(pImpl->humanModel.getLinkIndex(linkName));
+
+        // Get link to base transform
+        iDynTree::Transform base_H_link = kinDyn.getWorldBaseTransform().inverse() * world_H_link;
+
+        // Link wrench
+        iDynTree::Wrench linkWrench;
+        linkWrench.zero();
+
+        linkWrench.setVal(0, wrenchesInLinkFrame[6 * i + 0]);
+        linkWrench.setVal(1, wrenchesInLinkFrame[6 * i + 1]);
+        linkWrench.setVal(2, wrenchesInLinkFrame[6 * i + 2]);
+        linkWrench.setVal(3, wrenchesInLinkFrame[6 * i + 3]);
+        linkWrench.setVal(4, wrenchesInLinkFrame[6 * i + 4]);
+        linkWrench.setVal(5, wrenchesInLinkFrame[6 * i + 5]);
+
+        // Transform wrench to base frame
+        Eigen::Matrix<double,6,1> transformedWrenchInBaseFrameEigen = iDynTree::toEigen(base_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkWrench.asVector());
+
+        iDynTree::Wrench transformedLinkWrenchInBaseFrame;
+        iDynTree::fromEigen(transformedLinkWrenchInBaseFrame, transformedWrenchInBaseFrameEigen);
+
+        // Set wrench in base frame buffer
+        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 0) = transformedLinkWrenchInBaseFrame.getVal(0);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 1) = transformedLinkWrenchInBaseFrame.getVal(1);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 2) = transformedLinkWrenchInBaseFrame.getVal(2);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 3) = transformedLinkWrenchInBaseFrame.getVal(3);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 4) = transformedLinkWrenchInBaseFrame.getVal(4);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 5) = transformedLinkWrenchInBaseFrame.getVal(5);
+
+        // Transform wrench to world frame
+        Eigen::Matrix<double,6,1> transformedWrenchInWorldFrameEigen = iDynTree::toEigen(world_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkWrench.asVector());
+
+        iDynTree::Wrench transformedLinkWrenchInWorldFrame;
+        iDynTree::fromEigen(transformedLinkWrenchInWorldFrame, transformedWrenchInWorldFrameEigen);
+
+        // Set wrench in base frame buffer
+        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 0) = transformedLinkWrenchInWorldFrame.getVal(0);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 1) = transformedLinkWrenchInWorldFrame.getVal(1);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 2) = transformedLinkWrenchInWorldFrame.getVal(2);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 3) = transformedLinkWrenchInWorldFrame.getVal(3);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 4) = transformedLinkWrenchInWorldFrame.getVal(4);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 5) = transformedLinkWrenchInWorldFrame.getVal(5);
+
+        // Compute centroidal frame (G[I]) to inertial frame transform
+        iDynTree::Transform world_H_centroidal = iDynTree::Transform::Identity();
+        iDynTree::Position pos(kinDyn.getCenterOfMassPosition().getVal(0),
+                               kinDyn.getCenterOfMassPosition().getVal(1),
+                               kinDyn.getCenterOfMassPosition().getVal(2));
+        world_H_centroidal.setPosition(pos);
+
+        // Compute link to centroidal frame transform
+        iDynTree::Transform centroidal_H_link = iDynTree::Transform::Identity();
+        centroidal_H_link = world_H_centroidal.inverse() * world_H_link;
+
+        // Transform wrench to centroidal frame
+        Eigen::Matrix<double,6,1> transformedWrenchInCentroidalFrameEigen = iDynTree::toEigen(centroidal_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkWrench.asVector());
+
+        iDynTree::Wrench transformedLinkWrenchInCentroidalFrame;
+        iDynTree::fromEigen(transformedLinkWrenchInCentroidalFrame, transformedWrenchInCentroidalFrameEigen);
+
+        // Set wrench in centroidal frame buffer
+        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 0) = transformedLinkWrenchInCentroidalFrame.getVal(0);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 1) = transformedLinkWrenchInCentroidalFrame.getVal(1);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 2) = transformedLinkWrenchInCentroidalFrame.getVal(2);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 3) = transformedLinkWrenchInCentroidalFrame.getVal(3);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 4) = transformedLinkWrenchInCentroidalFrame.getVal(4);
+        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 5) = transformedLinkWrenchInCentroidalFrame.getVal(5);
+
+    }
+
+}
+
 void HumanDynamicsEstimator::run()
 {
-//    yInfo() << LogPrefix << "Size of task 1 dynamic variables : " << pImpl->berdyData.helper.getNrOfDynamicVariables(true);
-//    yInfo() << LogPrefix << "Size of task 1 measurements : " << pImpl->berdyData.helper.getNrOfSensorsMeasurements(true);
-
     // Get state data from the attached IHumanState interface
     std::vector<double> jointsPosition    = pImpl->iHumanState->getJointPositions();
     std::vector<double> jointsVelocity    = pImpl->iHumanState->getJointVelocities();
@@ -1795,102 +1902,9 @@ void HumanDynamicsEstimator::run()
     // Fill in the y vector with sensor measurements for the FT sensors
     std::vector<double> wrenchValues = pImpl->iHumanWrench->getWrenches();
 
-    std::vector<double> offsetRemovedWrenchValues;
-    offsetRemovedWrenchValues.resize(wrenchValues.size(), 0.0);
+    // Expressed measured wrench in different frames
+    expressWrenchInDifferentFrames(wrenchValues, hde::interfaces::IHumanWrench::WrenchType::Measured, kinDynComputations);
 
-    std::vector<double> wrenchMeasurementValuesInBaseFrame;
-    wrenchMeasurementValuesInBaseFrame.resize(wrenchValues.size(), 0.0);
-
-    std::vector<double> wrenchMeasurementValuesInWorldFrame;
-    wrenchMeasurementValuesInWorldFrame.resize(wrenchValues.size(), 0.0);
-
-    std::vector<double> wrenchMeasurementValuesInCentroidalFrame;
-    wrenchMeasurementValuesInCentroidalFrame.resize(wrenchValues.size(), 0.0);
-
-    // Transform wrench measurement values from link frames to base frame
-    for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
-
-        // Get link name
-        std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
-
-        // Get link to world transform
-        iDynTree::Transform world_H_link = kinDynComputations.getWorldTransform(pImpl->humanModel.getLinkIndex(linkName));
-
-        // Get link to base transform
-        iDynTree::Transform base_H_link = kinDynComputations.getWorldBaseTransform().inverse() * world_H_link;
-
-        // Link wrench
-        iDynTree::Wrench linkMeasuredWrench;
-        linkMeasuredWrench.zero();
-
-        linkMeasuredWrench.setVal(0, wrenchValues[6 * i + 0]);
-        linkMeasuredWrench.setVal(1, wrenchValues[6 * i + 1]);
-        linkMeasuredWrench.setVal(2, wrenchValues[6 * i + 2]);
-        linkMeasuredWrench.setVal(3, wrenchValues[6 * i + 3]);
-        linkMeasuredWrench.setVal(4, wrenchValues[6 * i + 4]);
-        linkMeasuredWrench.setVal(5, wrenchValues[6 * i + 5]);
-
-        // Transform wrench to base frame
-        Eigen::Matrix<double,6,1> transformedWrenchInBaseFrameEigen = iDynTree::toEigen(base_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkMeasuredWrench.asVector());
-
-        iDynTree::Wrench transformedLinkWrenchInBaseFrame;
-        iDynTree::fromEigen(transformedLinkWrenchInBaseFrame, transformedWrenchInBaseFrameEigen);
-
-        pImpl->sumOfWrenchMeasurementInBaseFrame = pImpl->sumOfWrenchMeasurementInBaseFrame + transformedLinkWrenchInBaseFrame;
-
-        // Set measured wrench in base frame buffer
-        wrenchMeasurementValuesInBaseFrame.at(6 * i + 0) = transformedLinkWrenchInBaseFrame.getVal(0);
-        wrenchMeasurementValuesInBaseFrame.at(6 * i + 1) = transformedLinkWrenchInBaseFrame.getVal(1);
-        wrenchMeasurementValuesInBaseFrame.at(6 * i + 2) = transformedLinkWrenchInBaseFrame.getVal(2);
-        wrenchMeasurementValuesInBaseFrame.at(6 * i + 3) = transformedLinkWrenchInBaseFrame.getVal(3);
-        wrenchMeasurementValuesInBaseFrame.at(6 * i + 4) = transformedLinkWrenchInBaseFrame.getVal(4);
-        wrenchMeasurementValuesInBaseFrame.at(6 * i + 5) = transformedLinkWrenchInBaseFrame.getVal(5);
-
-        // Transform wrench to world frame
-        Eigen::Matrix<double,6,1> transformedWrenchInWorldFrameEigen = iDynTree::toEigen(world_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkMeasuredWrench.asVector());
-
-        iDynTree::Wrench transformedLinkWrenchInWorldFrame;
-        iDynTree::fromEigen(transformedLinkWrenchInWorldFrame, transformedWrenchInWorldFrameEigen);
-
-        pImpl->sumOfWrenchMeasurementInWorldFrame = pImpl->sumOfWrenchMeasurementInWorldFrame + transformedLinkWrenchInWorldFrame;
-
-        // Set measured wrench in base frame buffer
-        wrenchMeasurementValuesInWorldFrame.at(6 * i + 0) = transformedLinkWrenchInWorldFrame.getVal(0);
-        wrenchMeasurementValuesInWorldFrame.at(6 * i + 1) = transformedLinkWrenchInWorldFrame.getVal(1);
-        wrenchMeasurementValuesInWorldFrame.at(6 * i + 2) = transformedLinkWrenchInWorldFrame.getVal(2);
-        wrenchMeasurementValuesInWorldFrame.at(6 * i + 3) = transformedLinkWrenchInWorldFrame.getVal(3);
-        wrenchMeasurementValuesInWorldFrame.at(6 * i + 4) = transformedLinkWrenchInWorldFrame.getVal(4);
-        wrenchMeasurementValuesInWorldFrame.at(6 * i + 5) = transformedLinkWrenchInWorldFrame.getVal(5);
-
-        // Compute centroidal frame (G[I]) to inertial frame transform
-        iDynTree::Transform world_H_centroidal = iDynTree::Transform::Identity();
-        iDynTree::Position pos(comPosition[0], comPosition[1], comPosition[2]);
-        world_H_centroidal.setPosition(pos);
-
-        // Compute link to centroidal frame transform
-        iDynTree::Transform centroidal_H_link = iDynTree::Transform::Identity();
-        centroidal_H_link = world_H_centroidal.inverse() * world_H_link;
-
-        // Transform wrench to centroidal frame
-        Eigen::Matrix<double,6,1> transformedWrenchInCentroidalFrameEigen = iDynTree::toEigen(centroidal_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkMeasuredWrench.asVector());
-
-        iDynTree::Wrench transformedLinkWrenchInCentroidalFrame;
-        iDynTree::fromEigen(transformedLinkWrenchInCentroidalFrame, transformedWrenchInCentroidalFrameEigen);
-
-        pImpl->sumOfWrenchMeasurementInCentroidalFrame = pImpl->sumOfWrenchMeasurementInCentroidalFrame + transformedLinkWrenchInCentroidalFrame;
-
-        // Set measured wrench in centroidal frame buffer
-        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 0) = transformedLinkWrenchInCentroidalFrame.getVal(0);
-        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 1) = transformedLinkWrenchInCentroidalFrame.getVal(1);
-        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 2) = transformedLinkWrenchInCentroidalFrame.getVal(2);
-        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 3) = transformedLinkWrenchInCentroidalFrame.getVal(3);
-        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 4) = transformedLinkWrenchInCentroidalFrame.getVal(4);
-        wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 5) = transformedLinkWrenchInCentroidalFrame.getVal(5);
-
-    }
-
-//    yInfo() << LogPrefix << "sumOfWrenchMeasurementInBaseFrame is " <<  pImpl->sumOfWrenchMeasurementInBaseFrame.toString().c_str();
-//    yInfo() << LogPrefix << "sumOfWrenchMeasurementInWorldFrame is " << pImpl->sumOfWrenchMeasurementInWorldFrame.toString().c_str();
 
     // Get the task1 berdy sensors following its internal order
     std::vector<iDynTree::BerdySensor> task1BerdySensors = pImpl->berdyData.helper.getSensorsOrdering(pImpl->task1);
@@ -2003,6 +2017,8 @@ void HumanDynamicsEstimator::run()
     if (pImpl->commandPro->cmdOffsetStatus && !pImpl->commandPro->resetOffset) {
         if (pImpl->removeOffsetOption == "source") {
 
+            // TODO: Get the sum of wrenches from the allWrenchesMap buffer
+
             // Compute offset to be removed at the rate of change of momentum level in world frame
             pImpl->wrenchOffset.setVal(0, rateOfChangeOfMomentumInWorldFrame.at(0) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(0));
             pImpl->wrenchOffset.setVal(1, rateOfChangeOfMomentumInWorldFrame.at(1) - pImpl->sumOfWrenchMeasurementInWorldFrame.getVal(1));
@@ -2079,42 +2095,28 @@ void HumanDynamicsEstimator::run()
                                                                                    pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame,
                                                                                    pImpl->task1);
 
-        // Get base to world transform
-        iDynTree::Transform world_H_base = kinDynComputations.getWorldTransform(pImpl->humanModel.getLinkName(pImpl->berdyData.state.floatingBaseFrameIndex));
+        // Prepare estimates wrenches vector
+        std::vector<double> estimtedWrechesInLinkFrame;
+        estimtedWrechesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0.0);
 
-        // Express task1 link net external wrenches in base and world frames buffers
-        for (iDynTree::LinkIndex l = 0; l < pImpl->humanModel.getNrOfLinks(); l++)
-        {
-            // get link name
-            std::string linkName = pImpl->humanModel.getLinkName(l);
+        for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
 
-            // Get link to world transform
-            iDynTree::Transform world_H_link = kinDynComputations.getWorldTransform(linkName);
+            // Get link name
+            std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
 
             // Get task1 estimated wrench in link frame
-            iDynTree::Wrench linkWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame(l);
+            iDynTree::Wrench estimatedLinkWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame(pImpl->humanModel.getLinkIndex(linkName));
 
-            // Compute
-            iDynTree::Transform base_H_link = world_H_base.inverse() * world_H_link;
-
-            // Transform wrench to base frame
-            Eigen::Matrix<double,6,1> transformedWrenchInBaseFrameEigen = iDynTree::toEigen(base_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkWrench.asVector());
-
-            iDynTree::Wrench transformedLinkWrenchInBaseFrame;
-            iDynTree::fromEigen(transformedLinkWrenchInBaseFrame, transformedWrenchInBaseFrameEigen);
-
-            // Set estimated wrench in base frame buffer
-            pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInBaseFrame(l) = transformedLinkWrenchInBaseFrame;
-
-            // Transform wrench to world frame
-            Eigen::Matrix<double,6,1> transformedWrenchInWorldFrameEigen = iDynTree::toEigen(world_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkWrench.asVector());
-
-            iDynTree::Wrench transformedLinkWrenchInWorldFrame;
-            iDynTree::fromEigen(transformedLinkWrenchInWorldFrame, transformedWrenchInWorldFrameEigen);
-
-            // Set estimated wrench in base frame buffer
-            pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInWorldFrame(l) = transformedLinkWrenchInWorldFrame;
+            estimtedWrechesInLinkFrame.at(6 * i + 0) = estimatedLinkWrench.getVal(0);
+            estimtedWrechesInLinkFrame.at(6 * i + 1) = estimatedLinkWrench.getVal(1);
+            estimtedWrechesInLinkFrame.at(6 * i + 2) = estimatedLinkWrench.getVal(2);
+            estimtedWrechesInLinkFrame.at(6 * i + 3) = estimatedLinkWrench.getVal(3);
+            estimtedWrechesInLinkFrame.at(6 * i + 4) = estimatedLinkWrench.getVal(4);
+            estimtedWrechesInLinkFrame.at(6 * i + 5) = estimatedLinkWrench.getVal(5);
         }
+
+        // Expressed task 1 estimated wrenches in different frames
+        expressWrenchInDifferentFrames(estimtedWrechesInLinkFrame, hde::interfaces::IHumanWrench::WrenchType::Estimated, kinDynComputations);
 
         // Check to ensure all the links net external wrenches are extracted correctly
         if (!pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame.isConsistent(pImpl->humanModel))
@@ -2165,71 +2167,6 @@ void HumanDynamicsEstimator::run()
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 11] = linkNetExternalWrench.getAngularVec3()(2);
 
         }
-
-        for (int i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
-
-            std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
-
-            // Expose net link external wrench estimates in base frame to analog sensor data variable
-            iDynTree::Wrench linkNetExternalWrenchInBaseFrame = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInBaseFrame(pImpl->humanModel.getLinkIndex(linkName));
-
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 0] = linkNetExternalWrenchInBaseFrame.getLinearVec3()(0);
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 1] = linkNetExternalWrenchInBaseFrame.getLinearVec3()(1);
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 2] = linkNetExternalWrenchInBaseFrame.getLinearVec3()(2);
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 3] = linkNetExternalWrenchInBaseFrame.getAngularVec3()(0);
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 4] = linkNetExternalWrenchInBaseFrame.getAngularVec3()(1);
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 12 * i + 5] = linkNetExternalWrenchInBaseFrame.getAngularVec3()(2);
-
-            // Expose net link external wrench estimates in world frame to analog sensor data variable
-            iDynTree::Wrench linkNetExternalWrenchInWorldFrame = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInWorldFrame(pImpl->humanModel.getLinkIndex(linkName));
-
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 6] = linkNetExternalWrenchInWorldFrame.getLinearVec3()(0);
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 7] = linkNetExternalWrenchInWorldFrame.getLinearVec3()(1);
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 8] = linkNetExternalWrenchInWorldFrame.getLinearVec3()(2);
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 9] = linkNetExternalWrenchInWorldFrame.getAngularVec3()(0);
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 10] = linkNetExternalWrenchInWorldFrame.getAngularVec3()(1);
-            pImpl->allWrenchAnalogSensorData.measurements[48 + 2 * 6 * i + 11] = linkNetExternalWrenchInWorldFrame.getAngularVec3()(2);
-
-        }
-
-
-        for (int i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
-
-            // Expose link measured wrench in base frame to analog sensor data variable
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 0] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 0);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 1] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 1);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 2] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 2);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 3] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 3);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 4] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 4);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 5] = wrenchMeasurementValuesInBaseFrame.at(6 * i + 5);
-
-            // Expose link measured wrench in world frame to analog sensor data variable
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 6] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 0);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 7] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 1);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 8] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 2);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 9] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 3);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 10] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 4);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 11] = wrenchMeasurementValuesInWorldFrame.at(6 * i + 5);
-
-            // Expose link measured wrench in centroidal frame to analog sensor data variable
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 12] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 0);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 13] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 1);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 14] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 2);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 15] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 3);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 16] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 4);
-            pImpl->allWrenchAnalogSensorData.measurements[96 + 3 * 6 * i + 17] = wrenchMeasurementValuesInCentroidalFrame.at(6 * i + 5);
-
-        }
-
-        // Expose offset wrench in world frame to analog sensor data variable
-        pImpl->allWrenchAnalogSensorData.measurements[168 + 0] = pImpl->wrenchOffset.getVal(0);
-        pImpl->allWrenchAnalogSensorData.measurements[168 + 1] = pImpl->wrenchOffset.getVal(1);
-        pImpl->allWrenchAnalogSensorData.measurements[168 + 2] = pImpl->wrenchOffset.getVal(2);
-        pImpl->allWrenchAnalogSensorData.measurements[168 + 3] = pImpl->wrenchOffset.getVal(3);
-        pImpl->allWrenchAnalogSensorData.measurements[168 + 4] = pImpl->wrenchOffset.getVal(4);
-        pImpl->allWrenchAnalogSensorData.measurements[168 + 5] = pImpl->wrenchOffset.getVal(5);
-
-
     }
 
 }
@@ -2489,5 +2426,28 @@ std::vector<double> HumanDynamicsEstimator::getWrenches() const
     }
 
     return wrenchValues;
+}
+
+std::vector<double> HumanDynamicsEstimator::getWrenchesInFrame(hde::interfaces::IHumanWrench::WrenchType wrenchType,
+                                                               hde::interfaces::IHumanWrench::WrenchReferenceFrame wrenchReferenceFrame) const
+{
+    std::lock_guard<std::mutex> lock(pImpl->mutex);
+
+    if (wrenchReferenceFrame == hde::interfaces::IHumanWrench::WrenchReferenceFrame::Link)
+    {
+        return pImpl->allWrenchesMap[wrenchType].wrenchesInLinkFrame;
+    }
+    else if (wrenchReferenceFrame == hde::interfaces::IHumanWrench::WrenchReferenceFrame::Centroidal)
+    {
+        return pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame;
+    }
+    else if (wrenchReferenceFrame == hde::interfaces::IHumanWrench::WrenchReferenceFrame::Base)
+    {
+        return pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame;
+    }
+    else if (wrenchReferenceFrame == hde::interfaces::IHumanWrench::WrenchReferenceFrame::World)
+    {
+        return pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame;
+    }
 }
 

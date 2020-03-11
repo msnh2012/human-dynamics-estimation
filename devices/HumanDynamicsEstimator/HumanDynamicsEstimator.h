@@ -14,6 +14,8 @@
 #include <yarp/dev/Wrapper.h>
 #include <yarp/os/PeriodicThread.h>
 
+#include <iDynTree/KinDynComputations.h>
+
 #include "IHumanWrench.h"
 #include "IHumanDynamics.h"
 
@@ -41,6 +43,11 @@ private:
 public:
     HumanDynamicsEstimator();
     ~HumanDynamicsEstimator() override;
+
+    // Method to express wrenches in different frame
+    void expressWrenchInDifferentFrames(const std::vector<double>& wrenchInLinkFrame,
+                                        hde::interfaces::IHumanWrench::WrenchType wrenchType,
+                                        iDynTree::KinDynComputations& kinDyn);
 
     // DeviceDriver interface
     bool open(yarp::os::Searchable& config) override;
