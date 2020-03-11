@@ -72,6 +72,7 @@ public:
     std::vector<std::string> getWrenchSourceNames() const override;
     size_t getNumberOfWrenchSources() const override;
     std::vector<double> getWrenches() const override;
+    std::vector<double> getWrenchesInFrame(WrenchType, WrenchReferenceFrame) const override;
 
     // IHumanDynamics
     std::vector<std::string> getJointNames() const override;

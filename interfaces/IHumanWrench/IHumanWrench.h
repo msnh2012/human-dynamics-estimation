@@ -30,11 +30,26 @@ public:
         Dummy, // TODO
     };
 
+    enum class WrenchReferenceFrame
+    {
+        Link,
+        Centroidal,
+        Base,
+        World,
+    };
+
+    enum class WrenchType
+    {
+        Measured,
+        Estimated,
+    };
+
     virtual std::vector<std::pair<std::string, WrenchSourceType>> getWrenchSourceNameAndType() const = 0;
     virtual std::vector<std::string> getWrenchSourceNames() const = 0;
     virtual size_t getNumberOfWrenchSources() const = 0;
 
     virtual std::vector<double> getWrenches() const = 0;
+    virtual std::vector<double> getWrenchesInFrame(WrenchType, WrenchReferenceFrame) const = 0;
 
 };
 
