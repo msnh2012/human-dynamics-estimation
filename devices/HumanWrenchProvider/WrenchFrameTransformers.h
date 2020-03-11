@@ -11,6 +11,7 @@
 
 #include <iDynTree/Core/Transform.h>
 #include <iDynTree/Core/Wrench.h>
+#include <iDynTree/Model/Model.h>
 
 #include <mutex>
 #include <string>
@@ -30,7 +31,8 @@ class hde::devices::impl::IWrenchFrameTransformer
 public:
     virtual ~IWrenchFrameTransformer() = default;
     virtual bool transformWrenchFrame(const iDynTree::Wrench inputWrench,
-                                      iDynTree::Wrench& transformedWrench) = 0;
+                                      iDynTree::Wrench& transformedWrench,
+                                      const iDynTree::Model& model) = 0;
 };
 
 class hde::devices::impl::FixedFrameWrenchTransformer final
@@ -45,7 +47,8 @@ public:
     ~FixedFrameWrenchTransformer() override = default;
 
     bool transformWrenchFrame(const iDynTree::Wrench inputWrench,
-                              iDynTree::Wrench& transformedWrench) override;
+                              iDynTree::Wrench& transformedWrench,
+                              const iDynTree::Model& model) override;
 };
 
 class hde::devices::impl::RobotFrameWrenchTransformer final
@@ -60,7 +63,8 @@ public:
     ~RobotFrameWrenchTransformer() override = default;
 
     bool transformWrenchFrame(const iDynTree::Wrench inputWrench,
-                              iDynTree::Wrench& transformedWrench) override;
+                              iDynTree::Wrench& transformedWrench,
+                              const iDynTree::Model& model) override;
 };
 
 #endif // HDE_DEVICES_IMPL_IWRENCHFRAMETRANSFORMERS

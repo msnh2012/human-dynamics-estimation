@@ -1353,6 +1353,16 @@ void HumanStateProvider::run()
         pImpl->baseVelocitySolution = measuredBaseVelocity;
     }
 
+    // Set IK solutions to zero
+    pImpl->jointConfigurationSolution.zero();
+    pImpl->jointVelocitiesSolution.zero();
+
+    // Set base transform solution to Identity
+    pImpl->baseTransformSolution = iDynTree::Transform::Identity();
+
+    // Set base velocity to zero
+    pImpl->baseVelocitySolution.zero();
+
     // Update kinDyn computations based on IK solution
     iDynTree::VectorDynSize solvedJointPositions(pImpl->solution.jointPositions.size());
 
@@ -2923,6 +2933,7 @@ std::vector<double> HumanStateProvider::getJointPositions() const
 {
     std::lock_guard<std::mutex> lock(pImpl->mutex);
     return pImpl->solution.jointPositions;
+
 }
 
 std::vector<double> HumanStateProvider::getJointVelocities() const

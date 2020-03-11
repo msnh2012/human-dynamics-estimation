@@ -669,7 +669,7 @@ void HumanWrenchProvider::run()
                 forceSource.frameTransformer.reset(ptr);
             }
 
-            if (!forceSource.frameTransformer->transformWrenchFrame(inputWrench, transformedWrench)) {
+            if (!forceSource.frameTransformer->transformWrenchFrame(inputWrench, transformedWrench, pImpl->humanModel)) {
                 askToStop();
                 return;
             }
