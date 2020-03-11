@@ -210,11 +210,19 @@ public:
     size_t numberOfWrenchMeasurementSources;
     std::vector<std::string> wrenchMeasurementSourceNames;
     std::vector<double> wrenchMeasurementValuesVec;
+    std::vector<double> wrenchMeasurementsInLinkFrameVec;
+    std::vector<double> wrenchMeasurementsInCentroidalFrameVec;
+    std::vector<double> wrenchMeasurementsInBaseFrameVec;
+    std::vector<double> wrenchMeasurementsInWorldFrameVec;
 
     // Wrench Estimates
     size_t numberOfWrenchEstimateSources;
     std::vector<std::string> wrenchEstimateSourceNames;
     std::vector<double> wrenchEstimateValuesVec;
+    std::vector<double> wrenchEstimatesInLinkFrameVec;
+    std::vector<double> wrenchEstimatesInCentroidalFrameVec;
+    std::vector<double> wrenchEstimatesInBaseFrameVec;
+    std::vector<double> wrenchEstimatesInWorldFrameVec;
 
     // Joint Torques
     size_t dynamicsNumberOfJoints;
@@ -517,6 +525,16 @@ void HumanDataCollector::run()
                 pImpl->humanDataStruct.wrenchEstimateSourceNames.clear();
                 pImpl->humanDataStruct.data["wrenchEstimates"] = std::vector<std::vector<double>>();
 
+                pImpl->humanDataStruct.data["wrenchMeasurementsInLinkFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["wrenchMeasurementsInCentroidalFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["wrenchMeasurementsInBaseFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["wrenchMeasurementsInWorldFrame"] = std::vector<std::vector<double>>();
+
+                pImpl->humanDataStruct.data["wrenchEstimatesInLinkFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["wrenchEstimatesInCentroidalFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["wrenchEstimatesInBaseFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["wrenchEstimatesInWorldFrame"] = std::vector<std::vector<double>>();
+
                 pImpl->humanDataStruct.dynamicsJointNames.clear();
                 pImpl->humanDataStruct.data["jointTorques"] = std::vector<std::vector<double>>();
             }
@@ -586,10 +604,28 @@ void HumanDataCollector::run()
         pImpl->wrenchEstimateSourceNames = pImpl->iHumanWrenchEstimates->getWrenchSourceNames();
         pImpl->wrenchEstimateValuesVec = pImpl->iHumanWrenchEstimates->getWrenches();
 
+        pImpl->wrenchMeasurementsInLinkFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                   hde::interfaces::IHumanWrench::WrenchReferenceFrame::Link);
+        pImpl->wrenchMeasurementsInCentroidalFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                         hde::interfaces::IHumanWrench::WrenchReferenceFrame::Centroidal);
+        pImpl->wrenchMeasurementsInBaseFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                   hde::interfaces::IHumanWrench::WrenchReferenceFrame::Base);
+        pImpl->wrenchMeasurementsInWorldFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                    hde::interfaces::IHumanWrench::WrenchReferenceFrame::World);
+
         // Get data from IHumanDynamics interface of HumanDynamicsEstimator
         pImpl->dynamicsNumberOfJoints = pImpl->iHumanDynamics->getNumberOfJoints();
         pImpl->dynamicsJointNames = pImpl->iHumanDynamics->getJointNames();
         pImpl->jointTorquesVec = pImpl->iHumanDynamics->getJointTorques();
+
+        pImpl->wrenchEstimatesInLinkFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                hde::interfaces::IHumanWrench::WrenchReferenceFrame::Link);
+        pImpl->wrenchEstimatesInCentroidalFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                      hde::interfaces::IHumanWrench::WrenchReferenceFrame::Centroidal);
+        pImpl->wrenchEstimatesInBaseFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                hde::interfaces::IHumanWrench::WrenchReferenceFrame::Base);
+        pImpl->wrenchEstimatesInWorldFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                 hde::interfaces::IHumanWrench::WrenchReferenceFrame::World);
 
     }
 
@@ -667,6 +703,16 @@ void HumanDataCollector::run()
             }
 
             pImpl->humanDataStruct.data["wrenchEstimates"].push_back(pImpl->wrenchEstimateValuesVec);
+
+            pImpl->humanDataStruct.data["wrenchMeasurementsInLinkFrame"].push_back(pImpl->wrenchMeasurementsInLinkFrameVec);
+            pImpl->humanDataStruct.data["wrenchMeasurementsInCentroidalFrame"].push_back(pImpl->wrenchMeasurementsInCentroidalFrameVec);
+            pImpl->humanDataStruct.data["wrenchMeasurementsInBaseFrame"].push_back(pImpl->wrenchMeasurementsInBaseFrameVec);
+            pImpl->humanDataStruct.data["wrenchMeasurementsInWorldFrame"].push_back(pImpl->wrenchMeasurementsInWorldFrameVec);
+
+            pImpl->humanDataStruct.data["wrenchEstimatesInLinkFrame"].push_back(pImpl->wrenchEstimatesInLinkFrameVec);
+            pImpl->humanDataStruct.data["wrenchEstimatesInCentroidalFrame"].push_back(pImpl->wrenchEstimatesInCentroidalFrameVec);
+            pImpl->humanDataStruct.data["wrenchEstimatesInBaseFrame"].push_back(pImpl->wrenchEstimatesInBaseFrameVec);
+            pImpl->humanDataStruct.data["wrenchEstimatesInWorldFrame"].push_back(pImpl->wrenchEstimatesInWorldFrameVec);
 
             // Set dynamics joint names once
             if (pImpl->humanDataStruct.dynamicsJointNames.empty()) {
