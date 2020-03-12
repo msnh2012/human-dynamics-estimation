@@ -8,117 +8,109 @@ lineWidth = 2;
 
 %% Load data
 load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estimation/conf/xml/testData/matLogFile.mat');
-% plotSuffix = "HandEstimatesInLinkOrientation";
-% plotSuffix = " - Expressed in Link Frame";=
-% plotSuffix = " - Measurements in World Orientation & Estimates in Link Orientation";
 
 %% Measurement wrenches in link frame
-LeftFootMeasuredWrenchInLinkFrame = data.wrenchEstimates(1:6,:)';
-RightFootMeasuredWrenchInLinkFrame = data.wrenchEstimates(13:18,:)';
-LeftHandMeasuredWrenchInLinkFrame = data.wrenchEstimates(25:30,:)';
-RightHandMeasuredWrenchInLinkFrame = data.wrenchEstimates(37:42,:)';
+LeftFootMeasuredWrenchInLinkFrame  = data.wrenchMeasurementsInLinkFrame(1:6,:)';
+RightFootMeasuredWrenchInLinkFrame = data.wrenchMeasurementsInLinkFrame(7:12,:)';
+LeftHandMeasuredWrenchInLinkFrame  = data.wrenchMeasurementsInLinkFrame(13:18,:)';
+RightHandMeasuredWrenchInLinkFrame = data.wrenchMeasurementsInLinkFrame(19:24,:)';
 
-%% Sum of measurements wrenches in base frame
-sumMeasurementsInBaseFrame = data.wrenchEstimates(97:102,:)' + data.wrenchEstimates(115:120,:)' + data.wrenchEstimates(133:138,:)' + data.wrenchEstimates(151:156,:)';
-sumFeetMeasurementsInBaseFrame = data.wrenchEstimates(97:102,:)' + data.wrenchEstimates(121:126,:)';
-sumHandsMeasurementsInBaseFrame = data.wrenchEstimates(139:144,:)' + data.wrenchEstimates(157:162,:)';
+%% Measurement wrenches in base frame
+LeftFootMeasuredWrenchInBaseFrame  = data.wrenchMeasurementsInBaseFrame(1:6,:)';
+RightFootMeasuredWrenchInBaseFrame = data.wrenchMeasurementsInBaseFrame(7:12,:)';
+LeftHandMeasuredWrenchInBaseFrame  = data.wrenchMeasurementsInBaseFrame(13:18,:)';
+RightHandMeasuredWrenchInBaseFrame = data.wrenchMeasurementsInBaseFrame(19:24,:)';
 
-%% Sum of measurements wrenches in world frame
-sumMeasurementsInWorldFrame = data.wrenchEstimates(103:108,:)' + data.wrenchEstimates(121:126,:)' + data.wrenchEstimates(139:144,:)' + data.wrenchEstimates(157:162,:)';
-sumFeetMeasurementsInWorldFrame = data.wrenchEstimates(103:108,:)' + data.wrenchEstimates(127:132,:)';
-sumHandsMeasurementsInWorldFrame = data.wrenchEstimates(145:150,:)' + data.wrenchEstimates(163:168,:)';
+sumWrenchMeasurementsInBaseFrame = LeftFootMeasuredWrenchInBaseFrame + RightFootMeasuredWrenchInBaseFrame +...
+                                   LeftHandMeasuredWrenchInBaseFrame + RightHandMeasuredWrenchInBaseFrame;
 
-%% Sum of measurements wrenches in centroidal frame
-sumMeasurementsInCentroidalFrame = data.wrenchEstimates(109:114,:)' + data.wrenchEstimates(127:132,:)' + data.wrenchEstimates(145:150,:)' + data.wrenchEstimates(163:168,:)';
-sumFeetMeasurementsInCentroidalFrame = data.wrenchEstimates(109:114,:)' + data.wrenchEstimates(133:138,:)';
-sumHandsMeasurementsIncentroidalFrame = data.wrenchEstimates(151:156,:)' + data.wrenchEstimates(169:174,:)';
+%% Measurement wrenches in world frame
+LeftFootMeasuredWrenchInWorldFrame  = data.wrenchMeasurementsInWorldFrame(1:6,:)';
+RightFootMeasuredWrenchInWorldFrame = data.wrenchMeasurementsInWorldFrame(7:12,:)';
+LeftHandMeasuredWrenchInWorldFrame  = data.wrenchMeasurementsInWorldFrame(13:18,:)';
+RightHandMeasuredWrenchInWorldFrame = data.wrenchMeasurementsInWorldFrame(19:24,:)';
 
-%% Estimated wrenches in link frame
-LeftFootEstimatedWrenchInLinkFrame = data.wrenchEstimates(7:12,:)';
-RightFootEstimatedWrenchInLinkFrame = data.wrenchEstimates(19:24,:)';
-LeftHandEstimatedWrenchInLinkFrame = data.wrenchEstimates(31:36,:)';
-RightHandEstimatedWrenchInLinkFrame = data.wrenchEstimates(43:48,:)';
+sumWrenchMeasurementsInWorldFrame = LeftFootMeasuredWrenchInWorldFrame + RightFootMeasuredWrenchInWorldFrame +...
+                                   LeftHandMeasuredWrenchInWorldFrame + RightHandMeasuredWrenchInWorldFrame;
 
-%% Sum of estimated wrenches in base frame
-sumOfEstimatedWrenchInBaseFrame = data.wrenchEstimates(49:54,:)' + data.wrenchEstimates(61:66,:)' + data.wrenchEstimates(73:78,:)' + data.wrenchEstimates(85:90,:)';
-sumOfFeetEstimatedWrenchInBaseFrame = data.wrenchEstimates(49:54,:)' + data.wrenchEstimates(61:66,:)';
-sumOfHandsEstimatedWrenchInBaseFrame = data.wrenchEstimates(73:78,:)' + data.wrenchEstimates(85:90,:)';
+%% Measurement wrenches in centroidal frame
+LeftFootMeasuredWrenchInCentroidalFrame  = data.wrenchMeasurementsInCentroidalFrame(1:6,:)';
+RightFootMeasuredWrenchInCentroidalFrame = data.wrenchMeasurementsInCentroidalFrame(7:12,:)';
+LeftHandMeasuredWrenchInCentroidalFrame  = data.wrenchMeasurementsInCentroidalFrame(13:18,:)';
+RightHandMeasuredWrenchInCentroidalFrame = data.wrenchMeasurementsInCentroidalFrame(19:24,:)';
 
-%% Sum of estimated wrenches in world frame
-sumOfEstimatedWrenchInWorldFrame = data.wrenchEstimates(55:60,:)' + data.wrenchEstimates(67:72,:)' + data.wrenchEstimates(79:84,:)' + data.wrenchEstimates(91:96,:)';
-sumOfFeetEstimatedWrenchInWorldFrame = data.wrenchEstimates(55:60,:)' + data.wrenchEstimates(67:72,:)';
-sumOfHandsEstimatedWrenchInWorldFrame = data.wrenchEstimates(79:84,:)' + data.wrenchEstimates(91:96,:)';
+sumWrenchMeasurementsInCentroidalFrame = LeftFootMeasuredWrenchInCentroidalFrame + RightFootMeasuredWrenchInCentroidalFrame +...
+                                         LeftHandMeasuredWrenchInCentroidalFrame + RightHandMeasuredWrenchInCentroidalFrame;
+
+%% Estimate wrenches in link frame
+LeftFootEstimatedWrenchInLinkFrame  = data.wrenchEstimatesInLinkFrame(1:6,:)';
+RightFootEstimatedWrenchInLinkFrame = data.wrenchEstimatesInLinkFrame(7:12,:)';
+LeftHandEstimatedWrenchInLinkFrame  = data.wrenchEstimatesInLinkFrame(13:18,:)';
+RightHandEstimatedWrenchInLinkFrame = data.wrenchEstimatesInLinkFrame(19:24,:)';
+
+%% Estimate wrenches in base frame
+LeftFootEstimatedWrenchInBaseFrame  = data.wrenchEstimatesInBaseFrame(1:6,:)';
+RightFootEstimatedWrenchInBaseFrame = data.wrenchEstimatesInBaseFrame(7:12,:)';
+LeftHandEstimatedWrenchInBaseFrame  = data.wrenchEstimatesInBaseFrame(13:18,:)';
+RightHandEstimatedWrenchInBaseFrame = data.wrenchEstimatesInBaseFrame(19:24,:)';
+
+%% Estimate wrenches in world frame
+LeftFootEstimatedWrenchInWorldFrame  = data.wrenchEstimatesInWorldFrame(1:6,:)';
+RightFootEstimatedWrenchInWorldFrame = data.wrenchEstimatesInWorldFrame(7:12,:)';
+LeftHandEstimatedWrenchInWorldFrame  = data.wrenchEstimatesInWorldFrame(13:18,:)';
+RightHandEstimatedWrenchInWorldFrame = data.wrenchEstimatesInWorldFrame(19:24,:)';
+
+%% Estimate wrenches in centroidal frame
+LeftFootEstimatedWrenchInCentroidalFrame  = data.wrenchEstimatesInCentroidalFrame(1:6,:)';
+RightFootEstimatedWrenchInCentroidalFrame = data.wrenchEstimatesInCentroidalFrame(7:12,:)';
+LeftHandEstimatedWrenchInCentroidalFrame  = data.wrenchEstimatesInCentroidalFrame(13:18,:)';
+RightHandEstimatedWrenchInCentroidalFrame = data.wrenchEstimatesInCentroidalFrame(19:24,:)';
+
 
 %% Legend or Title Index
 wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y [Nm]$", "$m_z [Nm]$"];
 wrenchSourceName = ["Left Foot Wrench", "Right Foot Wrench", "Left Hand Wrench", "Right Hand Wrench"];
 momentumLegendString = ["$\dot{H}_{L_x}$", "$\dot{H}_{L_y}$", "$\dot{H}_{L_z}$", "$\dot{H}_{\omega_x}$", "$\dot{H}_{\omega_y}$", "$\dot{H}_{\omega_z}$"];
 
-% % %% Measurement Vs Estimates Wrench In Link Frame
-% % 
-% % numberOfWrenchSources = 4;
-% % 
-% % for i = 1:numberOfWrenchSources
-% %     
-% %     fH = figure('units','normalized','outerposition',[0 0 1 1]);
-% %     
-% %     for s = 1:6
-% %         
-% %         subplot(2,3,s);
-% %         plot(data.wrenchEstimates(s + 2 * 6 * (i-1),:)', 'LineWidth', lineWidth);
-% %         hold on;
-% %         plot(data.wrenchEstimates(6 + s + 2 * 6 * (i-1),:)', 'LineWidth', lineWidth, 'LineStyle', '--');
-% %         hold on;
-% %         xlabel('Samples', 'FontSize', fontSize);
-% %         ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
-% %         set (gca, 'FontSize' , fontSize)
-% %         legend('Measured Wrench', 'Estimated Wrench', 'FontSize', fontSize, 'Location', 'Best');
-% %         
-% %     end
-% %     
-% %     a = axes;
-% %     t = title (strcat(wrenchSourceName(i) + " - Estimate In Link Frame"));
-% %     t.FontSize = fontSize;
-% %     a.Visible = 'off' ;
-% %     t.Visible = 'on' ;
-% %     
-% %     %% Save figure
-% %     save2pdf(strcat(t.String + ".pdf"), fH,300);
-% %     
-% % end
+%% Measurement Vs Estimates Wrench In Link Frame
 
-% % %% Hands Estimates Wrench In World Frame
-% % 
-% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
-% % 
-% % for s = 1:6
-% %     
-% %     subplot(2,3,s);
-% %     plot(data.wrenchEstimates(78 + s,:)', 'LineWidth', lineWidth);
-% %     hold on;
-% %     plot(data.wrenchEstimates(90 + s,:)', 'LineWidth', lineWidth);
-% %     hold on;
-% %     xlabel('Samples', 'FontSize', fontSize);
-% %     ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
-% %     set (gca, 'FontSize' , fontSize)
-% %     legend(wrenchSourceName(3), wrenchSourceName(4), 'FontSize', fontSize, 'Location', 'Best');
-% %     
-% % end
-% % 
-% % a = axes;
-% % t = title ('Hands Estimated Wrench In World Frame');
-% % t.FontSize = fontSize;
-% % a.Visible = 'off' ;
-% % t.Visible = 'on' ;
-% % 
-% % %% Save figure
-% % save2pdf(strcat(t.String + ".pdf"), fH,300);
+numberOfWrenchSources = 2;
 
+for i = 1:numberOfWrenchSources
+    
+    fH = figure('units','normalized','outerposition',[0 0 1 1]);
+    
+    for s = 1:6
+        
+        subplot(2,3,s);
+        plot(data.wrenchMeasurementsInCentroidalFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth);
+        hold on;
+        plot(data.wrenchEstimatesInCentroidalFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth, 'LineStyle', '--');
+        hold on;
+        xlabel('Samples', 'FontSize', fontSize);
+        ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
+        set (gca, 'FontSize' , fontSize)
+        legend('Measured Wrench', 'Estimated Wrench', 'FontSize', fontSize, 'Location', 'Best');
+        
+    end
+    
+    a = axes;
+    t = title (strcat(wrenchSourceName(i) + " In Centroidal Frame"));
+    t.FontSize = fontSize;
+    a.Visible = 'off' ;
+    t.Visible = 'on' ;
+    
+    %% Save figure
+    save2pdf(strcat(t.String + ".pdf"), fH,300);
+    
+end
+
+%% Rate of change of momentum
  RateOfChangeOfMomentumInWorldFrame = data.rateOfChangeOfMomentumInWorldFrame;
  RateOfChangeOfMomentumInBaseFrame = data.rateOfChangeOfMomentumInBaseFrame;
  RateOfChangeOfMomentumInCentroidalFrame = data.rateOfChangeOfMomentumInCentroidalFrame;
  
- %% %%   Rate of Change of Momentum In Base Frame Vs Sum of External Wrenches Measurements In Centroidal Frame
+%% %%   Rate of Change of Momentum In Centroidal Frame Vs Sum of External Wrenches Measurements In Centroidal Frame
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
 
 for s = 1:6 
@@ -126,7 +118,7 @@ for s = 1:6
     subplot(2,3,s);
     plot( RateOfChangeOfMomentumInCentroidalFrame(s,:)', 'LineWidth', lineWidth);
     hold on;
-    plot(sumMeasurementsInCentroidalFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+    plot(sumWrenchMeasurementsInCentroidalFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
     hold on;    
     xlabel('Samples', 'FontSize', fontSize);
     legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
@@ -142,6 +134,57 @@ t.Visible = 'on' ;
 save2pdf("rateOfMomentumVsMeasuredWrenchesInCentroidalFrame.pdf", fH,300);
 
 
+%% %% Center of Mass Position Expressed in World Frame
+fH = figure('units','normalized','outerposition',[0 0 1 1]);
+
+plot( data.comPosition', 'LineWidth', lineWidth);
+hold on;
+xlabel('Samples', 'FontSize', fontSize);
+legend('$com_x$','$com_y$','$com_z$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+
+
+a = axes;
+t = title ("Center of Mass Position in World Frame");
+t.FontSize = fontSize;
+a.Visible = 'off' ;
+t.Visible = 'on' ;
+
+save2pdf("comPositionInWorldFrame.pdf", fH,300);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 % % %% %%   Rate of Change of Momentum In Base Frame Vs Sum of External Wrenches Measurements In Base Frame
 % % fH = figure('units','normalized','outerposition',[0 0 1 1]);
 % % 
@@ -150,7 +193,7 @@ save2pdf("rateOfMomentumVsMeasuredWrenchesInCentroidalFrame.pdf", fH,300);
 % %     subplot(2,3,s);
 % %     plot( RateOfChangeOfMomentumInBaseFrame(s,:)', 'LineWidth', lineWidth);
 % %     hold on;
-% %     plot(sumMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+% %     plot(sumWrenchMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
 % %     hold on;    
 % %     xlabel('Samples', 'FontSize', fontSize);
 % %     legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
@@ -173,9 +216,7 @@ save2pdf("rateOfMomentumVsMeasuredWrenchesInCentroidalFrame.pdf", fH,300);
 % %     subplot(2,3,s);
 % %     plot( RateOfChangeOfMomentumInWorldFrame(s,:)', 'LineWidth', lineWidth);
 % %     hold on;
-% %     plot(sumMeasurementsInWorldFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
-% %     hold on;    
-% %     plot(data.wrenchEstimates(144 + s,:)', 'LineWidth', lineWidth, 'LineStyle', '-');
+% %     plot(sumWrenchMeasurementsInWorldFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
 % %     hold on;
 % %     xlabel('Samples', 'FontSize', fontSize);
 % %     legend(momentumLegendString(s), wrenchLegendString(s), strcat("offset-"+wrenchLegendString(s)), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
