@@ -31,7 +31,7 @@ LeftHandMeasuredWrenchInWorldFrame  = data.wrenchMeasurementsInWorldFrame(13:18,
 RightHandMeasuredWrenchInWorldFrame = data.wrenchMeasurementsInWorldFrame(19:24,:)';
 
 sumWrenchMeasurementsInWorldFrame = LeftFootMeasuredWrenchInWorldFrame + RightFootMeasuredWrenchInWorldFrame +...
-                                   LeftHandMeasuredWrenchInWorldFrame + RightHandMeasuredWrenchInWorldFrame;
+                                    LeftHandMeasuredWrenchInWorldFrame + RightHandMeasuredWrenchInWorldFrame;
 
 %% Measurement wrenches in centroidal frame
 LeftFootMeasuredWrenchInCentroidalFrame  = data.wrenchMeasurementsInCentroidalFrame(1:6,:)';
@@ -54,11 +54,17 @@ RightFootEstimatedWrenchInBaseFrame = data.wrenchEstimatesInBaseFrame(7:12,:)';
 LeftHandEstimatedWrenchInBaseFrame  = data.wrenchEstimatesInBaseFrame(13:18,:)';
 RightHandEstimatedWrenchInBaseFrame = data.wrenchEstimatesInBaseFrame(19:24,:)';
 
+sumWrenchEstimatesInBaseFrame = LeftFootEstimatedWrenchInBaseFrame + RightFootEstimatedWrenchInBaseFrame +...
+                                LeftHandEstimatedWrenchInBaseFrame + RightHandEstimatedWrenchInBaseFrame;
+
 %% Estimate wrenches in world frame
 LeftFootEstimatedWrenchInWorldFrame  = data.wrenchEstimatesInWorldFrame(1:6,:)';
 RightFootEstimatedWrenchInWorldFrame = data.wrenchEstimatesInWorldFrame(7:12,:)';
 LeftHandEstimatedWrenchInWorldFrame  = data.wrenchEstimatesInWorldFrame(13:18,:)';
 RightHandEstimatedWrenchInWorldFrame = data.wrenchEstimatesInWorldFrame(19:24,:)';
+
+sumWrenchEstimatesInWorldFrame = LeftFootEstimatedWrenchInWorldFrame + RightFootEstimatedWrenchInWorldFrame +...
+                                 LeftHandEstimatedWrenchInWorldFrame + RightHandEstimatedWrenchInWorldFrame;
 
 %% Estimate wrenches in centroidal frame
 LeftFootEstimatedWrenchInCentroidalFrame  = data.wrenchEstimatesInCentroidalFrame(1:6,:)';
@@ -66,15 +72,18 @@ RightFootEstimatedWrenchInCentroidalFrame = data.wrenchEstimatesInCentroidalFram
 LeftHandEstimatedWrenchInCentroidalFrame  = data.wrenchEstimatesInCentroidalFrame(13:18,:)';
 RightHandEstimatedWrenchInCentroidalFrame = data.wrenchEstimatesInCentroidalFrame(19:24,:)';
 
+sumWrenchEstimatesInCentroidalFrame = LeftFootEstimatedWrenchInCentroidalFrame + RightFootEstimatedWrenchInCentroidalFrame +...
+                                      LeftHandEstimatedWrenchInCentroidalFrame + RightHandEstimatedWrenchInCentroidalFrame;
+
 
 %% Legend or Title Index
 wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y [Nm]$", "$m_z [Nm]$"];
 wrenchSourceName = ["Left Foot Wrench", "Right Foot Wrench", "Left Hand Wrench", "Right Hand Wrench"];
 momentumLegendString = ["$\dot{H}_{L_x}$", "$\dot{H}_{L_y}$", "$\dot{H}_{L_z}$", "$\dot{H}_{\omega_x}$", "$\dot{H}_{\omega_y}$", "$\dot{H}_{\omega_z}$"];
 
-%% Measurement Vs Estimates Wrench In Link Frame
+%% Measurement Vs Estimates Wrench In Base Frame
 
-numberOfWrenchSources = 2;
+numberOfWrenchSources = 4;
 
 for i = 1:numberOfWrenchSources
     
@@ -83,9 +92,9 @@ for i = 1:numberOfWrenchSources
     for s = 1:6
         
         subplot(2,3,s);
-        plot(data.wrenchMeasurementsInCentroidalFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth);
+        plot(data.wrenchMeasurementsInBaseFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth);
         hold on;
-        plot(data.wrenchEstimatesInCentroidalFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth, 'LineStyle', '--');
+        plot(data.wrenchEstimatesInBaseFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth, 'LineStyle', '--');
         hold on;
         xlabel('Samples', 'FontSize', fontSize);
         ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
@@ -95,7 +104,7 @@ for i = 1:numberOfWrenchSources
     end
     
     a = axes;
-    t = title (strcat(wrenchSourceName(i) + " In Centroidal Frame"));
+    t = title (strcat(wrenchSourceName(i) + " In Base Frame"));
     t.FontSize = fontSize;
     a.Visible = 'off' ;
     t.Visible = 'on' ;
@@ -105,51 +114,77 @@ for i = 1:numberOfWrenchSources
     
 end
 
-%% Rate of change of momentum
- RateOfChangeOfMomentumInWorldFrame = data.rateOfChangeOfMomentumInWorldFrame;
- RateOfChangeOfMomentumInBaseFrame = data.rateOfChangeOfMomentumInBaseFrame;
- RateOfChangeOfMomentumInCentroidalFrame = data.rateOfChangeOfMomentumInCentroidalFrame;
- 
-%% %%   Rate of Change of Momentum In Centroidal Frame Vs Sum of External Wrenches Measurements In Centroidal Frame
+%% Sum of measured wrench vs sum of estimated wrench in Base frame
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
 
-for s = 1:6 
-    
-    subplot(2,3,s);
-    plot( RateOfChangeOfMomentumInCentroidalFrame(s,:)', 'LineWidth', lineWidth);
-    hold on;
-    plot(sumWrenchMeasurementsInCentroidalFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
-    hold on;    
-    xlabel('Samples', 'FontSize', fontSize);
-    legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
-    
+for s = 1:6
+        
+        subplot(2,3,s);
+        plot(sumWrenchMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth);
+        hold on;
+        plot(sumWrenchEstimatesInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+        hold on;
+        xlabel('Samples', 'FontSize', fontSize);
+        ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
+        set (gca, 'FontSize' , fontSize)
+        legend('Measured Wrench', 'Estimated Wrench', 'FontSize', fontSize, 'Location', 'Best');
+        
 end
 
 a = axes;
-t = title ("  Rate of Change of Momentum - Sum of External Wrenches Measurements In Centroidal Frame");
+t = title ("Sum of measured wrench vs sum of estimated wrench in Base frame");
 t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
 
-save2pdf("rateOfMomentumVsMeasuredWrenchesInCentroidalFrame.pdf", fH,300);
+%% Save figure
+save2pdf("SumOfMeasuredVsEstimatedWrenchInBaseFrame.pdf", fH,300);
+
+% % %% Rate of change of momentum
+% % RateOfChangeOfMomentumInWorldFrame = data.rateOfChangeOfMomentumInWorldFrame;
+% % RateOfChangeOfMomentumInBaseFrame = data.rateOfChangeOfMomentumInBaseFrame;
+% % RateOfChangeOfMomentumInCentroidalFrame = data.rateOfChangeOfMomentumInCentroidalFrame;
+% % 
+% % %% %%   Rate of Change of Momentum In Centroidal Frame Vs Sum of External Wrenches Measurements In Centroidal Frame
+% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
+% % 
+% % for s = 1:6
+% %     
+% %     subplot(2,3,s);
+% %     plot( RateOfChangeOfMomentumInCentroidalFrame(s,:)', 'LineWidth', lineWidth);
+% %     hold on;
+% %     plot(sumWrenchMeasurementsInCentroidalFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+% %     hold on;
+% %     xlabel('Samples', 'FontSize', fontSize);
+% %     legend(momentumLegendString(s), wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% %     
+% % end
+% % 
+% % a = axes;
+% % t = title ("  Rate of Change of Momentum - Sum of External Wrenches Measurements In Centroidal Frame");
+% % t.FontSize = fontSize;
+% % a.Visible = 'off' ;
+% % t.Visible = 'on' ;
+% % 
+% % save2pdf("rateOfMomentumVsMeasuredWrenchesInCentroidalFrame.pdf", fH,300);
 
 
-%% %% Center of Mass Position Expressed in World Frame
-fH = figure('units','normalized','outerposition',[0 0 1 1]);
-
-plot( data.comPosition', 'LineWidth', lineWidth);
-hold on;
-xlabel('Samples', 'FontSize', fontSize);
-legend('$com_x$','$com_y$','$com_z$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
-
-
-a = axes;
-t = title ("Center of Mass Position in World Frame");
-t.FontSize = fontSize;
-a.Visible = 'off' ;
-t.Visible = 'on' ;
-
-save2pdf("comPositionInWorldFrame.pdf", fH,300);
+% % %% %% Center of Mass Position Expressed in World Frame
+% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
+% % 
+% % plot( data.comPosition', 'LineWidth', lineWidth);
+% % hold on;
+% % xlabel('Samples', 'FontSize', fontSize);
+% % legend('$com_x$','$com_y$','$com_z$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% % 
+% % 
+% % a = axes;
+% % t = title ("Center of Mass Position in World Frame");
+% % t.FontSize = fontSize;
+% % a.Visible = 'off' ;
+% % t.Visible = 'on' ;
+% % 
+% % save2pdf("comPositionInWorldFrame.pdf", fH,300);
 
 
 
