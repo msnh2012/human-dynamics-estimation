@@ -29,6 +29,9 @@
 #include <vector>
 #include <random>
 #include <iostream>
+#include <math.h>
+
+#define PI 3.14159265
 
 const std::string DeviceName = "HumanWrenchProvider";
 const std::string LogPrefix = DeviceName + " :";
@@ -87,8 +90,15 @@ public:
     iDynTree::VectorDynSize humanJointPositionsVec;
     iDynTree::VectorDynSize humanJointVelocitiesVec;
 
-    // Simulated wrench from uniform distribution
-    std::vector<std::vector<int>> simulatedWrenches;
+    // Simulated wrench amplitude from uniform distribution
+    std::vector<std::vector<int>> simulatedWrenchesAmplitude;
+
+    // Simulated wrench frequency from uniform distribution
+    std::vector<std::vector<double>> simulatedWrenchesFrequency;
+
+    // Time params
+    double t;
+    double step;
 
     // Robot variables
     iDynTree::Model robotModel;
@@ -500,25 +510,35 @@ bool HumanWrenchProvider::open(yarp::os::Searchable& config)
         pImpl->wrenchSourceNameAndType.push_back(std::pair<std::string, WrenchSourceType>(wrenchSource.name, wrenchSource.type));
     }
 
-    // Initialize uniform distribution
+    // Initialize uniform distribution for wrench amplitude and frequency
     std::random_device rd;
     unsigned seed = rd();
     std::default_random_engine gen(seed);
-    std::uniform_int_distribution<int> dist(-200.0, 200.0);
+    std::uniform_int_distribution<int> dist(10.0, 200.0);
     std::cout << dist(gen) << std::endl;
 
-    // Initialize and set simulated wrench
-    pImpl->simulatedWrenches.resize(pImpl->wrenchSources.size());
+    // Initialize and set simulated wrench amplitude and frequency
+    pImpl->simulatedWrenchesAmplitude.resize(pImpl->wrenchSources.size());
+    pImpl->simulatedWrenchesFrequency.resize(pImpl->wrenchSources.size());
 
     for (size_t i = 0; i < pImpl->wrenchSources.size(); i++) {
         std::vector<int> wrench(6, 0);
+        std::vector<double> frequency(6, 0.0);
         for (size_t v = 0; v < 6; v++) {
-            wrench.at(v) = dist(gen);
-            yInfo() << "Wrench value is " << wrench.at(v);
+            while (wrench.at(v) == 0) {
+                wrench.at(v) = dist(gen);
+            }
+            while(frequency.at(v) == 0) {
+                frequency.at(v) = dist(gen)/20;
+            }
         }
 
-        pImpl->simulatedWrenches.at(i) = wrench;
+        pImpl->simulatedWrenchesAmplitude.at(i) = wrench;
+        pImpl->simulatedWrenchesFrequency.at(i) = frequency;
     }
+
+    pImpl->step = 0.01;
+    pImpl->t = 0;
 
     return true;
 }
@@ -599,6 +619,8 @@ void HumanWrenchProvider::run()
 
     }
 
+    pImpl->t = pImpl->t + pImpl->step;
+
     for (unsigned i = 0; i < pImpl->wrenchSources.size(); ++i) {
         auto& forceSource = pImpl->wrenchSources[i];
 
@@ -607,13 +629,13 @@ void HumanWrenchProvider::run()
         iDynTree::Torque defaultTorque(0,0,0);
 
         // Set simulated wrench
-        defaultForce.setVal(0, pImpl->simulatedWrenches.at(i).at(0));
-        defaultForce.setVal(1, pImpl->simulatedWrenches.at(i).at(1));
-        defaultForce.setVal(2, pImpl->simulatedWrenches.at(i).at(2));
+        defaultForce.setVal(0, pImpl->simulatedWrenchesAmplitude.at(i).at(0) * sin(2 * PI * pImpl->simulatedWrenchesFrequency.at(i).at(0) * (pImpl->t)));
+        defaultForce.setVal(1, pImpl->simulatedWrenchesAmplitude.at(i).at(1) * sin(2 * PI * pImpl->simulatedWrenchesFrequency.at(i).at(1) * (pImpl->t)));
+        defaultForce.setVal(2, pImpl->simulatedWrenchesAmplitude.at(i).at(2) * sin(2 * PI * pImpl->simulatedWrenchesFrequency.at(i).at(2) * (pImpl->t)));
 
-        defaultTorque.setVal(0, pImpl->simulatedWrenches.at(i).at(3));
-        defaultTorque.setVal(1, pImpl->simulatedWrenches.at(i).at(4));
-        defaultTorque.setVal(2, pImpl->simulatedWrenches.at(i).at(5));
+        defaultTorque.setVal(0, pImpl->simulatedWrenchesAmplitude.at(i).at(3) * sin(2 * PI * pImpl->simulatedWrenchesFrequency.at(i).at(3) * (pImpl->t)));
+        defaultTorque.setVal(1, pImpl->simulatedWrenchesAmplitude.at(i).at(4) * sin(2 * PI * pImpl->simulatedWrenchesFrequency.at(i).at(4) * (pImpl->t)));
+        defaultTorque.setVal(2, pImpl->simulatedWrenchesAmplitude.at(i).at(5) * sin(2 * PI * pImpl->simulatedWrenchesFrequency.at(i).at(5) * (pImpl->t)));
 
         iDynTree::Wrench transformedWrench(defaultForce, defaultTorque);
 
