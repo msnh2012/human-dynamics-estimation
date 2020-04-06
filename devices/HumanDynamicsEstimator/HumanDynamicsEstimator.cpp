@@ -1013,8 +1013,6 @@ public:
     // treshold to set low estimated wrenches to zero. if it has value -1, no treshold is used.
     double wrenchEstimationForceLowerThreshold;
 
-    bool saveStateToFile;
-
     const std::unordered_map<iDynTree::BerdySensorTypes, std::string> mapBerdySensorType = {
         {iDynTree::BerdySensorTypes::SIX_AXIS_FORCE_TORQUE_SENSOR, "SIX_AXIS_FORCE_TORQUE_SENSOR"},
         {iDynTree::BerdySensorTypes::ACCELEROMETER_SENSOR, "ACCELEROMETER_SENSOR"},
@@ -1428,9 +1426,6 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
     // Get the comConstraintIncludeAllLinks option. The default value is true
     bool comConstraintIncludeAllLinks = config.check("comConstraintIncludeAllLinks",yarp::os::Value(true)).asBool();
 
-    // Get the saveStateToFile option. The default value is false
-    pImpl->saveStateToFile = config.check("saveStateToFile",yarp::os::Value(false)).asBool();
-
     // Set the links to be considered for com acceleration constraint
     // TODO: Check if initializing the default case in berdy init is a better approach. At the moment there is no back compatibility problem
     // This is an berdy option that has to be initialized before calling berdy initialization
@@ -1705,31 +1700,11 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
     // Extract links net external wrench from estimated dynamic variables
     pImpl->berdyData.helper.extractLinkNetExternalWrenchesFromDynamicVariables(estimatedDynamicVariables,
                                                                                pImpl->berdyData.estimates.linkNetExternalWrenchEstimates);
-
-    // Open debug files
-    if (pImpl->saveStateToFile) {
-        pImpl->task1MeasurementFile.open("task1MeasurementsVector.txt", std::ios::trunc);
-        pImpl->task1DynamicVariablesFile.open("task1DynamicVariablesVector.txt", std::ios::trunc);
-        pImpl->measurementsFile.open("measurementsVector.txt", std::ios::trunc);
-        pImpl->dynamicVariablesFile.open("dynamicVariablesVector.txt", std::ios::trunc);
-        pImpl->task1simulatedyFile.open("task1simulatedy.txt", std::ios::trunc);
-        pImpl->task1DifferenceInyd.open("task1DifferenceInyd.txt", std::ios::trunc);
-    }
-
     return true;
 }
 
 bool HumanDynamicsEstimator::close()
 {
-    if (pImpl->saveStateToFile) {
-        pImpl->task1MeasurementFile.close();
-        pImpl->task1DynamicVariablesFile.close();
-        pImpl->measurementsFile.close();
-        pImpl->dynamicVariablesFile.close();
-        pImpl->task1simulatedyFile.close();
-        pImpl->task1DifferenceInyd.close();
-    }
-
     return true;
 }
 
@@ -1997,11 +1972,6 @@ void HumanDynamicsEstimator::run()
         }
     }
 
-    // Dump task1 measurement vector
-    if (pImpl->saveStateToFile) {
-        pImpl->task1MeasurementFile << pImpl->berdyData.buffers.task1_measurements.toString().c_str() << std::endl;
-    }
-
     // Update estimator information
     pImpl->berdyData.solver->updateEstimateInformationFloatingBase(baseTransform,
                                                                    pImpl->berdyData.state.jointsPosition,
@@ -2015,21 +1985,41 @@ void HumanDynamicsEstimator::run()
         yError() << LogPrefix << "Failed to do task1 berdy estimation";
     }
 
+    // Extract the estimated dynamic variables
+    iDynTree::VectorDynSize task1_estimatedDynamicVariables(pImpl->berdyData.helper.getNrOfDynamicVariables(pImpl->task1));
+    pImpl->berdyData.solver->getLastEstimate(task1_estimatedDynamicVariables, pImpl->task1);
+
+    // Extract links net external wrench from  task1 estimated dynamic variables
+    pImpl->berdyData.helper.extractLinkNetExternalWrenchesFromDynamicVariables(task1_estimatedDynamicVariables,
+                                                                               pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame,
+                                                                               pImpl->task1);
+
+    // Variable to store task1 estimated wrench values
+    std::vector<double> task1EstiamtedWrenchValues;
+    task1EstiamtedWrenchValues.resize(wrenchValues.size(),0.0);
+
+    // Update wrench values with the estimates from task1
+    for (int idx = 0; idx < pImpl->wrenchSensorsLinkNames.size(); idx++) {
+
+        std::string wrenchSensorLinkName = pImpl->wrenchSensorsLinkNames.at(idx);
+        iDynTree::LinkIndex linkIndex = pImpl->berdyData.helper.model().getLinkIndex(wrenchSensorLinkName);
+
+        iDynTree::Wrench linkWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame(linkIndex);
+
+        task1EstiamtedWrenchValues.at(idx*6 + 0) = linkWrench.getVal(0);
+        task1EstiamtedWrenchValues.at(idx*6 + 1) = linkWrench.getVal(1);
+        task1EstiamtedWrenchValues.at(idx*6 + 2) = linkWrench.getVal(2);
+        task1EstiamtedWrenchValues.at(idx*6 + 3) = linkWrench.getVal(3);
+        task1EstiamtedWrenchValues.at(idx*6 + 4) = linkWrench.getVal(4);
+        task1EstiamtedWrenchValues.at(idx*6 + 5) = linkWrench.getVal(5);
+    }
+
+
+
     // Get simulated y1
     iDynTree::VectorDynSize simulatedy1;
     pImpl->berdyData.solver->getSimulatedMeasurementVector(simulatedy1, true);
 
-    if (pImpl->saveStateToFile) {
-        pImpl->task1simulatedyFile << simulatedy1.toString().c_str() << std::endl;
-    }
-
-    // Compute the difference between input meausrement y1 and the simulated y1
-    if (pImpl->saveStateToFile) {
-        iDynTree::VectorDynSize diff;
-        diff.resize(pImpl->berdyData.helper.getNrOfSensorsMeasurements(true));
-        iDynTree::toEigen(diff) = iDynTree::toEigen(pImpl->berdyData.buffers.task1_measurements) - iDynTree::toEigen(simulatedy1);
-        pImpl->task1DifferenceInyd << diff.toString().c_str() << std::endl;
-    }
 
     // Check for rpc command status for the offset, and in case update or reset the offsets
     if (pImpl->commandPro->cmdOffsetStatus && !pImpl->commandPro->resetOffset) {
@@ -2088,26 +2078,201 @@ void HumanDynamicsEstimator::run()
     pImpl->commandPro->resetTask1 = false;
     pImpl->commandPro->zeroWrench = false;
 
+    // ================================
+    // LOW PRIORITY TASK 2 - FULL BERDY
+    // ================================
+
+    // Get the berdy sensors following its internal order
+    std::vector<iDynTree::BerdySensor> berdySensors = pImpl->berdyData.helper.getSensorsOrdering();
+
+    // Clear measurements
+    pImpl->berdyData.buffers.measurements.zero();
+
+    /* The total number of sensors are :
+     * 17 Accelerometers, 66 DOF Acceleration sensors and 67 NET EXT WRENCH sensors
+     * The total number of sensor measurements = (17x3) + (66x1) + (67x6) = 519
+     */
+
+    // Iterate over the sensors and add corresponding measurements
+    for (const iDynTree::BerdySensor& sensor : berdySensors) {
+
+        // Create the key
+        SensorKey key = {sensor.type, sensor.id};
+
+        // Check that it exists in the sensorMapIndex
+        if (pImpl->sensorMapIndex.find(key) != pImpl->sensorMapIndex.end()) {
+            SensorMapIndex::const_iterator found = pImpl->sensorMapIndex.find(key);
+            // Update sensor measurements vector y
+            switch (sensor.type)
+            {
+            case iDynTree::COM_ACCELEROMETER_SENSOR:
+            {
+                // Set rate of change of measurement values to y vector
+                // TODO: Task 2 does not consider this constraint
+                pImpl->berdyData.buffers.measurements(found->second.offset + 0) = rateOfChangeOfMomentumInBaseFrame.at(0);
+                pImpl->berdyData.buffers.measurements(found->second.offset + 1) = rateOfChangeOfMomentumInBaseFrame.at(1);
+                pImpl->berdyData.buffers.measurements(found->second.offset + 2) = rateOfChangeOfMomentumInBaseFrame.at(2);
+                pImpl->berdyData.buffers.measurements(found->second.offset + 3) = rateOfChangeOfMomentumInBaseFrame.at(3);
+                pImpl->berdyData.buffers.measurements(found->second.offset + 4) = rateOfChangeOfMomentumInBaseFrame.at(4);
+                pImpl->berdyData.buffers.measurements(found->second.offset + 5) = rateOfChangeOfMomentumInBaseFrame.at(5);
+            }
+                break;
+            case iDynTree::THREE_AXIS_ANGULAR_ACCELEROMETER_SENSOR:
+            {
+                // Check for the ParentLinkName_accelerometer sensor name, as this is the name of the sensors in IHumanState interface
+                std::size_t separatorLocation = sensor.id.find_last_of("_");
+
+                // Double check the sensor names from the model and the IHumanState interface
+                std::vector<std::string>::iterator itr = std::find(accelerometerSensorNames.begin(),
+                                                                   accelerometerSensorNames.end(),
+                                                                   sensor.id.substr(0, separatorLocation) + "_accelerometer");
+
+                // Find if the parent link name is present in the names from IHumanState interface
+                if (itr != accelerometerSensorNames.end()) {
+
+                    // Get the proper acceleration from IHumanState interface
+                    std::array<double, 6> properAcceleration = properAccelerations.at(std::distance(accelerometerSensorNames.begin(), itr));
+
+                    // Set linear proper acceleration measurements
+                    pImpl->berdyData.buffers.measurements(found->second.offset + 0) = properAcceleration[3];
+                    pImpl->berdyData.buffers.measurements(found->second.offset + 1) = properAcceleration[4];
+                    pImpl->berdyData.buffers.measurements(found->second.offset + 2) = properAcceleration[5];
+
+                }
+                else {
+
+                    yWarning() << LogPrefix << "Could not find accelerometer" << sensor.id
+                               << "in the accelerometerSensorNames obtained from IHumanState interface. Ignoring it "
+                                  "Double check if the same models are used in HumanStateProvider and HumanDynamicsEstimator";
+
+                    // Set zero default values for ignored sensors
+                    for (int i = 0; i < 3; i++)
+                    {
+                        pImpl->berdyData.buffers.measurements(found->second.offset + i) = 0;
+                    }
+
+                }
+
+            }
+                break;
+            case iDynTree::ACCELEROMETER_SENSOR:
+            {
+                // Double check the sensor names from the model and the IHumanState interface
+                std::vector<std::string>::iterator itr = std::find(accelerometerSensorNames.begin(),
+                                                                   accelerometerSensorNames.end(),
+                                                                   sensor.id);
+
+                // Find if the parent link name is present in the names from IHumanState interface
+                if (itr != accelerometerSensorNames.end()) {
+
+                    // Get the proper acceleration from IHumanState interface
+                    std::array<double, 6> properAcceleration = properAccelerations.at(std::distance(accelerometerSensorNames.begin(), itr));
+
+                    // Set linear proper acceleration measurements
+                    pImpl->berdyData.buffers.measurements(found->second.offset + 0) = properAcceleration[0];
+                    pImpl->berdyData.buffers.measurements(found->second.offset + 1) = properAcceleration[1];
+                    pImpl->berdyData.buffers.measurements(found->second.offset + 2) = properAcceleration[2];
+
+                }
+                else {
+
+                    yWarning() << LogPrefix << "Could not find accelerometer" << sensor.id
+                               << "in the accelerometerSensorNames obtained from IHumanState interface. Ignoring it "
+                                  "Double check if the same models are used in HumanStateProvider and HumanDynamicsEstimator";
+
+                    // Set zero default values for ignored sensors
+                    for (int i = 0; i < 3; i++)
+                    {
+                        pImpl->berdyData.buffers.measurements(found->second.offset + i) = 0;
+                    }
+
+                }
+            }
+                break;
+            case iDynTree::DOF_ACCELERATION_SENSOR:
+            {
+                // Filling y vector with zero values for DOF_ACCELEROMETER sensors
+                pImpl->berdyData.buffers.measurements(found->second.offset) = 0;
+            }
+                break;
+            case iDynTree::NET_EXT_WRENCH_SENSOR:
+            {
+                // Filling y vector with zero values for NET_EXT_WRENCH sensors
+                for (int idx = 0; idx < pImpl->wrenchSensorsLinkNames.size(); idx++) {
+                    std::string wrenchSensorLinkName = pImpl->wrenchSensorsLinkNames.at(idx);
+                    if (wrenchSensorLinkName.compare(sensor.id) == 0) {
+                        for (int i = 0; i < 6; i++)
+                        {
+                            pImpl->berdyData.buffers.measurements(found->second.offset + i) = task1EstiamtedWrenchValues.at(idx*6 + i);
+                        }
+                        break;
+                    }
+                    else {
+                        for (int i = 0; i < 6; i++)
+                        {
+                            pImpl->berdyData.buffers.measurements(found->second.offset + i) = 0;
+                        }
+                    }
+                }
+            }
+                break;
+            default:
+                yWarning() << LogPrefix << sensor.type << " sensor unimplemented";
+                break;
+            }
+        }
+    }
+
+    // Update estimator information
+    pImpl->berdyData.solver->updateEstimateInformationFloatingBase(pImpl->berdyData.state.jointsPosition,
+                                                                   pImpl->berdyData.state.jointsVelocity,
+                                                                   pImpl->berdyData.state.floatingBaseFrameIndex,
+                                                                   pImpl->berdyData.state.baseAngularVelocity,
+                                                                   pImpl->berdyData.buffers.measurements);
+    // Do berdy estimation
+    if (!pImpl->berdyData.solver->doEstimate()) {
+        yError() << LogPrefix << "Failed to do berdy estimation";
+    }
+
+    // Extract the estimated dynamic variables
+    iDynTree::VectorDynSize estimatedDynamicVariables(pImpl->berdyData.helper.getNrOfDynamicVariables());
+    pImpl->berdyData.solver->getLastEstimate(estimatedDynamicVariables);
+
+    iDynTree::LinkProperAccArray properAccs;
+    iDynTree::LinkNetTotalWrenchesWithoutGravity netTotalWrenchesWithoutGrav;
+    iDynTree::LinkNetExternalWrenches netExtWrenches;
+    iDynTree::LinkInternalWrenches linkJointWrenches;
+    iDynTree::JointDOFsDoubleArray jointTorques;
+    iDynTree::JointDOFsDoubleArray jointAccs;
+
+    //Extract LINK_BODY_PROPER_CLASSICAL_ACCELERATION from dynamic variables
+    for (iDynTree::LinkIndex lnkIdx=0; lnkIdx < static_cast<iDynTree::LinkIndex>(pImpl->humanModel.getNrOfLinks()); lnkIdx++) {
+
+        iDynTree::IndexRange range = pImpl->berdyData.helper.getRangeLinkVariable(iDynTree::LINK_BODY_PROPER_CLASSICAL_ACCELERATION, lnkIdx);
+        iDynTree::LinAcceleration linAcc(estimatedDynamicVariables.data() + range.offset, 3);
+        iDynTree::AngAcceleration angAcc(estimatedDynamicVariables.data() + range.offset + 3, 3);
+        pImpl->berdyData.estimates.linkClassicalProperAccelerationEstimates(lnkIdx) = iDynTree::SpatialAcc(linAcc, angAcc);
+
+
+    }
+
+    // Extract joint torques from estimated dynamic variables
+    pImpl->berdyData.helper.extractJointTorquesFromDynamicVariables(estimatedDynamicVariables,
+                                                                    pImpl->berdyData.state.jointsPosition,
+                                                                    pImpl->berdyData.estimates.jointTorqueEstimates);
+
+    // Extract links net external wrench from estimated dynamic variables
+    pImpl->berdyData.helper.extractLinkNetExternalWrenchesFromDynamicVariables(estimatedDynamicVariables,
+                                                                               pImpl->berdyData.estimates.linkNetExternalWrenchEstimates);
+
+
+
     // ===========================
     // EXPOSE DATA FOR IHUMANSTATE
     // ===========================
 
     {
         std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-        // Extract the estimated dynamic variables
-        iDynTree::VectorDynSize task1_estimatedDynamicVariables(pImpl->berdyData.helper.getNrOfDynamicVariables(pImpl->task1));
-        pImpl->berdyData.solver->getLastEstimate(task1_estimatedDynamicVariables, pImpl->task1);
-
-        // Dump task1 dynamic variables vector
-        if (pImpl->saveStateToFile) {
-            pImpl->task1DynamicVariablesFile << task1_estimatedDynamicVariables.toString().c_str() << std::endl;
-        }
-
-        // Extract links net external wrench from  task1 estimated dynamic variables
-        pImpl->berdyData.helper.extractLinkNetExternalWrenchesFromDynamicVariables(task1_estimatedDynamicVariables,
-                                                                                   pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame,
-                                                                                   pImpl->task1);
 
         // Prepare estimates wrenches vector
         std::vector<double> estimtedWrechesInLinkFrame;
@@ -2155,7 +2320,7 @@ void HumanDynamicsEstimator::run()
         // containing links we are interested to see the extracted wrench estimates
         for (int i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
 
-            // Expose offset removed wrench to link external wrench measurement analog sensor variable
+            // Expose input measured wrench from task 1 to analog sensor variable
             pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 0] = wrenchValues.at(i*6 + 0);
             pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 1] = wrenchValues.at(i*6 + 1);
             pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 2] = wrenchValues.at(i*6 + 2);
@@ -2163,7 +2328,7 @@ void HumanDynamicsEstimator::run()
             pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 4] = wrenchValues.at(i*6 + 4);
             pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 5] = wrenchValues.at(i*6 + 5);
 
-            // Expose offset removed wrench to all wrench analog sensor variable
+            // Expose input measured wrench from task 1 to analog sensor variable
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 0] = wrenchValues.at(i*6 + 0);
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 1] = wrenchValues.at(i*6 + 1);
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 2] = wrenchValues.at(i*6 + 2);
@@ -2171,9 +2336,9 @@ void HumanDynamicsEstimator::run()
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 4] = wrenchValues.at(i*6 + 4);
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 5] = wrenchValues.at(i*6 + 5);
 
-            // Expose net link external wrench estimates to analog sensor data variable
+            // Expose net link external wrench estimates from task 2 to analog sensor data variable
             std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
-            iDynTree::Wrench linkNetExternalWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame(pImpl->humanModel.getLinkIndex(linkName));
+            iDynTree::Wrench linkNetExternalWrench = pImpl->berdyData.estimates.linkNetExternalWrenchEstimates(pImpl->humanModel.getLinkIndex(linkName));
 
             pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements[6 * i + 0] = linkNetExternalWrench.getLinearVec3()(0);
             pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements[6 * i + 1] = linkNetExternalWrench.getLinearVec3()(1);
@@ -2182,7 +2347,7 @@ void HumanDynamicsEstimator::run()
             pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements[6 * i + 4] = linkNetExternalWrench.getAngularVec3()(1);
             pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements[6 * i + 5] = linkNetExternalWrench.getAngularVec3()(2);
 
-            // Expose estimated wrench to all wrench analog sensor variable
+            // Expose net link external wrench estimates from task 2 to analog sensor data variable
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 6] = linkNetExternalWrench.getLinearVec3()(0);
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 7] = linkNetExternalWrench.getLinearVec3()(1);
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 8] = linkNetExternalWrench.getLinearVec3()(2);
