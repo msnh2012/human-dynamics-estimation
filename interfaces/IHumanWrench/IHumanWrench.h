@@ -44,12 +44,19 @@ public:
         Estimated,
     };
 
+    // TODO: Check if the task type enum can be improved
+    enum class TaskType
+    {
+        Task1,
+        Task2,
+    };
+
     virtual std::vector<std::pair<std::string, WrenchSourceType>> getWrenchSourceNameAndType() const = 0;
     virtual std::vector<std::string> getWrenchSourceNames() const = 0;
     virtual size_t getNumberOfWrenchSources() const = 0;
 
     virtual std::vector<double> getWrenches() const = 0;
-    virtual std::vector<double> getWrenchesInFrame(WrenchType, WrenchReferenceFrame) const = 0;
+    virtual std::vector<double> getWrenchesInFrame(TaskType, WrenchType, WrenchReferenceFrame) const = 0;
 
 };
 

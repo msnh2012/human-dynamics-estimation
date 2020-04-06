@@ -46,6 +46,7 @@ public:
 
     // Method to express wrenches in different frame
     void expressWrenchInDifferentFrames(const std::vector<double>& wrenchInLinkFrame,
+                                        hde::interfaces::IHumanWrench::TaskType taskType,
                                         hde::interfaces::IHumanWrench::WrenchType wrenchType,
                                         iDynTree::KinDynComputations& kinDyn);
 
@@ -79,7 +80,7 @@ public:
     std::vector<std::string> getWrenchSourceNames() const override;
     size_t getNumberOfWrenchSources() const override;
     std::vector<double> getWrenches() const override;
-    std::vector<double> getWrenchesInFrame(WrenchType, WrenchReferenceFrame) const override;
+    std::vector<double> getWrenchesInFrame(TaskType, WrenchType, WrenchReferenceFrame) const override;
 
     // IHumanDynamics
     std::vector<std::string> getJointNames() const override;

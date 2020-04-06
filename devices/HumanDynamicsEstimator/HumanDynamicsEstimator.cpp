@@ -1071,10 +1071,10 @@ public:
     LinkExternalWrenchMeasurementsAnalogSensorData linkExternalWrenchMeasurementAnalogSensorData;
 
     // Wrench buffers
-    std::unordered_map<hde::interfaces::IHumanWrench::WrenchType, WrenchInDifferentFrames> allWrenchesMap;
+    std::unordered_map<hde::interfaces::IHumanWrench::TaskType, std::unordered_map<hde::interfaces::IHumanWrench::WrenchType, WrenchInDifferentFrames>> allWrenchesMap;
 
     // Sum of wrench buffers
-    std::unordered_map<hde::interfaces::IHumanWrench::WrenchType, SumOfWrenchInDifferentFrames> sumOfWrenchesMap;
+    std::unordered_map<hde::interfaces::IHumanWrench::TaskType, std::unordered_map<hde::interfaces::IHumanWrench::WrenchType, SumOfWrenchInDifferentFrames>> sumOfWrenchesMap;
 
     // TODO: In case of using multiple analog sensor usage in the future, we can remove this variable
     // Analog sensor variable containing the offset removed wrench measurements and the extimates link net external wrench estimates
@@ -1271,38 +1271,79 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
         pImpl->wrenchSensorsLinkNames.at(i) = linkNames->get(i).asString();
     }
 
-    // Initialize measured wrench buffers to map
-    WrenchInDifferentFrames allMeasuredWrench;
-    allMeasuredWrench.wrenchesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
-    allMeasuredWrench.wrenchesInCentroidalFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
-    allMeasuredWrench.wrenchesInBaseFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
-    allMeasuredWrench.wrenchesInWorldFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    // Initialize task 1 measured wrench buffers to map
+    WrenchInDifferentFrames task1_allMeasuredWrench;
+    task1_allMeasuredWrench.wrenchesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task1_allMeasuredWrench.wrenchesInCentroidalFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task1_allMeasuredWrench.wrenchesInBaseFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task1_allMeasuredWrench.wrenchesInWorldFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
 
-    pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured] = allMeasuredWrench;
+    // Initialize task 1 estimated wrench buffers to map
+    WrenchInDifferentFrames task1_allEstimatedWrench;
+    task1_allEstimatedWrench.wrenchesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task1_allEstimatedWrench.wrenchesInCentroidalFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task1_allEstimatedWrench.wrenchesInBaseFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task1_allEstimatedWrench.wrenchesInWorldFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
 
-    // Initialize estimated wrench buffers to map
-    WrenchInDifferentFrames allEstimatedWrench;
-    allEstimatedWrench.wrenchesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
-    allEstimatedWrench.wrenchesInCentroidalFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
-    allEstimatedWrench.wrenchesInBaseFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
-    allEstimatedWrench.wrenchesInWorldFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    // Set task 1 wrenches to all wrenches map
+    std::unordered_map<hde::interfaces::IHumanWrench::WrenchType, WrenchInDifferentFrames> task1_allWrench;
+    task1_allWrench[hde::interfaces::IHumanWrench::WrenchType::Measured] = task1_allMeasuredWrench;
+    task1_allWrench[hde::interfaces::IHumanWrench::WrenchType::Estimated] = task1_allEstimatedWrench;
+    pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1] = task1_allWrench;
 
-    pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Estimated] = allMeasuredWrench;
+    // Initialize task 2 measured wrench buffers to map
+    WrenchInDifferentFrames task2_allMeasuredWrench;
+    task2_allMeasuredWrench.wrenchesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task2_allMeasuredWrench.wrenchesInCentroidalFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task2_allMeasuredWrench.wrenchesInBaseFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task2_allMeasuredWrench.wrenchesInWorldFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
 
-    // Initialize sum of wrenches buffer to map
-    SumOfWrenchInDifferentFrames sumOfMeasuredWrench;
-    sumOfMeasuredWrench.sumOfWrenchesInBaseFrame.resize(6, 0);
-    sumOfMeasuredWrench.sumOfWrenchesInWorldFrame.resize(6, 0);
-    sumOfMeasuredWrench.sumOfWrenchesInCentroidalFrame.resize(6, 0);
+    // Initialize task 1 estimated wrench buffers to map
+    WrenchInDifferentFrames task2_allEstimatedWrench;
+    task2_allEstimatedWrench.wrenchesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task2_allEstimatedWrench.wrenchesInCentroidalFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task2_allEstimatedWrench.wrenchesInBaseFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
+    task2_allEstimatedWrench.wrenchesInWorldFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0);
 
-    pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured] = sumOfMeasuredWrench;
+    // Set task 2 wrenches to all wrenches map
+    std::unordered_map<hde::interfaces::IHumanWrench::WrenchType, WrenchInDifferentFrames> task2_allWrench;
+    task2_allWrench[hde::interfaces::IHumanWrench::WrenchType::Measured] = task2_allMeasuredWrench;
+    task2_allWrench[hde::interfaces::IHumanWrench::WrenchType::Estimated] = task2_allEstimatedWrench;
+    pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2] = task2_allWrench;
 
-    SumOfWrenchInDifferentFrames sumOfEstimatedWrench;
-    sumOfEstimatedWrench.sumOfWrenchesInBaseFrame.resize(6, 0);
-    sumOfEstimatedWrench.sumOfWrenchesInWorldFrame.resize(6, 0);
-    sumOfEstimatedWrench.sumOfWrenchesInCentroidalFrame.resize(6, 0);
+    // Initialize task 1 sum of wrenches buffer to map
+    SumOfWrenchInDifferentFrames task1_sumOfMeasuredWrench;
+    task1_sumOfMeasuredWrench.sumOfWrenchesInBaseFrame.resize(6, 0);
+    task1_sumOfMeasuredWrench.sumOfWrenchesInWorldFrame.resize(6, 0);
+    task1_sumOfMeasuredWrench.sumOfWrenchesInCentroidalFrame.resize(6, 0);
 
-    pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Estimated] = sumOfEstimatedWrench;
+    SumOfWrenchInDifferentFrames task1_sumOfEstimatedWrench;
+    task1_sumOfEstimatedWrench.sumOfWrenchesInBaseFrame.resize(6, 0);
+    task1_sumOfEstimatedWrench.sumOfWrenchesInWorldFrame.resize(6, 0);
+    task1_sumOfEstimatedWrench.sumOfWrenchesInCentroidalFrame.resize(6, 0);
+
+    std::unordered_map<hde::interfaces::IHumanWrench::WrenchType, SumOfWrenchInDifferentFrames> task1_sumOfWrench;
+    task1_sumOfWrench[hde::interfaces::IHumanWrench::WrenchType::Measured] = task1_sumOfMeasuredWrench;
+    task1_sumOfWrench[hde::interfaces::IHumanWrench::WrenchType::Estimated] = task1_sumOfEstimatedWrench;
+    pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1] = task1_sumOfWrench;
+
+    // Initialize task 2 sum of wrenches buffer to map
+    SumOfWrenchInDifferentFrames task2_sumOfMeasuredWrench;
+    task2_sumOfMeasuredWrench.sumOfWrenchesInBaseFrame.resize(6, 0);
+    task2_sumOfMeasuredWrench.sumOfWrenchesInWorldFrame.resize(6, 0);
+    task2_sumOfMeasuredWrench.sumOfWrenchesInCentroidalFrame.resize(6, 0);
+
+    SumOfWrenchInDifferentFrames task2_sumOfEstimatedWrench;
+    task2_sumOfEstimatedWrench.sumOfWrenchesInBaseFrame.resize(6, 0);
+    task2_sumOfEstimatedWrench.sumOfWrenchesInWorldFrame.resize(6, 0);
+    task2_sumOfEstimatedWrench.sumOfWrenchesInCentroidalFrame.resize(6, 0);
+
+    std::unordered_map<hde::interfaces::IHumanWrench::WrenchType, SumOfWrenchInDifferentFrames> task2_sumOfWrench;
+    task2_sumOfWrench[hde::interfaces::IHumanWrench::WrenchType::Measured] = task2_sumOfMeasuredWrench;
+    task2_sumOfWrench[hde::interfaces::IHumanWrench::WrenchType::Estimated] = task2_sumOfEstimatedWrench;
+    pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2] = task2_sumOfWrench;
+
+
 
     // Initialize the number of channels of the equivalent IAnalogSensor
     {
@@ -1709,11 +1750,12 @@ bool HumanDynamicsEstimator::close()
 }
 
 void HumanDynamicsEstimator::expressWrenchInDifferentFrames(const std::vector<double>& wrenchesInLinkFrame,
+                                                            hde::interfaces::IHumanWrench::TaskType taskType,
                                                             hde::interfaces::IHumanWrench::WrenchType wrenchType,
                                                             iDynTree::KinDynComputations& kinDyn) {
 
     // Set wrench in link frame
-    pImpl->allWrenchesMap[wrenchType].wrenchesInLinkFrame = wrenchesInLinkFrame;
+    pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInLinkFrame = wrenchesInLinkFrame;
 
     // Transform wrench measurement values from link frames to base frame
     for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
@@ -1745,20 +1787,20 @@ void HumanDynamicsEstimator::expressWrenchInDifferentFrames(const std::vector<do
         iDynTree::fromEigen(transformedLinkWrenchInBaseFrame, transformedWrenchInBaseFrameEigen);
 
         // Set wrench in base frame buffer
-        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 0) = transformedLinkWrenchInBaseFrame.getVal(0);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 1) = transformedLinkWrenchInBaseFrame.getVal(1);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 2) = transformedLinkWrenchInBaseFrame.getVal(2);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 3) = transformedLinkWrenchInBaseFrame.getVal(3);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 4) = transformedLinkWrenchInBaseFrame.getVal(4);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame.at(6 * i + 5) = transformedLinkWrenchInBaseFrame.getVal(5);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInBaseFrame.at(6 * i + 0) = transformedLinkWrenchInBaseFrame.getVal(0);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInBaseFrame.at(6 * i + 1) = transformedLinkWrenchInBaseFrame.getVal(1);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInBaseFrame.at(6 * i + 2) = transformedLinkWrenchInBaseFrame.getVal(2);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInBaseFrame.at(6 * i + 3) = transformedLinkWrenchInBaseFrame.getVal(3);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInBaseFrame.at(6 * i + 4) = transformedLinkWrenchInBaseFrame.getVal(4);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInBaseFrame.at(6 * i + 5) = transformedLinkWrenchInBaseFrame.getVal(5);
 
         // Sum of wrenches in base frame buffer
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(0) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(0) + transformedLinkWrenchInBaseFrame.getVal(0);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(1) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(1) + transformedLinkWrenchInBaseFrame.getVal(1);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(2) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(2) + transformedLinkWrenchInBaseFrame.getVal(2);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(3) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(3) + transformedLinkWrenchInBaseFrame.getVal(3);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(4) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(4) + transformedLinkWrenchInBaseFrame.getVal(4);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(5) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInBaseFrame.at(5) + transformedLinkWrenchInBaseFrame.getVal(5);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(0) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(0) + transformedLinkWrenchInBaseFrame.getVal(0);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(1) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(1) + transformedLinkWrenchInBaseFrame.getVal(1);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(2) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(2) + transformedLinkWrenchInBaseFrame.getVal(2);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(3) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(3) + transformedLinkWrenchInBaseFrame.getVal(3);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(4) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(4) + transformedLinkWrenchInBaseFrame.getVal(4);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(5) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInBaseFrame.at(5) + transformedLinkWrenchInBaseFrame.getVal(5);
 
         // Transform wrench to world frame
         Eigen::Matrix<double,6,1> transformedWrenchInWorldFrameEigen = iDynTree::toEigen(world_H_link.asAdjointTransformWrench()) * iDynTree::toEigen(linkWrench.asVector());
@@ -1767,20 +1809,20 @@ void HumanDynamicsEstimator::expressWrenchInDifferentFrames(const std::vector<do
         iDynTree::fromEigen(transformedLinkWrenchInWorldFrame, transformedWrenchInWorldFrameEigen);
 
         // Set wrench in world frame buffer
-        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 0) = transformedLinkWrenchInWorldFrame.getVal(0);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 1) = transformedLinkWrenchInWorldFrame.getVal(1);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 2) = transformedLinkWrenchInWorldFrame.getVal(2);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 3) = transformedLinkWrenchInWorldFrame.getVal(3);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 4) = transformedLinkWrenchInWorldFrame.getVal(4);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame.at(6 * i + 5) = transformedLinkWrenchInWorldFrame.getVal(5);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInWorldFrame.at(6 * i + 0) = transformedLinkWrenchInWorldFrame.getVal(0);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInWorldFrame.at(6 * i + 1) = transformedLinkWrenchInWorldFrame.getVal(1);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInWorldFrame.at(6 * i + 2) = transformedLinkWrenchInWorldFrame.getVal(2);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInWorldFrame.at(6 * i + 3) = transformedLinkWrenchInWorldFrame.getVal(3);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInWorldFrame.at(6 * i + 4) = transformedLinkWrenchInWorldFrame.getVal(4);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInWorldFrame.at(6 * i + 5) = transformedLinkWrenchInWorldFrame.getVal(5);
 
         // Sum of wrenches in world frame buffer
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(0) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(0) + transformedLinkWrenchInWorldFrame.getVal(0);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(1) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(1) + transformedLinkWrenchInWorldFrame.getVal(1);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(2) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(2) + transformedLinkWrenchInWorldFrame.getVal(2);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(3) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(3) + transformedLinkWrenchInWorldFrame.getVal(3);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(4) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(4) + transformedLinkWrenchInWorldFrame.getVal(4);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(5) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInWorldFrame.at(5) + transformedLinkWrenchInWorldFrame.getVal(5);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(0) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(0) + transformedLinkWrenchInWorldFrame.getVal(0);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(1) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(1) + transformedLinkWrenchInWorldFrame.getVal(1);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(2) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(2) + transformedLinkWrenchInWorldFrame.getVal(2);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(3) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(3) + transformedLinkWrenchInWorldFrame.getVal(3);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(4) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(4) + transformedLinkWrenchInWorldFrame.getVal(4);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(5) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInWorldFrame.at(5) + transformedLinkWrenchInWorldFrame.getVal(5);
 
         // Compute centroidal frame (G[I]) to inertial frame transform
         iDynTree::Transform world_H_centroidal = iDynTree::Transform::Identity();
@@ -1800,20 +1842,20 @@ void HumanDynamicsEstimator::expressWrenchInDifferentFrames(const std::vector<do
         iDynTree::fromEigen(transformedLinkWrenchInCentroidalFrame, transformedWrenchInCentroidalFrameEigen);
 
         // Set wrench in centroidal frame buffer
-        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 0) = transformedLinkWrenchInCentroidalFrame.getVal(0);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 1) = transformedLinkWrenchInCentroidalFrame.getVal(1);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 2) = transformedLinkWrenchInCentroidalFrame.getVal(2);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 3) = transformedLinkWrenchInCentroidalFrame.getVal(3);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 4) = transformedLinkWrenchInCentroidalFrame.getVal(4);
-        pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame.at(6 * i + 5) = transformedLinkWrenchInCentroidalFrame.getVal(5);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInCentroidalFrame.at(6 * i + 0) = transformedLinkWrenchInCentroidalFrame.getVal(0);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInCentroidalFrame.at(6 * i + 1) = transformedLinkWrenchInCentroidalFrame.getVal(1);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInCentroidalFrame.at(6 * i + 2) = transformedLinkWrenchInCentroidalFrame.getVal(2);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInCentroidalFrame.at(6 * i + 3) = transformedLinkWrenchInCentroidalFrame.getVal(3);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInCentroidalFrame.at(6 * i + 4) = transformedLinkWrenchInCentroidalFrame.getVal(4);
+        pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInCentroidalFrame.at(6 * i + 5) = transformedLinkWrenchInCentroidalFrame.getVal(5);
 
         // Sum of wrenches in centroidal frame buffer
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(0) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(0) + transformedLinkWrenchInCentroidalFrame.getVal(0);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(1) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(1) + transformedLinkWrenchInCentroidalFrame.getVal(1);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(2) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(2) + transformedLinkWrenchInCentroidalFrame.getVal(2);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(3) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(3) + transformedLinkWrenchInCentroidalFrame.getVal(3);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(4) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(4) + transformedLinkWrenchInCentroidalFrame.getVal(4);
-        pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(5) = pImpl->sumOfWrenchesMap[wrenchType].sumOfWrenchesInCentroidalFrame.at(5) + transformedLinkWrenchInCentroidalFrame.getVal(5);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(0) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(0) + transformedLinkWrenchInCentroidalFrame.getVal(0);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(1) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(1) + transformedLinkWrenchInCentroidalFrame.getVal(1);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(2) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(2) + transformedLinkWrenchInCentroidalFrame.getVal(2);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(3) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(3) + transformedLinkWrenchInCentroidalFrame.getVal(3);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(4) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(4) + transformedLinkWrenchInCentroidalFrame.getVal(4);
+        pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(5) = pImpl->sumOfWrenchesMap[taskType][wrenchType].sumOfWrenchesInCentroidalFrame.at(5) + transformedLinkWrenchInCentroidalFrame.getVal(5);
 
 
     }
@@ -1902,8 +1944,11 @@ void HumanDynamicsEstimator::run()
     // Fill in the y vector with sensor measurements for the FT sensors
     std::vector<double> wrenchValues = pImpl->iHumanWrench->getWrenches();
 
-    // Expressed measured wrench in different frames
-    expressWrenchInDifferentFrames(wrenchValues, hde::interfaces::IHumanWrench::WrenchType::Measured, kinDynComputations);
+    // Express task 1 measured wrench in different frames
+    expressWrenchInDifferentFrames(wrenchValues,
+                                   hde::interfaces::IHumanWrench::TaskType::Task1,
+                                   hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                   kinDynComputations);
 
 
     // Get the task1 berdy sensors following its internal order
@@ -1928,12 +1973,12 @@ void HumanDynamicsEstimator::run()
                 case iDynTree::COM_ACCELEROMETER_SENSOR:
                 {
                     // Set rate of change of momentum measurements equal to the sum of measured wrench in base frame
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(0);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(1);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(2);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(3);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(4);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(5);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(0);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(1);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(2);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(3);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(4);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(5);
                 }
                 break;
                 case iDynTree::NET_EXT_WRENCH_SENSOR:
@@ -1994,32 +2039,45 @@ void HumanDynamicsEstimator::run()
                                                                                pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame,
                                                                                pImpl->task1);
 
-    // Variable to store task1 estimated wrench values
-    std::vector<double> task1EstiamtedWrenchValues;
-    task1EstiamtedWrenchValues.resize(wrenchValues.size(),0.0);
-
-    // Update wrench values with the estimates from task1
-    for (int idx = 0; idx < pImpl->wrenchSensorsLinkNames.size(); idx++) {
-
-        std::string wrenchSensorLinkName = pImpl->wrenchSensorsLinkNames.at(idx);
-        iDynTree::LinkIndex linkIndex = pImpl->berdyData.helper.model().getLinkIndex(wrenchSensorLinkName);
-
-        iDynTree::Wrench linkWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame(linkIndex);
-
-        task1EstiamtedWrenchValues.at(idx*6 + 0) = linkWrench.getVal(0);
-        task1EstiamtedWrenchValues.at(idx*6 + 1) = linkWrench.getVal(1);
-        task1EstiamtedWrenchValues.at(idx*6 + 2) = linkWrench.getVal(2);
-        task1EstiamtedWrenchValues.at(idx*6 + 3) = linkWrench.getVal(3);
-        task1EstiamtedWrenchValues.at(idx*6 + 4) = linkWrench.getVal(4);
-        task1EstiamtedWrenchValues.at(idx*6 + 5) = linkWrench.getVal(5);
+    // Check to ensure all the task 1 links net external wrenches are extracted correctly
+    if (!pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame.isConsistent(pImpl->humanModel))
+    {
+        yError() << LogPrefix << "Links net external wrench estimates extracted from dynamic variables are not consistent with the model provided";
     }
 
+    // Prepare estimates wrenches vector
+    std::vector<double> task1_estimtedWrechesInLinkFrame;
+    task1_estimtedWrechesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0.0);
+
+    for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
+
+        // Get link name
+        std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
+
+        // Get task1 estimated wrench in link frame
+        iDynTree::Wrench task1_estimatedLinkWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame(pImpl->humanModel.getLinkIndex(linkName));
+
+        task1_estimtedWrechesInLinkFrame.at(6 * i + 0) = task1_estimatedLinkWrench.getVal(0);
+        task1_estimtedWrechesInLinkFrame.at(6 * i + 1) = task1_estimatedLinkWrench.getVal(1);
+        task1_estimtedWrechesInLinkFrame.at(6 * i + 2) = task1_estimatedLinkWrench.getVal(2);
+        task1_estimtedWrechesInLinkFrame.at(6 * i + 3) = task1_estimatedLinkWrench.getVal(3);
+        task1_estimtedWrechesInLinkFrame.at(6 * i + 4) = task1_estimatedLinkWrench.getVal(4);
+        task1_estimtedWrechesInLinkFrame.at(6 * i + 5) = task1_estimatedLinkWrench.getVal(5);
+    }
+
+    // Express task 1 estimated wrenches in different frames
+    expressWrenchInDifferentFrames(task1_estimtedWrechesInLinkFrame,
+                                   hde::interfaces::IHumanWrench::TaskType::Task1,
+                                   hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                   kinDynComputations);
 
 
-    // Get simulated y1
-    iDynTree::VectorDynSize simulatedy1;
-    pImpl->berdyData.solver->getSimulatedMeasurementVector(simulatedy1, true);
-
+    // NOTE: Task 1 estimate wrenches are Task 2 measurement wrenches
+    // Express task 2 measurement wrenches in different frames
+    expressWrenchInDifferentFrames(task1_estimtedWrechesInLinkFrame,
+                                   hde::interfaces::IHumanWrench::TaskType::Task2,
+                                   hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                   kinDynComputations);
 
     // Check for rpc command status for the offset, and in case update or reset the offsets
     if (pImpl->commandPro->cmdOffsetStatus && !pImpl->commandPro->resetOffset) {
@@ -2028,23 +2086,23 @@ void HumanDynamicsEstimator::run()
             // TODO: Get the sum of wrenches from the allWrenchesMap buffer
 
             // Compute offset to be removed at the rate of change of momentum level in world frame
-            pImpl->wrenchOffset.setVal(0, rateOfChangeOfMomentumInWorldFrame.at(0) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(0));
-            pImpl->wrenchOffset.setVal(1, rateOfChangeOfMomentumInWorldFrame.at(1) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(1));
-            pImpl->wrenchOffset.setVal(2, rateOfChangeOfMomentumInWorldFrame.at(2) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(2));
-            pImpl->wrenchOffset.setVal(3, rateOfChangeOfMomentumInWorldFrame.at(3) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(3));
-            pImpl->wrenchOffset.setVal(4, rateOfChangeOfMomentumInWorldFrame.at(4) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(4));
-            pImpl->wrenchOffset.setVal(5, rateOfChangeOfMomentumInWorldFrame.at(5) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(5));
+            pImpl->wrenchOffset.setVal(0, rateOfChangeOfMomentumInWorldFrame.at(0) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(0));
+            pImpl->wrenchOffset.setVal(1, rateOfChangeOfMomentumInWorldFrame.at(1) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(1));
+            pImpl->wrenchOffset.setVal(2, rateOfChangeOfMomentumInWorldFrame.at(2) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(2));
+            pImpl->wrenchOffset.setVal(3, rateOfChangeOfMomentumInWorldFrame.at(3) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(3));
+            pImpl->wrenchOffset.setVal(4, rateOfChangeOfMomentumInWorldFrame.at(4) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(4));
+            pImpl->wrenchOffset.setVal(5, rateOfChangeOfMomentumInWorldFrame.at(5) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(5));
 
             // Compute offset to be removed at the rate of change of momentum level in centroidal frame
             iDynTree::Wrench offset;
             offset.zero();
 
-            offset.setVal(0, rateOfChangeOfMomentumInCentroidalFrame.at(0) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(0));
-            offset.setVal(1, rateOfChangeOfMomentumInCentroidalFrame.at(1) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(1));
-            offset.setVal(2, rateOfChangeOfMomentumInCentroidalFrame.at(2) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(2));
-            offset.setVal(3, rateOfChangeOfMomentumInCentroidalFrame.at(3) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(3));
-            offset.setVal(4, rateOfChangeOfMomentumInCentroidalFrame.at(4) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(4));
-            offset.setVal(5, rateOfChangeOfMomentumInCentroidalFrame.at(5) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(5));
+            offset.setVal(0, rateOfChangeOfMomentumInCentroidalFrame.at(0) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(0));
+            offset.setVal(1, rateOfChangeOfMomentumInCentroidalFrame.at(1) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(1));
+            offset.setVal(2, rateOfChangeOfMomentumInCentroidalFrame.at(2) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(2));
+            offset.setVal(3, rateOfChangeOfMomentumInCentroidalFrame.at(3) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(3));
+            offset.setVal(4, rateOfChangeOfMomentumInCentroidalFrame.at(4) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(4));
+            offset.setVal(5, rateOfChangeOfMomentumInCentroidalFrame.at(5) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(5));
 
             yInfo() << LogPrefix << "Offset in centroidal frame is " << offset.toString().c_str();
 
@@ -2059,16 +2117,6 @@ void HumanDynamicsEstimator::run()
         pImpl->wrenchOffset.zero();
 
     }
-
-    // Clear sum of wrench measurements and resize
-    pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.clear();
-    pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.resize(6, 0);
-
-    pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.clear();
-    pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.resize(6, 0);
-
-    pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.clear();
-    pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.resize(6, 0);
 
     // Set rpc command status to false
     pImpl->commandPro->cmdOffsetStatus = false;
@@ -2203,7 +2251,7 @@ void HumanDynamicsEstimator::run()
                     if (wrenchSensorLinkName.compare(sensor.id) == 0) {
                         for (int i = 0; i < 6; i++)
                         {
-                            pImpl->berdyData.buffers.measurements(found->second.offset + i) = task1EstiamtedWrenchValues.at(idx*6 + i);
+                            pImpl->berdyData.buffers.measurements(found->second.offset + i) = task1_estimtedWrechesInLinkFrame.at(idx*6 + i);
                         }
                         break;
                     }
@@ -2265,6 +2313,37 @@ void HumanDynamicsEstimator::run()
     pImpl->berdyData.helper.extractLinkNetExternalWrenchesFromDynamicVariables(estimatedDynamicVariables,
                                                                                pImpl->berdyData.estimates.linkNetExternalWrenchEstimates);
 
+    // Check to ensure all the task 1 links net external wrenches are extracted correctly
+    if (!pImpl->berdyData.estimates.linkNetExternalWrenchEstimates.isConsistent(pImpl->humanModel))
+    {
+        yError() << LogPrefix << "Links net external wrench estimates extracted from dynamic variables are not consistent with the model provided";
+    }
+
+    // Prepare estimates wrenches vector
+    std::vector<double> task2_estimtedWrechesInLinkFrame;
+    task2_estimtedWrechesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0.0);
+
+    for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
+
+        // Get link name
+        std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
+
+        // Get task1 estimated wrench in link frame
+        iDynTree::Wrench task2_estimatedLinkWrench = pImpl->berdyData.estimates.linkNetExternalWrenchEstimates(pImpl->humanModel.getLinkIndex(linkName));
+
+        task2_estimtedWrechesInLinkFrame.at(6 * i + 0) = task2_estimatedLinkWrench.getVal(0);
+        task2_estimtedWrechesInLinkFrame.at(6 * i + 1) = task2_estimatedLinkWrench.getVal(1);
+        task2_estimtedWrechesInLinkFrame.at(6 * i + 2) = task2_estimatedLinkWrench.getVal(2);
+        task2_estimtedWrechesInLinkFrame.at(6 * i + 3) = task2_estimatedLinkWrench.getVal(3);
+        task2_estimtedWrechesInLinkFrame.at(6 * i + 4) = task2_estimatedLinkWrench.getVal(4);
+        task2_estimtedWrechesInLinkFrame.at(6 * i + 5) = task2_estimatedLinkWrench.getVal(5);
+    }
+
+    // Express task 2 estimated wrenches in different frames
+    expressWrenchInDifferentFrames(task2_estimtedWrechesInLinkFrame,
+                                   hde::interfaces::IHumanWrench::TaskType::Task2,
+                                   hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                   kinDynComputations);
 
 
     // ===========================
@@ -2273,45 +2352,6 @@ void HumanDynamicsEstimator::run()
 
     {
         std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-        // Prepare estimates wrenches vector
-        std::vector<double> estimtedWrechesInLinkFrame;
-        estimtedWrechesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0.0);
-
-        for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
-
-            // Get link name
-            std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
-
-            // Get task1 estimated wrench in link frame
-            iDynTree::Wrench estimatedLinkWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame(pImpl->humanModel.getLinkIndex(linkName));
-
-            estimtedWrechesInLinkFrame.at(6 * i + 0) = estimatedLinkWrench.getVal(0);
-            estimtedWrechesInLinkFrame.at(6 * i + 1) = estimatedLinkWrench.getVal(1);
-            estimtedWrechesInLinkFrame.at(6 * i + 2) = estimatedLinkWrench.getVal(2);
-            estimtedWrechesInLinkFrame.at(6 * i + 3) = estimatedLinkWrench.getVal(3);
-            estimtedWrechesInLinkFrame.at(6 * i + 4) = estimatedLinkWrench.getVal(4);
-            estimtedWrechesInLinkFrame.at(6 * i + 5) = estimatedLinkWrench.getVal(5);
-        }
-
-        // Expressed task 1 estimated wrenches in different frames
-        expressWrenchInDifferentFrames(estimtedWrechesInLinkFrame, hde::interfaces::IHumanWrench::WrenchType::Estimated, kinDynComputations);
-
-        // Clear sum of wrench estimates
-        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInBaseFrame.clear();
-        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInBaseFrame.resize(6, 0);
-
-        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInWorldFrame.clear();
-        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInWorldFrame.resize(6, 0);
-
-        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInCentroidalFrame.clear();
-        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInCentroidalFrame.resize(6, 0);
-
-        // Check to ensure all the links net external wrenches are extracted correctly
-        if (!pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame.isConsistent(pImpl->humanModel))
-        {
-            yError() << LogPrefix << "Links net external wrench estimates extracted from dynamic variables are not consistent with the model provided";
-        }
 
         // Expose the data as IAnalogSensor
         // ================================
@@ -2356,6 +2396,52 @@ void HumanDynamicsEstimator::run()
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 11] = linkNetExternalWrench.getAngularVec3()(2);
 
         }
+    }
+
+
+    {
+        // Zero sum of wrenches
+
+        // Zero task 1 sum of wrench measurements
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.resize(6, 0);
+
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.resize(6, 0);
+
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.resize(6, 0);
+
+        // Zero task 1 sum of wrench estimates
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInBaseFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInBaseFrame.resize(6, 0);
+
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInWorldFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInWorldFrame.resize(6, 0);
+
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInCentroidalFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInCentroidalFrame.resize(6, 0);
+
+        // Zero task 2 sum of wrench measurements
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.resize(6, 0);
+
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.resize(6, 0);
+
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.resize(6, 0);
+
+        // Zero task 2 sum of wrench estimates
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInBaseFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInBaseFrame.resize(6, 0);
+
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInWorldFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInWorldFrame.resize(6, 0);
+
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInCentroidalFrame.clear();
+        pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Estimated].sumOfWrenchesInCentroidalFrame.resize(6, 0);
+
     }
 
 }
@@ -2617,26 +2703,27 @@ std::vector<double> HumanDynamicsEstimator::getWrenches() const
     return wrenchValues;
 }
 
-std::vector<double> HumanDynamicsEstimator::getWrenchesInFrame(hde::interfaces::IHumanWrench::WrenchType wrenchType,
+std::vector<double> HumanDynamicsEstimator::getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType taskType,
+                                                               hde::interfaces::IHumanWrench::WrenchType wrenchType,
                                                                hde::interfaces::IHumanWrench::WrenchReferenceFrame wrenchReferenceFrame) const
 {
     std::lock_guard<std::mutex> lock(pImpl->mutex);
 
     if (wrenchReferenceFrame == hde::interfaces::IHumanWrench::WrenchReferenceFrame::Link)
     {
-        return pImpl->allWrenchesMap[wrenchType].wrenchesInLinkFrame;
+        return pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInLinkFrame;
     }
     else if (wrenchReferenceFrame == hde::interfaces::IHumanWrench::WrenchReferenceFrame::Centroidal)
     {
-        return pImpl->allWrenchesMap[wrenchType].wrenchesInCentroidalFrame;
+        return pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInCentroidalFrame;
     }
     else if (wrenchReferenceFrame == hde::interfaces::IHumanWrench::WrenchReferenceFrame::Base)
     {
-        return pImpl->allWrenchesMap[wrenchType].wrenchesInBaseFrame;
+        return pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInBaseFrame;
     }
     else if (wrenchReferenceFrame == hde::interfaces::IHumanWrench::WrenchReferenceFrame::World)
     {
-        return pImpl->allWrenchesMap[wrenchType].wrenchesInWorldFrame;
+        return pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInWorldFrame;
     }
 }
 

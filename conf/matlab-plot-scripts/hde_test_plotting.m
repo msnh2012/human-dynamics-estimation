@@ -10,67 +10,67 @@ lineWidth = 2;
 load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estimation/conf/xml/testData/matLogFile.mat');
 
 %% Measurement wrenches in link frame
-LeftFootMeasuredWrenchInLinkFrame  = data.wrenchMeasurementsInLinkFrame(1:6,:)';
-RightFootMeasuredWrenchInLinkFrame = data.wrenchMeasurementsInLinkFrame(7:12,:)';
-LeftHandMeasuredWrenchInLinkFrame  = data.wrenchMeasurementsInLinkFrame(13:18,:)';
-RightHandMeasuredWrenchInLinkFrame = data.wrenchMeasurementsInLinkFrame(19:24,:)';
+LeftFootMeasuredWrenchInLinkFrame  = data.task1_wrenchMeasurementsInLinkFrame(1:6,:)';
+RightFootMeasuredWrenchInLinkFrame = data.task1_wrenchMeasurementsInLinkFrame(7:12,:)';
+LeftHandMeasuredWrenchInLinkFrame  = data.task1_wrenchMeasurementsInLinkFrame(13:18,:)';
+RightHandMeasuredWrenchInLinkFrame = data.task1_wrenchMeasurementsInLinkFrame(19:24,:)';
 
 %% Measurement wrenches in base frame
-LeftFootMeasuredWrenchInBaseFrame  = data.wrenchMeasurementsInBaseFrame(1:6,:)';
-RightFootMeasuredWrenchInBaseFrame = data.wrenchMeasurementsInBaseFrame(7:12,:)';
-LeftHandMeasuredWrenchInBaseFrame  = data.wrenchMeasurementsInBaseFrame(13:18,:)';
-RightHandMeasuredWrenchInBaseFrame = data.wrenchMeasurementsInBaseFrame(19:24,:)';
+LeftFootMeasuredWrenchInBaseFrame  = data.task1_wrenchMeasurementsInBaseFrame(1:6,:)';
+RightFootMeasuredWrenchInBaseFrame = data.task1_wrenchMeasurementsInBaseFrame(7:12,:)';
+LeftHandMeasuredWrenchInBaseFrame  = data.task1_wrenchMeasurementsInBaseFrame(13:18,:)';
+RightHandMeasuredWrenchInBaseFrame = data.task1_wrenchMeasurementsInBaseFrame(19:24,:)';
 
 sumWrenchMeasurementsInBaseFrame = LeftFootMeasuredWrenchInBaseFrame + RightFootMeasuredWrenchInBaseFrame +...
                                    LeftHandMeasuredWrenchInBaseFrame + RightHandMeasuredWrenchInBaseFrame;
 
 %% Measurement wrenches in world frame
-LeftFootMeasuredWrenchInWorldFrame  = data.wrenchMeasurementsInWorldFrame(1:6,:)';
-RightFootMeasuredWrenchInWorldFrame = data.wrenchMeasurementsInWorldFrame(7:12,:)';
-LeftHandMeasuredWrenchInWorldFrame  = data.wrenchMeasurementsInWorldFrame(13:18,:)';
-RightHandMeasuredWrenchInWorldFrame = data.wrenchMeasurementsInWorldFrame(19:24,:)';
+LeftFootMeasuredWrenchInWorldFrame  = data.task1_wrenchMeasurementsInWorldFrame(1:6,:)';
+RightFootMeasuredWrenchInWorldFrame = data.task1_wrenchMeasurementsInWorldFrame(7:12,:)';
+LeftHandMeasuredWrenchInWorldFrame  = data.task1_wrenchMeasurementsInWorldFrame(13:18,:)';
+RightHandMeasuredWrenchInWorldFrame = data.task1_wrenchMeasurementsInWorldFrame(19:24,:)';
 
 sumWrenchMeasurementsInWorldFrame = LeftFootMeasuredWrenchInWorldFrame + RightFootMeasuredWrenchInWorldFrame +...
                                     LeftHandMeasuredWrenchInWorldFrame + RightHandMeasuredWrenchInWorldFrame;
 
 %% Measurement wrenches in centroidal frame
-LeftFootMeasuredWrenchInCentroidalFrame  = data.wrenchMeasurementsInCentroidalFrame(1:6,:)';
-RightFootMeasuredWrenchInCentroidalFrame = data.wrenchMeasurementsInCentroidalFrame(7:12,:)';
-LeftHandMeasuredWrenchInCentroidalFrame  = data.wrenchMeasurementsInCentroidalFrame(13:18,:)';
-RightHandMeasuredWrenchInCentroidalFrame = data.wrenchMeasurementsInCentroidalFrame(19:24,:)';
+LeftFootMeasuredWrenchInCentroidalFrame  = data.task1_wrenchMeasurementsInCentroidalFrame(1:6,:)';
+RightFootMeasuredWrenchInCentroidalFrame = data.task1_wrenchMeasurementsInCentroidalFrame(7:12,:)';
+LeftHandMeasuredWrenchInCentroidalFrame  = data.task1_wrenchMeasurementsInCentroidalFrame(13:18,:)';
+RightHandMeasuredWrenchInCentroidalFrame = data.task1_wrenchMeasurementsInCentroidalFrame(19:24,:)';
 
 sumWrenchMeasurementsInCentroidalFrame = LeftFootMeasuredWrenchInCentroidalFrame + RightFootMeasuredWrenchInCentroidalFrame +...
                                          LeftHandMeasuredWrenchInCentroidalFrame + RightHandMeasuredWrenchInCentroidalFrame;
 
 %% Estimate wrenches in link frame
-LeftFootEstimatedWrenchInLinkFrame  = data.wrenchEstimatesInLinkFrame(1:6,:)';
-RightFootEstimatedWrenchInLinkFrame = data.wrenchEstimatesInLinkFrame(7:12,:)';
-LeftHandEstimatedWrenchInLinkFrame  = data.wrenchEstimatesInLinkFrame(13:18,:)';
-RightHandEstimatedWrenchInLinkFrame = data.wrenchEstimatesInLinkFrame(19:24,:)';
+LeftFootEstimatedWrenchInLinkFrame  = data.task1_wrenchEstimatesInLinkFrame(1:6,:)';
+RightFootEstimatedWrenchInLinkFrame = data.task1_wrenchEstimatesInLinkFrame(7:12,:)';
+LeftHandEstimatedWrenchInLinkFrame  = data.task1_wrenchEstimatesInLinkFrame(13:18,:)';
+RightHandEstimatedWrenchInLinkFrame = data.task1_wrenchEstimatesInLinkFrame(19:24,:)';
 
 %% Estimate wrenches in base frame
-LeftFootEstimatedWrenchInBaseFrame  = data.wrenchEstimatesInBaseFrame(1:6,:)';
-RightFootEstimatedWrenchInBaseFrame = data.wrenchEstimatesInBaseFrame(7:12,:)';
-LeftHandEstimatedWrenchInBaseFrame  = data.wrenchEstimatesInBaseFrame(13:18,:)';
-RightHandEstimatedWrenchInBaseFrame = data.wrenchEstimatesInBaseFrame(19:24,:)';
+LeftFootEstimatedWrenchInBaseFrame  = data.task1_wrenchEstimatesInBaseFrame(1:6,:)';
+RightFootEstimatedWrenchInBaseFrame = data.task1_wrenchEstimatesInBaseFrame(7:12,:)';
+LeftHandEstimatedWrenchInBaseFrame  = data.task1_wrenchEstimatesInBaseFrame(13:18,:)';
+RightHandEstimatedWrenchInBaseFrame = data.task1_wrenchEstimatesInBaseFrame(19:24,:)';
 
 sumWrenchEstimatesInBaseFrame = LeftFootEstimatedWrenchInBaseFrame + RightFootEstimatedWrenchInBaseFrame +...
                                 LeftHandEstimatedWrenchInBaseFrame + RightHandEstimatedWrenchInBaseFrame;
 
 %% Estimate wrenches in world frame
-LeftFootEstimatedWrenchInWorldFrame  = data.wrenchEstimatesInWorldFrame(1:6,:)';
-RightFootEstimatedWrenchInWorldFrame = data.wrenchEstimatesInWorldFrame(7:12,:)';
-LeftHandEstimatedWrenchInWorldFrame  = data.wrenchEstimatesInWorldFrame(13:18,:)';
-RightHandEstimatedWrenchInWorldFrame = data.wrenchEstimatesInWorldFrame(19:24,:)';
+LeftFootEstimatedWrenchInWorldFrame  = data.task1_wrenchEstimatesInWorldFrame(1:6,:)';
+RightFootEstimatedWrenchInWorldFrame = data.task1_wrenchEstimatesInWorldFrame(7:12,:)';
+LeftHandEstimatedWrenchInWorldFrame  = data.task1_wrenchEstimatesInWorldFrame(13:18,:)';
+RightHandEstimatedWrenchInWorldFrame = data.task1_wrenchEstimatesInWorldFrame(19:24,:)';
 
 sumWrenchEstimatesInWorldFrame = LeftFootEstimatedWrenchInWorldFrame + RightFootEstimatedWrenchInWorldFrame +...
                                  LeftHandEstimatedWrenchInWorldFrame + RightHandEstimatedWrenchInWorldFrame;
 
 %% Estimate wrenches in centroidal frame
-LeftFootEstimatedWrenchInCentroidalFrame  = data.wrenchEstimatesInCentroidalFrame(1:6,:)';
-RightFootEstimatedWrenchInCentroidalFrame = data.wrenchEstimatesInCentroidalFrame(7:12,:)';
-LeftHandEstimatedWrenchInCentroidalFrame  = data.wrenchEstimatesInCentroidalFrame(13:18,:)';
-RightHandEstimatedWrenchInCentroidalFrame = data.wrenchEstimatesInCentroidalFrame(19:24,:)';
+LeftFootEstimatedWrenchInCentroidalFrame  = data.task1_wrenchEstimatesInCentroidalFrame(1:6,:)';
+RightFootEstimatedWrenchInCentroidalFrame = data.task1_wrenchEstimatesInCentroidalFrame(7:12,:)';
+LeftHandEstimatedWrenchInCentroidalFrame  = data.task1_wrenchEstimatesInCentroidalFrame(13:18,:)';
+RightHandEstimatedWrenchInCentroidalFrame = data.task1_wrenchEstimatesInCentroidalFrame(19:24,:)';
 
 sumWrenchEstimatesInCentroidalFrame = LeftFootEstimatedWrenchInCentroidalFrame + RightFootEstimatedWrenchInCentroidalFrame +...
                                       LeftHandEstimatedWrenchInCentroidalFrame + RightHandEstimatedWrenchInCentroidalFrame;
@@ -92,9 +92,9 @@ for i = 1:numberOfWrenchSources
     for s = 1:6
         
         subplot(2,3,s);
-        plot(data.wrenchMeasurementsInBaseFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth);
+        plot(data.task1_wrenchMeasurementsInBaseFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth);
         hold on;
-        plot(data.wrenchEstimatesInBaseFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth, 'LineStyle', '--');
+        plot(data.task1_wrenchEstimatesInBaseFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth, 'LineStyle', '--');
         hold on;
         xlabel('Samples', 'FontSize', fontSize);
         ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);

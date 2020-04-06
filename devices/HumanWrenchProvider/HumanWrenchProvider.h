@@ -70,7 +70,7 @@ public:
     std::vector<std::string> getWrenchSourceNames() const override;
     size_t getNumberOfWrenchSources() const override;
     std::vector<double> getWrenches() const override;
-    std::vector<double> getWrenchesInFrame(WrenchType, WrenchReferenceFrame) const {return std::vector<double>();};
+    std::vector<double> getWrenchesInFrame(TaskType, WrenchType, WrenchReferenceFrame) const {return std::vector<double>();};
 };
 
 #endif // HDE_DEVICES_HUMANWRENCHPROVIDER
