@@ -277,6 +277,9 @@ public:
     std::unique_ptr<iDynTree::KinDynComputations> kinDynComputations;
     iDynTree::Vector3 worldGravity;
 
+    // Gravitational wrench vector
+    iDynTree::SpatialForceVector gravitationalWrenchInCentroidal;
+
     // get input data
     bool getJointAnglesFromInputData(iDynTree::VectorDynSize& jointAngles);
     bool getLinkQuantitiesFromInputData(std::unordered_map<std::string, iDynTree::Transform>& t,
@@ -512,6 +515,10 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
     // Set gravity
     pImpl->worldGravity.zero();
     pImpl->worldGravity(2) = -9.81;
+
+    // Set gravitational wrench vector
+    pImpl->gravitationalWrenchInCentroidal.zero();
+    pImpl->gravitationalWrenchInCentroidal.setVal(2, pImpl->humanModel.getTotalMass() * pImpl->worldGravity(2));
 
     // Get accelerometer sensor measurements option parameters
     // Default option set to "none" for zero measurement values
@@ -1509,6 +1516,34 @@ void HumanStateProvider::run()
     // Call to rate of change of momentum in base computation
     computeROCMInBase();
 
+
+    // Expose rate of change of momentum for IHumanState interface
+    {
+
+        // Set centroidal to world transform
+        iDynTree::Transform world_H_centroidal = iDynTree::Transform::Identity();
+        world_H_centroidal.setPosition(pImpl->kinDynComputations->getCenterOfMassPosition());
+
+        // Compute base_H_centroidal transform
+        iDynTree::Transform base_H_centroidal = pImpl->baseTransformSolution.inverse() * world_H_centroidal;
+
+        // Compute gravitational wrench expressed in base
+        iDynTree::SpatialForceVector gravitationalWrenchInBase = iDynTree::SpatialForceVector::Zero();
+        gravitationalWrenchInBase = base_H_centroidal * pImpl->gravitationalWrenchInCentroidal;
+
+        // TODO: Compute the bias term with centroidal momentum
+
+        std::lock_guard<std::mutex> lock(pImpl->mutex);
+
+                    pImpl->rateOfChangeOfMomentumInBaseFrame = {pImpl->rateOfChangeOfMomentumInBaseFrame[0] - gravitationalWrenchInBase.getVal(0),
+                                                                pImpl->rateOfChangeOfMomentumInBaseFrame[1] - gravitationalWrenchInBase.getVal(1),
+                                                                pImpl->rateOfChangeOfMomentumInBaseFrame[2] - gravitationalWrenchInBase.getVal(2),
+                                                                pImpl->rateOfChangeOfMomentumInBaseFrame[3] - gravitationalWrenchInBase.getVal(3),
+                                                                pImpl->rateOfChangeOfMomentumInBaseFrame[4] - gravitationalWrenchInBase.getVal(4),
+                                                                pImpl->rateOfChangeOfMomentumInBaseFrame[5] - gravitationalWrenchInBase.getVal(5)};
+
+    }
+
     // CoM position and velocity
     std::array<double, 3> CoM_position, CoM_velocity;
     CoM_position = {pImpl->kinDynComputations->getCenterOfMassPosition().getVal(0),
@@ -1600,77 +1635,6 @@ void HumanStateProvider::run()
 
 
             }
-
-        }
-
-        // Compute rate of change of momentum in centroidal frame
-        iDynTree::SpatialAcc rateOfChangeOfMomentumInCentroidalFrame;
-        rateOfChangeOfMomentumInCentroidalFrame.zero();
-
-        // Set the linear part of rate of change of momentum in centroidal frame
-        rateOfChangeOfMomentumInCentroidalFrame.setVal(0, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[0] - pImpl->worldGravity(0)));
-        rateOfChangeOfMomentumInCentroidalFrame.setVal(1, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[1] - pImpl->worldGravity(1)));
-        rateOfChangeOfMomentumInCentroidalFrame.setVal(2, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[2] - pImpl->worldGravity(2)));
-
-
-        // Set the angular part of rate of change of momentum in centroidal frame
-        rateOfChangeOfMomentumInCentroidalFrame.setVal(3, 0.0);
-        rateOfChangeOfMomentumInCentroidalFrame.setVal(4, 0.0);
-        rateOfChangeOfMomentumInCentroidalFrame.setVal(5, 0.0);
-
-        // Compute centroidal frame (G[I]) to inertial frame transform
-        iDynTree::Transform world_H_centroidal = iDynTree::Transform::Identity();
-        iDynTree::Position comPosition(CoM_position[0], CoM_position[1], CoM_position[2]);
-        world_H_centroidal.setPosition(comPosition);
-
-        // Compute centroidal frame to base frame transform
-        iDynTree::Transform base_H_centroidal = iDynTree::Transform::Identity();
-        base_H_centroidal = pImpl->baseTransformSolution.inverse() * world_H_centroidal;
-
-        // Transform rate of change of momentum to base frame from centroidal frame
-        iDynTree::SpatialAcc rateOfChangeOfMomentumInWorldFrame;
-        rateOfChangeOfMomentumInWorldFrame.zero();
-
-        Eigen::Matrix<double,6,1> rateOfChangeOfMomentumInWorldEigen = iDynTree::toEigen(world_H_centroidal.asAdjointTransformWrench()) *
-                                                                       iDynTree::toEigen(rateOfChangeOfMomentumInCentroidalFrame.asVector());
-
-        iDynTree::fromEigen(rateOfChangeOfMomentumInWorldFrame, rateOfChangeOfMomentumInWorldEigen);
-
-
-        // Transform rate of change of momentum to base frame from centroidal frame
-        iDynTree::SpatialAcc rateOfChangeOfMomentumInBaseFrame;
-        rateOfChangeOfMomentumInBaseFrame.zero();
-
-        Eigen::Matrix<double,6,1> rateOfChangeOfMomentumInBaseEigen = iDynTree::toEigen(base_H_centroidal.asAdjointTransformWrench()) *
-                                                                      iDynTree::toEigen(rateOfChangeOfMomentumInCentroidalFrame.asVector());
-
-        iDynTree::fromEigen(rateOfChangeOfMomentumInBaseFrame, rateOfChangeOfMomentumInBaseEigen);
-
-        // Expose rate of change of momentum for IHumanState interface
-        {
-
-            std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-            pImpl->rateOfChangeOfMomentumInCentroidalFrame = {rateOfChangeOfMomentumInCentroidalFrame.getVal(0),
-                                                              rateOfChangeOfMomentumInCentroidalFrame.getVal(1),
-                                                              rateOfChangeOfMomentumInCentroidalFrame.getVal(2),
-                                                              rateOfChangeOfMomentumInCentroidalFrame.getVal(3),
-                                                              rateOfChangeOfMomentumInCentroidalFrame.getVal(4),
-                                                              rateOfChangeOfMomentumInCentroidalFrame.getVal(5)};
-
-            pImpl->rateOfChangeOfMomentumInBaseFrame = {rateOfChangeOfMomentumInBaseFrame.getVal(0),
-                                                        rateOfChangeOfMomentumInBaseFrame.getVal(1),
-                                                        rateOfChangeOfMomentumInBaseFrame.getVal(2),
-                                                        rateOfChangeOfMomentumInBaseFrame.getVal(3),
-                                                        rateOfChangeOfMomentumInBaseFrame.getVal(4),
-                                                        rateOfChangeOfMomentumInBaseFrame.getVal(5)};
-
-            pImpl->rateOfChangeOfMomentumInWorldFrame = {rateOfChangeOfMomentumInWorldFrame.getVal(0),
-                                                         rateOfChangeOfMomentumInWorldFrame.getVal(1),
-                                                         rateOfChangeOfMomentumInWorldFrame.getVal(2),
-                                                         rateOfChangeOfMomentumInWorldFrame.getVal(3),
-                                                         rateOfChangeOfMomentumInWorldFrame.getVal(4),
-                                                         rateOfChangeOfMomentumInWorldFrame.getVal(5)};
 
         }
 
