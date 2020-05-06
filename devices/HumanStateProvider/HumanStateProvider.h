@@ -38,6 +38,8 @@ public:
     HumanStateProvider();
     ~HumanStateProvider() override;
 
+    void computeCentroidalMomentum();
+
     // DeviceDriver interface
     bool open(yarp::os::Searchable& config) override;
     bool close() override;

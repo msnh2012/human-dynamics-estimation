@@ -214,6 +214,9 @@ public:
     bool useFBAccelerationFromWearableData;
     HumanSensorData humanSensorData;
 
+    // Momentum variables
+    std::array<double, 6> centroidalMomentum;
+
     // Rate of change of momentum buffers
     std::array<double, 6> rateOfChangeOfMomentumInCentroidalFrame;
     std::array<double, 6> rateOfChangeOfMomentumInBaseFrame;
@@ -1037,6 +1040,9 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
 
     }
 
+    // Initialize momentum buffers to zero
+    pImpl->centroidalMomentum = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
     // Initialize rate of change of momentum buffers to zero
     pImpl->rateOfChangeOfMomentumInCentroidalFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     pImpl->rateOfChangeOfMomentumInBaseFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -1303,6 +1309,47 @@ bool HumanStateProvider::close()
     return true;
 }
 
+void HumanStateProvider::computeCentroidalMomentum()
+{
+    iDynTree::SpatialForceVector centroidalMomentum;
+
+    // Set centroidal to world transform
+    iDynTree::Transform world_H_centroidal = iDynTree::Transform::Identity();
+    world_H_centroidal.setPosition(pImpl->kinDynComputations->getCenterOfMassPosition());
+
+    // Iterate over all links and compute link momentum
+    for (size_t linkIdx = 0; linkIdx < pImpl->humanModel.getNrOfLinks(); linkIdx++) {
+
+        std::string linkName = pImpl->humanModel.getLinkName(linkIdx);
+
+        // compute link to world transform
+        iDynTree::Transform world_H_link = pImpl->kinDynComputations->getWorldTransform(linkIdx);
+
+        // Compute link to centroidal transform
+        iDynTree::Transform centroidal_H_link = world_H_centroidal.inverse() * world_H_link;
+
+        // Compute link velocity expressed in the body frame
+        iDynTree::Twist linkVeclocityExpressedInWorld = pImpl->linkVelocities[linkName];
+        iDynTree::Twist linkVelocityExpressedInBody = world_H_link.inverse() * linkVeclocityExpressedInWorld;
+
+        // Compute link momentum
+        iDynTree::SpatialForceVector linkMomentum = centroidal_H_link * pImpl->linkSpatialInertia[linkName] * linkVelocityExpressedInBody;
+
+        // Update centroidal momentum
+        centroidalMomentum = centroidalMomentum + linkMomentum;
+
+    }
+
+    // Set centroidal momentum to data buffer
+    pImpl->centroidalMomentum[0] = centroidalMomentum.getVal(0);
+    pImpl->centroidalMomentum[1] = centroidalMomentum.getVal(1);
+    pImpl->centroidalMomentum[2] = centroidalMomentum.getVal(2);
+    pImpl->centroidalMomentum[3] = centroidalMomentum.getVal(3);
+    pImpl->centroidalMomentum[4] = centroidalMomentum.getVal(4);
+    pImpl->centroidalMomentum[5] = centroidalMomentum.getVal(5);
+
+}
+
 void HumanStateProvider::run()
 {
     // Get the link transformations from input data
@@ -1408,6 +1455,9 @@ void HumanStateProvider::run()
                                              pImpl->baseVelocitySolution,
                                              solvedJointVelocities,
                                              pImpl->worldGravity);
+
+    // Call to compute centroidal momentum
+    computeCentroidalMomentum();
 
     // CoM position and velocity
     std::array<double, 3> CoM_position, CoM_velocity;
