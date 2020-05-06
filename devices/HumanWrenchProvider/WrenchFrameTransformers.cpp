@@ -19,9 +19,6 @@ bool FixedFrameWrenchTransformer::transformWrenchFrame(const iDynTree::Wrench in
     Eigen::Matrix<double,6,1> transformedWrenchEigen = iDynTree::toEigen(transform.asAdjointTransformWrench())
                                                        * iDynTree::toEigen(inputWrench.asVector());
     iDynTree::fromEigen(transformedWrench, transformedWrenchEigen);
-    // Set transformed wrench to weight
-    transformedWrench.zero();
-    transformedWrench.setVal(2, (model.getTotalMass()/2)*9.81);
     return true;
 }
 
