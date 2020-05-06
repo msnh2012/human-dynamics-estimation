@@ -185,6 +185,9 @@ public:
     std::unordered_map<std::string, iDynTree::Twist> linkVelocities;
     std::unordered_map<std::string, iDynTree::SpatialAcc> linkAccelerations;
 
+    // Link Spatial Inertia container
+    std::unordered_map<std::string, iDynTree::SpatialInertia> linkSpatialInertia;
+
     // Accelerometer fbAcc and Orientation wearable  data buffers
     std::unordered_map<std::string, iDynTree::AngAcceleration> fbAccelerationMatrices;
     std::unordered_map<std::string, iDynTree::Rotation> sensorOrientationMatrices;
@@ -956,8 +959,7 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
         yError() << LogPrefix << "Failed to load model" << urdfFilePath;
         return false;
     }
-
-    // ====================
+        // ====================
     // INITIALIZE VARIABLES
     // ====================
 
@@ -969,6 +971,40 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
         std::unique_ptr<iDynTree::KinDynComputations>(new iDynTree::KinDynComputations());
     pImpl->kinDynComputations->loadRobotModel(modelLoader.model());
     pImpl->kinDynComputations->setFloatingBase(pImpl->floatingBaseFrame.model);
+
+    // Get link spatial inertias
+    iDynTree::VectorDynSize linksInertialParametersVec;
+    pImpl->humanModel.getInertialParameters(linksInertialParametersVec);
+    for(size_t linkIdx = 0; linkIdx < pImpl->humanModel.getNrOfLinks(); linkIdx++) {
+
+        std::string linkName = pImpl->humanModel.getLinkName(linkIdx);
+
+        // Get link mass
+        double linkMass = linksInertialParametersVec.getVal(10 * linkIdx + 0);
+
+        // Get link center of mass with respect to the link frame
+        iDynTree::PositionRaw linkComPosition;
+        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 1), 0);
+        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 2), 1);
+        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 3), 2);
+
+        // Get link 6D rotation inertia
+        iDynTree::RotationalInertiaRaw link6DRotationalInertia;
+        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 4), 0);
+        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 5), 1);
+        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 6), 2);
+        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 7), 3);
+        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 8), 4);
+        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 9), 5);
+
+        // Initialize link spatial inertia variable
+        iDynTree::SpatialInertia linkSpatialInertia(linkMass, linkComPosition, link6DRotationalInertia);
+
+        // Set link spatial inertia to the unordered map
+        pImpl->linkSpatialInertia[linkName] = linkSpatialInertia;
+
+    }
+
 
     // ================================
     // INITIALIZE ACCELEROMETER SENSORS
@@ -1366,6 +1402,7 @@ void HumanStateProvider::run()
         solvedJointVelocities.setVal(j, pImpl->solution.jointVelocities.at(j));
     }
 
+    // Set kindyn robot state
     pImpl->kinDynComputations->setRobotState(pImpl->baseTransformSolution,
                                              solvedJointPositions,
                                              pImpl->baseVelocitySolution,
