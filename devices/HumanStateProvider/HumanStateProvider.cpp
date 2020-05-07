@@ -18,6 +18,7 @@
 #include <iDynTree/Sensors/AccelerometerSensor.h>
 #include <iDynTree/Core/EigenHelpers.h>
 #include <iDynTree/Model/Traversal.h>
+#include <iDynTree/Core/TransformDerivative.h>
 
 
 #include <yarp/os/LogStream.h>
@@ -216,6 +217,9 @@ public:
 
     // Momentum variables
     std::array<double, 6> centroidalMomentum;
+
+    // Computed Rate of change of momentum buffers
+    std::array<double, 6> computedRateOfChangeOfMomentumInBase;
 
     // Rate of change of momentum buffers
     std::array<double, 6> rateOfChangeOfMomentumInCentroidalFrame;
@@ -1051,6 +1055,7 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
     pImpl->centroidalMomentum = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     // Initialize rate of change of momentum buffers to zero
+    pImpl->computedRateOfChangeOfMomentumInBase = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     pImpl->rateOfChangeOfMomentumInCentroidalFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     pImpl->rateOfChangeOfMomentumInBaseFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     pImpl->rateOfChangeOfMomentumInWorldFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -1395,13 +1400,13 @@ void HumanStateProvider::computeROCMInBase()
         rocmInBase = rocmInBase + linkROCMInBase_acc_term + linkROCMInBase_bias_term;
     }
 
-    // Update rate of change of momentum in base buffer
-    pImpl->rateOfChangeOfMomentumInBaseFrame[0] = rocmInBase.getVal(0);
-    pImpl->rateOfChangeOfMomentumInBaseFrame[1] = rocmInBase.getVal(1);
-    pImpl->rateOfChangeOfMomentumInBaseFrame[2] = rocmInBase.getVal(2);
-    pImpl->rateOfChangeOfMomentumInBaseFrame[3] = rocmInBase.getVal(3);
-    pImpl->rateOfChangeOfMomentumInBaseFrame[4] = rocmInBase.getVal(4);
-    pImpl->rateOfChangeOfMomentumInBaseFrame[5] = rocmInBase.getVal(5);
+    // Update computed rate of change of momentum in base buffer
+    pImpl->computedRateOfChangeOfMomentumInBase[0] = rocmInBase.getVal(0);
+    pImpl->computedRateOfChangeOfMomentumInBase[1] = rocmInBase.getVal(1);
+    pImpl->computedRateOfChangeOfMomentumInBase[2] = rocmInBase.getVal(2);
+    pImpl->computedRateOfChangeOfMomentumInBase[3] = rocmInBase.getVal(3);
+    pImpl->computedRateOfChangeOfMomentumInBase[4] = rocmInBase.getVal(4);
+    pImpl->computedRateOfChangeOfMomentumInBase[5] = rocmInBase.getVal(5);
 }
 
 void HumanStateProvider::run()
@@ -1517,7 +1522,8 @@ void HumanStateProvider::run()
     computeROCMInBase();
 
 
-    // Expose rate of change of momentum for IHumanState interface
+    // Compute rate of change of momentum in base that is considered as the new measurement input for centroidal dynamics
+    // Expose it through IHumanState interface
     {
 
         // Set centroidal to world transform
@@ -1531,16 +1537,40 @@ void HumanStateProvider::run()
         iDynTree::SpatialForceVector gravitationalWrenchInBase = iDynTree::SpatialForceVector::Zero();
         gravitationalWrenchInBase = base_H_centroidal * pImpl->gravitationalWrenchInCentroidal;
 
-        // TODO: Compute the bias term with centroidal momentum
+        // Compute base_dotH_centroidal transform derivative
+
+        // Compute position derivative (comVel - baseLinVel)
+        iDynTree::Vector3 posDerivative;
+
+        posDerivative.setVal(0, pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(0) - pImpl->baseVelocitySolution.getLinearVec3().getVal(0));
+        posDerivative.setVal(0, pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(1) - pImpl->baseVelocitySolution.getLinearVec3().getVal(1));
+        posDerivative.setVal(0, pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(2) - pImpl->baseVelocitySolution.getLinearVec3().getVal(2));
+
+        // Compute rotation derivative ( base_dotR_world = ( Skew(baseAngVel) * world_R_base)' )
+        iDynTree::Matrix3x3 rotDerivative;
+        iDynTree::toEigen(rotDerivative) = iDynTree::toEigen(pImpl->baseTransformSolution.getRotation()).transpose() *
+                                           iDynTree::skew( iDynTree::toEigen( pImpl->baseVelocitySolution.getAngularVec3() ) ).transpose();
+
+        iDynTree::TransformDerivative base_dotH_centroidal(rotDerivative, posDerivative);
+
+        // Compute the bias term with centroidal momentum
+        iDynTree::SpatialMomentum centroidalMom;
+        for (size_t i = 0; i < pImpl->centroidalMomentum.size(); i++) {
+            centroidalMom.setVal(i, pImpl->centroidalMomentum[i]);
+        }
+
+        // Compute base_dotX*_centroidal * centroidal momentum
+        iDynTree::SpatialForceVector biasTermFromCentroidalMomentum = base_dotH_centroidal.transform(base_H_centroidal, centroidalMom);
 
         std::lock_guard<std::mutex> lock(pImpl->mutex);
 
-                    pImpl->rateOfChangeOfMomentumInBaseFrame = {pImpl->rateOfChangeOfMomentumInBaseFrame[0] - gravitationalWrenchInBase.getVal(0),
-                                                                pImpl->rateOfChangeOfMomentumInBaseFrame[1] - gravitationalWrenchInBase.getVal(1),
-                                                                pImpl->rateOfChangeOfMomentumInBaseFrame[2] - gravitationalWrenchInBase.getVal(2),
-                                                                pImpl->rateOfChangeOfMomentumInBaseFrame[3] - gravitationalWrenchInBase.getVal(3),
-                                                                pImpl->rateOfChangeOfMomentumInBaseFrame[4] - gravitationalWrenchInBase.getVal(4),
-                                                                pImpl->rateOfChangeOfMomentumInBaseFrame[5] - gravitationalWrenchInBase.getVal(5)};
+        // Compute and set the rate of change of momentum expressed in base to be used as the new measurement input for centroidal dynamics expressed in base
+        pImpl->rateOfChangeOfMomentumInBaseFrame = {pImpl->computedRateOfChangeOfMomentumInBase[0] - biasTermFromCentroidalMomentum.getVal(0) - gravitationalWrenchInBase.getVal(0),
+                                                    pImpl->computedRateOfChangeOfMomentumInBase[1] - biasTermFromCentroidalMomentum.getVal(1) - gravitationalWrenchInBase.getVal(1),
+                                                    pImpl->computedRateOfChangeOfMomentumInBase[2] - biasTermFromCentroidalMomentum.getVal(2) - gravitationalWrenchInBase.getVal(2),
+                                                    pImpl->computedRateOfChangeOfMomentumInBase[3] - biasTermFromCentroidalMomentum.getVal(3) - gravitationalWrenchInBase.getVal(3),
+                                                    pImpl->computedRateOfChangeOfMomentumInBase[4] - biasTermFromCentroidalMomentum.getVal(4) - gravitationalWrenchInBase.getVal(4),
+                                                    pImpl->computedRateOfChangeOfMomentumInBase[5] - biasTermFromCentroidalMomentum.getVal(5) - gravitationalWrenchInBase.getVal(5)};
 
     }
 
