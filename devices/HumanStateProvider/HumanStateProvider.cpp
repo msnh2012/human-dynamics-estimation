@@ -520,10 +520,6 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
     pImpl->worldGravity.zero();
     pImpl->worldGravity(2) = -9.81;
 
-    // Set gravitational wrench vector
-    pImpl->gravitationalWrenchInCentroidal.zero();
-    pImpl->gravitationalWrenchInCentroidal.setVal(2, pImpl->humanModel.getTotalMass() * pImpl->worldGravity(2));
-
     // Get accelerometer sensor measurements option parameters
     // Default option set to "none" for zero measurement values
     pImpl->humanSensorData.accelerometerSensorMeasurementsOption = config.check("accelerometerSensorMeasurementsOption",yarp::os::Value("none")).asString();
@@ -973,12 +969,18 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
         yError() << LogPrefix << "Failed to load model" << urdfFilePath;
         return false;
     }
-        // ====================
+
+    // ====================
     // INITIALIZE VARIABLES
     // ====================
 
     // Get the model from the loader
     pImpl->humanModel = modelLoader.model();
+
+    // Set gravitational wrench vector
+    pImpl->gravitationalWrenchInCentroidal.zero();
+    pImpl->gravitationalWrenchInCentroidal(2) = pImpl->humanModel.getTotalMass() * pImpl->worldGravity(2);
+
 
     // Initialize kinDyn computation
     pImpl->kinDynComputations =
@@ -997,22 +999,38 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
         double linkMass = linksInertialParametersVec.getVal(10 * linkIdx + 0);
 
         // Get link center of mass with respect to the link frame
-        iDynTree::PositionRaw linkComPosition;
-        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 1), 0);
-        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 2), 1);
-        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 3), 2);
+        iDynTree::PositionRaw linkComPosition(linksInertialParametersVec.getVal(10 * linkIdx + 1),
+                                              linksInertialParametersVec.getVal(10 * linkIdx + 2),
+                                              linksInertialParametersVec.getVal(10 * linkIdx + 3));
 
         // Get link 6D rotation inertia
-        iDynTree::RotationalInertiaRaw link6DRotationalInertia;
-        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 4), 0);
-        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 5), 1);
-        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 6), 2);
-        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 7), 3);
-        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 8), 4);
-        linkComPosition.setVal(linksInertialParametersVec.getVal(10 * linkIdx + 9), 5);
+        // I_{xx} \\  I_{xy} \\  I_{xz} \\  I_{yy} \\  I_{yz} \\  I_{zz}
+        double I_xx = linksInertialParametersVec.getVal(10 * linkIdx + 4);
+        double I_xy = linksInertialParametersVec.getVal(10 * linkIdx + 5);
+        double I_xz = linksInertialParametersVec.getVal(10 * linkIdx + 6);
+        double I_yy = linksInertialParametersVec.getVal(10 * linkIdx + 7);
+        double I_yz = linksInertialParametersVec.getVal(10 * linkIdx + 8);
+        double I_zz = linksInertialParametersVec.getVal(10 * linkIdx + 9);
+
+        iDynTree::Matrix3x3 inertiaMatrix;
+        inertiaMatrix.zero();
+
+        inertiaMatrix.setVal(0, 0, I_xx);
+        inertiaMatrix.setVal(0, 1, -I_xy);
+        inertiaMatrix.setVal(0, 2, -I_xz);
+
+        inertiaMatrix.setVal(1, 0, -I_xy);
+        inertiaMatrix.setVal(1, 1, I_yy);
+        inertiaMatrix.setVal(1, 2, -I_yz);
+
+        inertiaMatrix.setVal(2, 0, -I_xz);
+        inertiaMatrix.setVal(2, 1, -I_yz);
+        inertiaMatrix.setVal(2, 2, I_zz);
+
+        iDynTree::RotationalInertiaRaw link3DRotationalInertia(inertiaMatrix.data(), 3, 3);
 
         // Initialize link spatial inertia variable
-        iDynTree::SpatialInertia linkSpatialInertia(linkMass, linkComPosition, link6DRotationalInertia);
+        iDynTree::SpatialInertia linkSpatialInertia(linkMass, linkComPosition, link3DRotationalInertia);
 
         // Set link spatial inertia to the unordered map
         pImpl->linkSpatialInertia[linkName] = linkSpatialInertia;
