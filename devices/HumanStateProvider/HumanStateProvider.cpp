@@ -1455,7 +1455,7 @@ void HumanStateProvider::computeROCMInBase()
         iDynTree::toEigen(linkROCMInBase_bias_term) = iDynTree::toEigen(base_H_link.asAdjointTransformWrench()) *
                                                       iDynTree::toEigen(linkVelocityExpressedInBody.asCrossProductMatrixWrench()) *
                                                       iDynTree::toEigen(pImpl->linkSpatialInertia[linkName].asMatrix()) *
-                                                      iDynTree::toEigen(linkAccelerationExpressedInBody);
+                                                      iDynTree::toEigen(linkVelocityExpressedInBody);
 
         // Update rate of change of momnentum
         iDynTree::toEigen(rocmInBase) = iDynTree::toEigen(rocmInBase) +
