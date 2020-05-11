@@ -1342,25 +1342,26 @@ bool HumanStateProvider::close()
 void HumanStateProvider::computeCentroidalMomentum()
 {
     iDynTree::SpatialMomentum centroidalMomentum;
+    centroidalMomentum.zero();
 
     // Set centroidal to world transform
     iDynTree::Transform world_H_centroidal = iDynTree::Transform::Identity();
     world_H_centroidal.setPosition(pImpl->kinDynComputations->getCenterOfMassPosition());
 
-    // Iterate over all links and compute link momentum
-    for (size_t linkIdx = 0; linkIdx < pImpl->humanModel.getNrOfLinks(); linkIdx++) {
+    // Iterate over the links for which velocity measurements are available
+    for (const std::pair<std::string, iDynTree::Twist> linkNameVel : pImpl->linkVelocities) {
 
-        std::string linkName = pImpl->humanModel.getLinkName(linkIdx);
+        const std::string linkName = linkNameVel.first;
 
         // compute link to world transform
-        iDynTree::Transform world_H_link = pImpl->kinDynComputations->getWorldTransform(linkIdx);
+        iDynTree::Transform world_H_link = pImpl->kinDynComputations->getWorldTransform(linkName);
 
         // Compute link to centroidal transform
         iDynTree::Transform centroidal_H_link = world_H_centroidal.inverse() * world_H_link;
 
         // Compute link velocity expressed in the body frame
         // TODO: Double check if the velocities are expressed correctly
-        iDynTree::Twist linkVeclocityExpressedInWorld = pImpl->linkVelocities[linkName];
+        const iDynTree::Twist linkVeclocityExpressedInWorld = linkNameVel.second;
         iDynTree::Twist linkVelocityExpressedInBody = world_H_link.inverse() * linkVeclocityExpressedInWorld;
 
         // Compute link momentum - G_X*_L * I_L * v_L
@@ -1378,26 +1379,27 @@ void HumanStateProvider::computeCentroidalMomentum()
     pImpl->centroidalMomentum[3] = centroidalMomentum.getVal(3);
     pImpl->centroidalMomentum[4] = centroidalMomentum.getVal(4);
     pImpl->centroidalMomentum[5] = centroidalMomentum.getVal(5);
-
 }
 
 void HumanStateProvider::computeROCMInBase()
 {
     iDynTree::SpatialMomentum rocmInBase;
+    rocmInBase.zero();
 
-    for (size_t linkIdx = 0; linkIdx < pImpl->humanModel.getNrOfLinks(); linkIdx++) {
+    // Iterate over the links for which velocity and acceleration measurements are available
+    for (const std::pair<std::string, iDynTree::Twist> linkNameVel : pImpl->linkVelocities) {
 
-        std::string linkName = pImpl->humanModel.getLinkName(linkIdx);
+        const std::string linkName = linkNameVel.first;
 
         // compute link to world transform
-        iDynTree::Transform world_H_link = pImpl->kinDynComputations->getWorldTransform(linkIdx);
+        iDynTree::Transform world_H_link = pImpl->kinDynComputations->getWorldTransform(linkName);
 
         // Compute link to base transform
         iDynTree::Transform base_H_link = pImpl->baseTransformSolution.inverse() * world_H_link;
 
         // Compute link acceleration expressed in the body frame
         // TODO: Double check if the velocities and accelerations are expressed correctly
-        iDynTree::Twist linkVeclocityExpressedInWorld = pImpl->linkVelocities[linkName];
+        iDynTree::Twist linkVeclocityExpressedInWorld = linkNameVel.second;
         iDynTree::Twist linkVelocityExpressedInBody = world_H_link.inverse() * linkVeclocityExpressedInWorld;
 
         iDynTree::Twist linkAccelerationExpressedInWorld = pImpl->linkAccelerations[linkName];
@@ -1425,6 +1427,7 @@ void HumanStateProvider::computeROCMInBase()
     pImpl->computedRateOfChangeOfMomentumInBase[3] = rocmInBase.getVal(3);
     pImpl->computedRateOfChangeOfMomentumInBase[4] = rocmInBase.getVal(4);
     pImpl->computedRateOfChangeOfMomentumInBase[5] = rocmInBase.getVal(5);
+
 }
 
 void HumanStateProvider::run()
@@ -1533,12 +1536,12 @@ void HumanStateProvider::run()
                                              solvedJointVelocities,
                                              pImpl->worldGravity);
 
+
     // Call to compute centroidal momentum
     computeCentroidalMomentum();
 
     // Call to rate of change of momentum in base computation
     computeROCMInBase();
-
 
     // Compute rate of change of momentum in base that is considered as the new measurement input for centroidal dynamics
     // Expose it through IHumanState interface
@@ -1589,7 +1592,6 @@ void HumanStateProvider::run()
                                                     pImpl->computedRateOfChangeOfMomentumInBase[3] - biasTermFromCentroidalMomentum.getVal(3) - gravitationalWrenchInBase.getVal(3),
                                                     pImpl->computedRateOfChangeOfMomentumInBase[4] - biasTermFromCentroidalMomentum.getVal(4) - gravitationalWrenchInBase.getVal(4),
                                                     pImpl->computedRateOfChangeOfMomentumInBase[5] - biasTermFromCentroidalMomentum.getVal(5) - gravitationalWrenchInBase.getVal(5)};
-
     }
 
     // CoM position and velocity
