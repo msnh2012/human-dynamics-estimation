@@ -1546,6 +1546,10 @@ void HumanStateProvider::run()
                                              solvedJointVelocities,
                                              pImpl->worldGravity);
 
+    if (!pImpl->kinDynComputations->isValid()) {
+        yError() << "KinDyn object is not valid";
+        return;
+    }
 
     // Call to compute centroidal momentum
     computeCentroidalMomentum();
