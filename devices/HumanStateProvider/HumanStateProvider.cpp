@@ -1364,7 +1364,7 @@ void HumanStateProvider::computeCentroidalMomentum()
         const iDynTree::Twist linkVeclocityExpressedInWorld = linkNameVel.second;
         iDynTree::Vector6 linkVelocityExpressedInBodyVec;
         linkVelocityExpressedInBodyVec.zero();
-        iDynTree::toEigen(linkVelocityExpressedInBodyVec) = iDynTree::toEigen(world_H_link.inverse().asAdjointTransformWrench()) * iDynTree::toEigen(linkVeclocityExpressedInWorld);
+        iDynTree::toEigen(linkVelocityExpressedInBodyVec) = iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(linkVeclocityExpressedInWorld);
 
         iDynTree::Twist linkVelocityExpressedInBody;
         linkVelocityExpressedInBody.zero();
@@ -1417,7 +1417,7 @@ void HumanStateProvider::computeROCMInBase()
         const iDynTree::Twist linkVeclocityExpressedInWorld = linkNameVel.second;
         iDynTree::Vector6 linkVelocityExpressedInBodyVec;
         linkVelocityExpressedInBodyVec.zero();
-        iDynTree::toEigen(linkVelocityExpressedInBodyVec) = iDynTree::toEigen(world_H_link.inverse().asAdjointTransformWrench()) * iDynTree::toEigen(linkVeclocityExpressedInWorld);
+        iDynTree::toEigen(linkVelocityExpressedInBodyVec) = iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(linkVeclocityExpressedInWorld);
 
         iDynTree::Twist linkVelocityExpressedInBody;
         linkVelocityExpressedInBody.zero();
@@ -1431,7 +1431,7 @@ void HumanStateProvider::computeROCMInBase()
         const iDynTree::Twist linkAccelerationExpressedInWorld = pImpl->linkAccelerations[linkName];
         iDynTree::Vector6 linkAccelerationExpressedInBodyVec;
         linkAccelerationExpressedInBodyVec.zero();
-        iDynTree::toEigen(linkAccelerationExpressedInBodyVec) = iDynTree::toEigen(world_H_link.inverse().asAdjointTransformWrench()) * iDynTree::toEigen(linkAccelerationExpressedInWorld);
+        iDynTree::toEigen(linkAccelerationExpressedInBodyVec) = iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(linkAccelerationExpressedInWorld);
 
         iDynTree::Twist linkAccelerationExpressedInBody;
         linkAccelerationExpressedInBody.zero();
