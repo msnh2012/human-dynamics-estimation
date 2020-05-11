@@ -1362,7 +1362,18 @@ void HumanStateProvider::computeCentroidalMomentum()
         // Compute link velocity expressed in the body frame
         // TODO: Double check if the velocities are expressed correctly
         const iDynTree::Twist linkVeclocityExpressedInWorld = linkNameVel.second;
-        iDynTree::Twist linkVelocityExpressedInBody = world_H_link.inverse() * linkVeclocityExpressedInWorld;
+        iDynTree::Vector6 linkVelocityExpressedInBodyVec;
+        linkVelocityExpressedInBodyVec.zero();
+        iDynTree::toEigen(linkVelocityExpressedInBodyVec) = iDynTree::toEigen(world_H_link.inverse().asAdjointTransformWrench()) * iDynTree::toEigen(linkVeclocityExpressedInWorld);
+
+        iDynTree::Twist linkVelocityExpressedInBody;
+        linkVelocityExpressedInBody.zero();
+        linkVelocityExpressedInBody.setVal(0, linkVelocityExpressedInBodyVec.getVal(0));
+        linkVelocityExpressedInBody.setVal(1, linkVelocityExpressedInBodyVec.getVal(1));
+        linkVelocityExpressedInBody.setVal(2, linkVelocityExpressedInBodyVec.getVal(2));
+        linkVelocityExpressedInBody.setVal(3, linkVelocityExpressedInBodyVec.getVal(3));
+        linkVelocityExpressedInBody.setVal(4, linkVelocityExpressedInBodyVec.getVal(4));
+        linkVelocityExpressedInBody.setVal(5, linkVelocityExpressedInBodyVec.getVal(5));
 
         // Compute link momentum - G_X*_L * I_L * v_L
         iDynTree::Vector6 linkMomentum;
@@ -1403,11 +1414,33 @@ void HumanStateProvider::computeROCMInBase()
 
         // Compute link acceleration expressed in the body frame
         // TODO: Double check if the velocities and accelerations are expressed correctly
-        iDynTree::Twist linkVeclocityExpressedInWorld = linkNameVel.second;
-        iDynTree::Twist linkVelocityExpressedInBody = world_H_link.inverse() * linkVeclocityExpressedInWorld;
+        const iDynTree::Twist linkVeclocityExpressedInWorld = linkNameVel.second;
+        iDynTree::Vector6 linkVelocityExpressedInBodyVec;
+        linkVelocityExpressedInBodyVec.zero();
+        iDynTree::toEigen(linkVelocityExpressedInBodyVec) = iDynTree::toEigen(world_H_link.inverse().asAdjointTransformWrench()) * iDynTree::toEigen(linkVeclocityExpressedInWorld);
 
-        iDynTree::Twist linkAccelerationExpressedInWorld = pImpl->linkAccelerations[linkName];
-        iDynTree::Twist linkAccelerationExpressedInBody = world_H_link.inverse() * linkAccelerationExpressedInWorld;
+        iDynTree::Twist linkVelocityExpressedInBody;
+        linkVelocityExpressedInBody.zero();
+        linkVelocityExpressedInBody.setVal(0, linkVelocityExpressedInBodyVec.getVal(0));
+        linkVelocityExpressedInBody.setVal(1, linkVelocityExpressedInBodyVec.getVal(1));
+        linkVelocityExpressedInBody.setVal(2, linkVelocityExpressedInBodyVec.getVal(2));
+        linkVelocityExpressedInBody.setVal(3, linkVelocityExpressedInBodyVec.getVal(3));
+        linkVelocityExpressedInBody.setVal(4, linkVelocityExpressedInBodyVec.getVal(4));
+        linkVelocityExpressedInBody.setVal(5, linkVelocityExpressedInBodyVec.getVal(5));
+
+        const iDynTree::Twist linkAccelerationExpressedInWorld = pImpl->linkAccelerations[linkName];
+        iDynTree::Vector6 linkAccelerationExpressedInBodyVec;
+        linkAccelerationExpressedInBodyVec.zero();
+        iDynTree::toEigen(linkAccelerationExpressedInBodyVec) = iDynTree::toEigen(world_H_link.inverse().asAdjointTransformWrench()) * iDynTree::toEigen(linkAccelerationExpressedInWorld);
+
+        iDynTree::Twist linkAccelerationExpressedInBody;
+        linkAccelerationExpressedInBody.zero();
+        linkAccelerationExpressedInBody.setVal(0, linkAccelerationExpressedInBodyVec.getVal(0));
+        linkAccelerationExpressedInBody.setVal(1, linkAccelerationExpressedInBodyVec.getVal(1));
+        linkAccelerationExpressedInBody.setVal(2, linkAccelerationExpressedInBodyVec.getVal(2));
+        linkAccelerationExpressedInBody.setVal(3, linkAccelerationExpressedInBodyVec.getVal(3));
+        linkAccelerationExpressedInBody.setVal(4, linkAccelerationExpressedInBodyVec.getVal(4));
+        linkAccelerationExpressedInBody.setVal(5, linkAccelerationExpressedInBodyVec.getVal(5));
 
         // Compute link rate of change of momentum (expressed in base) term with accelerations -  B_X*_L * I_L * a_L
         iDynTree::Vector6 linkROCMInBase_acc_term;
