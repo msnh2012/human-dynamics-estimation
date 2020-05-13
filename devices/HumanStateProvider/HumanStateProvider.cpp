@@ -278,7 +278,7 @@ public:
     double lastTime{-1.0};
 
     // kinDynComputation
-    std::unique_ptr<iDynTree::KinDynComputations> kinDynComputations;
+    iDynTree::KinDynComputations kinDynComputations;
     iDynTree::Vector3 worldGravity;
 
     // Gravitational wrench vector
@@ -983,10 +983,8 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
 
 
     // Initialize kinDyn computation
-    pImpl->kinDynComputations =
-        std::unique_ptr<iDynTree::KinDynComputations>(new iDynTree::KinDynComputations());
-    pImpl->kinDynComputations->loadRobotModel(modelLoader.model());
-    pImpl->kinDynComputations->setFloatingBase(pImpl->floatingBaseFrame.model);
+    pImpl->kinDynComputations.loadRobotModel(modelLoader.model());
+    pImpl->kinDynComputations.setFloatingBase(pImpl->floatingBaseFrame.model);
 
     // Get link spatial inertias
     iDynTree::VectorDynSize linksInertialParametersVec;
@@ -1346,7 +1344,7 @@ void HumanStateProvider::computeCentroidalMomentum()
 
     // Set centroidal to world transform
     iDynTree::Transform world_H_centroidal = iDynTree::Transform::Identity();
-    world_H_centroidal.setPosition(pImpl->kinDynComputations->getCenterOfMassPosition());
+    world_H_centroidal.setPosition(pImpl->kinDynComputations.getCenterOfMassPosition());
 
     // Iterate over the links for which velocity measurements are available
     for (const std::pair<std::string, iDynTree::Twist> linkNameVel : pImpl->linkVelocities) {
@@ -1354,7 +1352,7 @@ void HumanStateProvider::computeCentroidalMomentum()
         const std::string linkName = linkNameVel.first;
 
         // compute link to world transform
-        iDynTree::Transform world_H_link = pImpl->kinDynComputations->getWorldTransform(linkName);
+        iDynTree::Transform world_H_link = pImpl->kinDynComputations.getWorldTransform(linkName);
 
         // Compute link to centroidal transform
         iDynTree::Transform centroidal_H_link = world_H_centroidal.inverse() * world_H_link;
@@ -1407,7 +1405,7 @@ void HumanStateProvider::computeROCMInBase()
         const std::string linkName = linkNameVel.first;
 
         // compute link to world transform
-        iDynTree::Transform world_H_link = pImpl->kinDynComputations->getWorldTransform(linkName);
+        iDynTree::Transform world_H_link = pImpl->kinDynComputations.getWorldTransform(linkName);
 
         // Compute link to base transform
         iDynTree::Transform base_H_link = pImpl->baseTransformSolution.inverse() * world_H_link;
@@ -1582,13 +1580,13 @@ void HumanStateProvider::run()
     }
 
     // Set kindyn robot state
-    pImpl->kinDynComputations->setRobotState(pImpl->baseTransformSolution,
+    pImpl->kinDynComputations.setRobotState(pImpl->baseTransformSolution,
                                              solvedJointPositions,
                                              pImpl->baseVelocitySolution,
                                              solvedJointVelocities,
                                              pImpl->worldGravity);
 
-    if (!pImpl->kinDynComputations->isValid()) {
+    if (!pImpl->kinDynComputations.isValid()) {
         yError() << "KinDyn object is not valid";
         return;
     }
@@ -1605,7 +1603,7 @@ void HumanStateProvider::run()
 
         // Set centroidal to world transform
         iDynTree::Transform world_H_centroidal = iDynTree::Transform::Identity();
-        world_H_centroidal.setPosition(pImpl->kinDynComputations->getCenterOfMassPosition());
+        world_H_centroidal.setPosition(pImpl->kinDynComputations.getCenterOfMassPosition());
 
         // Compute base_H_centroidal transform
         iDynTree::Transform base_H_centroidal = pImpl->baseTransformSolution.inverse() * world_H_centroidal;
@@ -1620,9 +1618,9 @@ void HumanStateProvider::run()
         // Compute position derivative (comVel - baseLinVel)
         iDynTree::Vector3 posDerivative;
 
-        posDerivative.setVal(0, pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(0) - pImpl->baseVelocitySolution.getLinearVec3().getVal(0));
-        posDerivative.setVal(0, pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(1) - pImpl->baseVelocitySolution.getLinearVec3().getVal(1));
-        posDerivative.setVal(0, pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(2) - pImpl->baseVelocitySolution.getLinearVec3().getVal(2));
+        posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(0) - pImpl->baseVelocitySolution.getLinearVec3().getVal(0));
+        posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(1) - pImpl->baseVelocitySolution.getLinearVec3().getVal(1));
+        posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(2) - pImpl->baseVelocitySolution.getLinearVec3().getVal(2));
 
         // Compute rotation derivative ( base_dotR_world = ( Skew(baseAngVel) * world_R_base)' )
         iDynTree::Matrix3x3 rotDerivative;
@@ -1653,19 +1651,19 @@ void HumanStateProvider::run()
 
     // CoM position and velocity
     std::array<double, 3> CoM_position, CoM_velocity;
-    CoM_position = {pImpl->kinDynComputations->getCenterOfMassPosition().getVal(0),
-                    pImpl->kinDynComputations->getCenterOfMassPosition().getVal(1),
-                    pImpl->kinDynComputations->getCenterOfMassPosition().getVal(2)};
+    CoM_position = {pImpl->kinDynComputations.getCenterOfMassPosition().getVal(0),
+                    pImpl->kinDynComputations.getCenterOfMassPosition().getVal(1),
+                    pImpl->kinDynComputations.getCenterOfMassPosition().getVal(2)};
 
-    CoM_velocity = {pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(0),
-                    pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(1),
-                    pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(2)};
+    CoM_velocity = {pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(0),
+                    pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(1),
+                    pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(2)};
 
     // CoM acceleration
     std::array<double, 3> CoM_biasacceleration;
-    CoM_biasacceleration = {pImpl->kinDynComputations->getCenterOfMassBiasAcc().getVal(0),
-                            pImpl->kinDynComputations->getCenterOfMassBiasAcc().getVal(1),
-                            pImpl->kinDynComputations->getCenterOfMassBiasAcc().getVal(2)};
+    CoM_biasacceleration = {pImpl->kinDynComputations.getCenterOfMassBiasAcc().getVal(0),
+                            pImpl->kinDynComputations.getCenterOfMassBiasAcc().getVal(1),
+                            pImpl->kinDynComputations.getCenterOfMassBiasAcc().getVal(2)};
 
     // Compute proper acceleration
     if (pImpl->useFBAccelerationFromWearableData) {
@@ -1686,7 +1684,7 @@ void HumanStateProvider::run()
                 continue;
             }
 
-            iDynTree::Transform base_H_sensor = pImpl->kinDynComputations->getRelativeTransform(pImpl->humanModel.getFrameIndex(pImpl->floatingBaseFrame.model),
+            iDynTree::Transform base_H_sensor = pImpl->kinDynComputations.getRelativeTransform(pImpl->humanModel.getFrameIndex(pImpl->floatingBaseFrame.model),
                                                                                          pImpl->humanModel.getFrameIndex(pImpl->humanSensorData.accelerometerSensorNames.at(accelerometerCount)));
 
             iDynTree::Transform world_H_accelerometer = pImpl->baseTransformSolution *
@@ -2537,14 +2535,13 @@ bool HumanStateProvider::impl::solveIntegrationBasedInverseKinematics()
     lastTime = yarp::os::Time::now();
 
     // LINK VELOCITY CORRECTION
-    iDynTree::KinDynComputations* computations = kinDynComputations.get();
 
     if (useDirectBaseMeasurement) {
-        computations->setRobotState(
+        kinDynComputations.setRobotState(
             jointConfigurationSolution, jointVelocitiesSolution, worldGravity);
     }
     else {
-        computations->setRobotState(baseTransformSolution,
+        kinDynComputations.setRobotState(baseTransformSolution,
                                     jointConfigurationSolution,
                                     baseVelocitySolution,
                                     jointVelocitiesSolution,
@@ -2561,7 +2558,7 @@ bool HumanStateProvider::impl::solveIntegrationBasedInverseKinematics()
         }
 
         iDynTree::Rotation rotationError =
-            computations->getWorldTransform(humanModel.getFrameIndex(linkName)).getRotation()
+            kinDynComputations.getWorldTransform(humanModel.getFrameIndex(linkName)).getRotation()
             * linkTransformMatrices[linkName].getRotation().inverse();
         iDynTree::Vector3 angularVelocityError;
 
@@ -2579,7 +2576,7 @@ bool HumanStateProvider::impl::solveIntegrationBasedInverseKinematics()
 
             iDynTree::Vector3 linearVelocityError;
             linearVelocityError =
-                computations->getWorldTransform(humanModel.getFrameIndex(linkName)).getPosition()
+                kinDynComputations.getWorldTransform(humanModel.getFrameIndex(linkName)).getPosition()
                 - linkTransformMatrices[linkName].getPosition();
             iDynTree::toEigen(integralLinearVelocityError) =
                 iDynTree::toEigen(integralLinearVelocityError)
@@ -2836,14 +2833,13 @@ bool HumanStateProvider::impl::computeLinksOrientationErrors(
     iDynTree::Twist zeroBaseVelocity;
     zeroBaseVelocity.zero();
 
-    iDynTree::KinDynComputations* computations = kinDynComputations.get();
-    computations->setRobotState(
+    kinDynComputations.setRobotState(
         floatingBasePose, jointConfigurations, zeroBaseVelocity, zeroJointVelocities, worldGravity);
 
     for (const auto& linkMapEntry : linkDesiredTransforms) {
         const ModelLinkName& linkName = linkMapEntry.first;
         linkErrorOrientations[linkName] = iDynTreeHelper::Rotation::rotationDistance(
-            computations->getWorldTransform(linkName).getRotation(),
+            kinDynComputations.getWorldTransform(linkName).getRotation(),
             linkDesiredTransforms[linkName].getRotation());
     }
     return true;
@@ -2857,15 +2853,14 @@ bool HumanStateProvider::impl::computeLinksAngularVelocityErrors(
     iDynTree::Twist baseVelocity,
     std::unordered_map<std::string, iDynTree::Vector3>& linkAngularVelocityError)
 {
-    iDynTree::KinDynComputations* computations = kinDynComputations.get();
-    computations->setRobotState(
+    kinDynComputations.setRobotState(
         floatingBasePose, jointConfigurations, baseVelocity, jointVelocities, worldGravity);
 
     for (const auto& linkMapEntry : linkDesiredVelocities) {
         const ModelLinkName& linkName = linkMapEntry.first;
         iDynTree::toEigen(linkAngularVelocityError[linkName]) =
             iDynTree::toEigen(linkDesiredVelocities[linkName].getLinearVec3())
-            - iDynTree::toEigen(computations->getFrameVel(linkName).getLinearVec3());
+            - iDynTree::toEigen(kinDynComputations.getFrameVel(linkName).getLinearVec3());
     }
 
     return true;
