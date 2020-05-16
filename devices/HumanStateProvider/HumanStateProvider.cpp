@@ -1423,7 +1423,7 @@ void HumanStateProvider::computeROCMInBase()
         iDynTree::Vector6 linkVelocityExpressedInBodyVec;
         linkVelocityExpressedInBodyVec.zero();
         iDynTree::toEigen(linkVelocityExpressedInBodyVec) = (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(linkVeclocityExpressedInWorld)) -
-                                                            (iDynTree::toEigen(base_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(pImpl->baseTransformSolution.inverse().asAdjointTransform()) * iDynTree::toEigen(pImpl->linkVelocities[pImpl->floatingBaseFrame.model]));
+                                                            (iDynTree::toEigen(base_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(pImpl->baseTransformSolution.inverse().asAdjointTransform()) * iDynTree::toEigen(pImpl->baseVelocitySolution));
 
         iDynTree::Twist linkVelocityExpressedInBody;
         linkVelocityExpressedInBody.zero();
@@ -1442,7 +1442,7 @@ void HumanStateProvider::computeROCMInBase()
         linkAccelerationExpressedInBodyVec.zero();
         iDynTree::toEigen(linkAccelerationExpressedInBodyVec) = (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(linkAccelerationExpressedInWorld)) -
                                                                 (iDynTree::toEigen(base_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(pImpl->baseTransformSolution.inverse().asAdjointTransform()) * iDynTree::toEigen(pImpl->linkAccelerations[pImpl->floatingBaseFrame.model])) -
-                                                                (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(pImpl->linkVelocities[pImpl->floatingBaseFrame.model].asCrossProductMatrixWrench()) * iDynTree::toEigen(linkVelocityExpressedInBody));
+                                                                (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(pImpl->baseVelocitySolution.asCrossProductMatrixWrench()) * iDynTree::toEigen(linkVelocityExpressedInBody));
 
         iDynTree::Twist linkAccelerationExpressedInBody;
         linkAccelerationExpressedInBody.zero();
