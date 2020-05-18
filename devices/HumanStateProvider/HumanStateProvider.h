@@ -40,6 +40,7 @@ public:
 
     void computeCentroidalMomentum();
     void computeROCMInBase();
+    void computeROCMInBaseUsingMeasurements();
 
     // DeviceDriver interface
     bool open(yarp::os::Searchable& config) override;
