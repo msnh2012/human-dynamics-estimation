@@ -38,8 +38,6 @@ public:
     HumanStateProvider();
     ~HumanStateProvider() override;
 
-    void computeCentroidalMomentum();
-    void computeROCMInBase();
     void computeROCMInBaseUsingMeasurements();
 
     // DeviceDriver interface
