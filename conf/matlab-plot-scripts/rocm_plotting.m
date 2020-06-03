@@ -20,16 +20,21 @@ GravitationalWrenchInCentroidalFrame = ["${}^{\bar{G}}w$"];
 GravitationalWrenchInBaseFrame = ["${}^{B}w = {}^{B}X^{*}_{\bar{G}} {}^{\bar{G}}w$"];
 CentroidalMomentum = ["${}^{\bar{G}}h$"];
 CentroidalMomentumBiasTerm = ["${}^{B}\dot{X}_{\bar{G}}^{*} \ {}^{\bar{G}}h$"];
-ROCMInBaseAccelerationTerm = ["$ \sum \ {}^{B}\dot{X}_{L}^{*}  \ {}_{L}{I}_{L} \ {}^{L}{v}_{B,L}$"];
+ROCMInBaseAccelerationTerm = ["$ \sum \ {}^{B}{X}_{L}^{*}  \ {}_{L}{I}_{L} \ {}^{L}\dot{v}_{B,L}$"];
 ROCMInBaseBiasTerm = ["$ \sum \ {}^{B}\dot{X}_{L}^{*}  \ {}_{L}{I}_{L} \ {}^{L}{v}_{B,L} $"];
 TotalTerm = ["$ {}^{B}\dot{h}   - {}^{B}\dot{X}_{\bar{G}}^{*} \ {}^{\bar{G}}h - {}^{B}{X}_{\bar{G}}^{*} \ {}^{\bar{G}}{w} $"];
 
 
+% {}\^{L}\dot{v}\_{B,L} =  {}\^{L}{X}\_{A} {}\^{A}\dot{v}\_{A,L} - {}\^{L}{X}\_{B} {}\^{B}{X}\_{A}{}\^{A}\dot{v}\_{A,B} - ({}\^{L}X\_{A} {}\^{A}v\_{A,B} \times {}\^{L}v\_{B,L} )
+
+acc_term_1 = ["${}^{L}\dot{v}_{B,L} = {}^{L}{X}_{A} {}^{A}\dot{v}_{A,L}$"];
+acc_term_2 = ["${}^{L}\dot{v}_{B,L} = {}^{L}{X}_{B} {}^{B}{X}_{A}{}^{A}\dot{v}_{A,B}$"];
+acc_term_3 = ["${}^{L}\dot{v}_{B,L} = {}^{L}X_{A} {}^{A}v_{A,B} \times {}^{L}v_{B,L}$"];
 a = axes;
-t = title(strcat(" ", ROCMInBaseAccelerationTerm),'Interpreter', 'latex');
+t = title(strcat(" ", strcat(ROCMInBaseAccelerationTerm, " ${}^{L}\dot{v}_{B,L} = {}^{L}{X}_{A} {}^{A}\dot{v}_{A,L}$ " )),'Interpreter', 'latex');
 t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
 
 %% Save figure
-save2pdf("ROCMInBaseAccelerationTerm.pdf", fH,300);
+save2pdf("ROCMInBaseAccelerationTerm-Acc-with-only-term1.pdf", fH,300);
