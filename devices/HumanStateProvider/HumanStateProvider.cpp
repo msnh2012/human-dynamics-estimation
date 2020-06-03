@@ -1506,10 +1506,7 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
     world_H_centroidal.setPosition(pImpl->kinDynComputations.getCenterOfMassPosition());
 
     // base_H_centroidal transform
-    iDynTree::Transform base_H_centroidal = pImpl->linkTransformMatricesMeasured[baseLinkName].inverse() * world_H_centroidal;
-
-    yInfo() << LogPrefix << "computeROCMInBaseUsingMeasurements===========";
-    yInfo() << LogPrefix << "linkTransformMatricesMeasured size " << pImpl->linkTransformMatricesMeasured.size();
+    const iDynTree::Transform base_H_centroidal = pImpl->linkTransformMatricesMeasured[baseLinkName].inverse() * world_H_centroidal;
 
     // Compute gravitational wrench expressed in base
     pImpl->gravitationalWrenchInBase.zero();
@@ -1522,38 +1519,28 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
     const iDynTree::Twist baseVelocityExpressedInWorld = pImpl->linkVelocitiesMeasured[baseLinkName];
 
     // Get base acceleration A_a_A,B
-    iDynTree::Twist baseAccelerationExpressedInWorld = pImpl->linkAccelerationsMeasured[baseLinkName];
-
-    //TEST: Set base link acceleration in body to constant value
-    for (size_t i = 0; i < baseAccelerationExpressedInWorld.size(); i++) {
-        baseAccelerationExpressedInWorld.setVal(i, 0.1);
-    }
+    const iDynTree::Twist baseAccelerationExpressedInWorld = pImpl->linkAccelerationsMeasured[baseLinkName];
 
     // Iterate over measurements
     for (const std::pair<std::string, iDynTree::Transform> linkNameTransform : pImpl->linkTransformMatricesMeasured) {
 
         // Get link name
-        std::string linkName = linkNameTransform.first;
+        const std::string linkName = linkNameTransform.first;
 
         // Get world_H_link transform
-        iDynTree::Transform world_H_link = linkNameTransform.second;
+        const iDynTree::Transform world_H_link = linkNameTransform.second;
 
         // Get link to base transform
-        iDynTree::Transform base_H_link = world_H_base.inverse() * world_H_link;
+        const iDynTree::Transform base_H_link = world_H_base.inverse() * world_H_link;
 
         // Compute link to centroidal transform
-        iDynTree::Transform centroidal_H_link = world_H_centroidal.inverse() * world_H_link;
+        const iDynTree::Transform centroidal_H_link = world_H_centroidal.inverse() * world_H_link;
 
         // Get link velocity A_v_A,L
         const iDynTree::Twist linkVelocityExpressedInWorld = pImpl->linkVelocitiesMeasured[linkName];
 
         // Get link acceleration A_a_A,L
-        iDynTree::Twist linkAccelerationExpressedInWorld = pImpl->linkAccelerationsMeasured[linkName];
-
-        //TEST: Set link acceleration in body to constant value
-        for (size_t i = 0; i < linkAccelerationExpressedInWorld.size(); i++) {
-            linkAccelerationExpressedInWorld.setVal(i, 0.1);
-        }
+        const iDynTree::Twist linkAccelerationExpressedInWorld = pImpl->linkAccelerationsMeasured[linkName];
 
         // Compute centroidal momentum bias term
         {
@@ -1580,15 +1567,8 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
             iDynTree::Vector6 linkVelocityExpressedInBody;
             linkVelocityExpressedInBody.zero();
 
-//            //TEST: Set link vecloty in body to constant value
-//            for (size_t i = 0; i < linkVelocityExpressedInBody.size(); i++) {
-//                linkVelocityExpressedInBody.setVal(i, 0.1);
-//            }
-
             iDynTree::toEigen(linkVelocityExpressedInBody) = (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(linkVelocityExpressedInWorld)) -
-                                                             (iDynTree::toEigen(base_H_link.inverse().asAdjointTransform()) *
-                                                              iDynTree::toEigen(world_H_base.inverse().asAdjointTransform()) *
-                                                              iDynTree::toEigen(baseVelocityExpressedInWorld));
+                                                             (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(baseVelocityExpressedInWorld));
 
 
             // Compute A_a_B,L = (L_X_A * A_a_A,L) - (L_X_B * B_X_A * A_a_A,B) - (L_X_A * A_v_A,B * L_v_B,L)
@@ -1596,13 +1576,8 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
             iDynTree::Vector6 linkAccelerationExpressedInBody;
             linkAccelerationExpressedInBody.zero();
 
-//            //TEST: Set link vecloty in body to constant value
-//            for (size_t i = 0; i < linkAccelerationExpressedInBody.size(); i++) {
-//                linkAccelerationExpressedInBody.setVal(i, 0.1);
-//            }
-
             iDynTree::toEigen(linkAccelerationExpressedInBody) = (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(linkAccelerationExpressedInWorld)) -
-                                                                 (iDynTree::toEigen(base_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(world_H_base.inverse().asAdjointTransform()) * iDynTree::toEigen(baseAccelerationExpressedInWorld)) -
+                                                                 (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(baseAccelerationExpressedInWorld)) -
                                                                  (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(baseVelocityExpressedInWorld.asCrossProductMatrixWrench()) * iDynTree::toEigen(linkVelocityExpressedInBody));
 
             // Compute link rate of change of momentum (expressed in base) term with accelerations -  B_X*_L * I_L * L_a_B,L
@@ -1631,12 +1606,9 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
                                                           iDynTree::toEigen(linkVelocityExpressedInBody);
 
             // Update rate of change of momnentum
-//            iDynTree::toEigen(rocmInBase) = iDynTree::toEigen(rocmInBase) +
-//                                            iDynTree::toEigen(linkROCMInBase_acc_term) +
-//                                            iDynTree::toEigen(linkROCMInBase_bias_term);
-
             iDynTree::toEigen(rocmInBase) = iDynTree::toEigen(rocmInBase) +
-                                            iDynTree::toEigen(linkROCMInBase_acc_term);
+                                            iDynTree::toEigen(linkROCMInBase_acc_term) +
+                                            iDynTree::toEigen(linkROCMInBase_bias_term);
 
         }
 
@@ -1849,10 +1821,6 @@ void HumanStateProvider::run()
 //        iDynTree::SpatialForceVector biasTermFromCentroidalMomentum = base_dotH_centroidal.transform(base_H_centroidal, centroidalMom);
 
         computeROCMInBaseUsingMeasurements();
-
-        // TEST: Setting gravitrational wrench and centroidal momentum bias term to zero
-        pImpl->gravitationalWrenchInBase.zero();
-        pImpl->biasTermFromCentroidalMomentum.zero();
 
         std::lock_guard<std::mutex> lock(pImpl->mutex);
 
