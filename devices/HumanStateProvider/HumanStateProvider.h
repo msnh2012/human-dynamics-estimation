@@ -38,6 +38,8 @@ public:
     HumanStateProvider();
     ~HumanStateProvider() override;
 
+    void computeROCMInBaseUsingMeasurements();
+
     // DeviceDriver interface
     bool open(yarp::os::Searchable& config) override;
     bool close() override;
