@@ -919,6 +919,24 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
             integrationBasedIKIntegralCorrectionGainsLinRot->get(1).asFloat64();
     }
 
+    // ==========================================
+    // PARSE THE MEASUREMENT SMOOTHING PARAMETERS
+    // ==========================================
+
+    if (!(config.check("velocitySmoothingFactor") && config.find("velocitySmoothingFactor").isDouble())) {
+        pImpl->velocitySmoothingFactor = 0.1; //Default value
+    }
+    else {
+        pImpl->velocitySmoothingFactor = config.find("velocitySmoothingFactor").asDouble();
+    }
+
+    if (!(config.check("accelerationSmoothingFactor") && config.find("accelerationSmoothingFactor").isDouble())) {
+        pImpl->accelerationSmoothingFactor = 0.1; //Default value
+    }
+    else {
+        pImpl->accelerationSmoothingFactor = config.find("accelerationSmoothingFactor").asDouble();
+    }
+
     // ===================================
     // PRINT CURRENT CONFIGURATION OPTIONS
     // ===================================
@@ -964,6 +982,8 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
         yInfo() << LogPrefix << "*** Inverse Velocity Kinematics solver:"
                 << pImpl->inverseVelocityKinematicsSolver;
     }
+    yInfo() << LogPrefix << "*** Velocity measurements smoothing factor    :" << pImpl->velocitySmoothingFactor;
+    yInfo() << LogPrefix << "*** Acceleration measurements smoothing factor:" << pImpl->accelerationSmoothingFactor;
     yInfo() << LogPrefix << "*** ===========================================";
 
     // ==========================
@@ -1050,11 +1070,6 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
 
     // Set first measurement data to true
     pImpl->firstMeasurementData = true;
-
-    // Set smoothing factors
-    // TODO: Move this to configuration
-    pImpl->velocitySmoothingFactor = 0.1;
-    pImpl->accelerationSmoothingFactor = 0.1;
 
     // ================================
     // INITIALIZE ACCELEROMETER SENSORS
