@@ -1053,8 +1053,8 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
 
     // Set smoothing factors
     // TODO: Move this to configuration
-    pImpl->velocitySmoothingFactor = 0.2;
-    pImpl->accelerationSmoothingFactor = 0.2;
+    pImpl->velocitySmoothingFactor = 0.1;
+    pImpl->accelerationSmoothingFactor = 0.1;
 
     // ================================
     // INITIALIZE ACCELEROMETER SENSORS
@@ -1464,10 +1464,10 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
     const iDynTree::Transform world_H_base = pImpl->linkTransformMatricesMeasured[baseLinkName];
 
     // Get base velocity A_v_A,B
-    const iDynTree::Twist baseVelocityExpressedInWorld = pImpl->linkVelocitiesMeasured[baseLinkName];
+    const iDynTree::Twist baseVelocityExpressedInWorld = pImpl->linkVelocitiesSmoothed[baseLinkName];
 
     // Get base acceleration A_a_A,B
-    const iDynTree::Twist baseAccelerationExpressedInWorld = pImpl->linkAccelerationsMeasured[baseLinkName];
+    const iDynTree::Twist baseAccelerationExpressedInWorld = pImpl->linkAccelerationsSmoothed[baseLinkName];
 
     // Iterate over measurements
     for (const std::pair<std::string, iDynTree::Transform> linkNameTransform : pImpl->linkTransformMatricesMeasured) {
@@ -1485,10 +1485,10 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
         const iDynTree::Transform centroidal_H_link = world_H_centroidal.inverse() * world_H_link;
 
         // Get link velocity A_v_A,L
-        const iDynTree::Twist linkVelocityExpressedInWorld = pImpl->linkVelocitiesMeasured[linkName];
+        const iDynTree::Twist linkVelocityExpressedInWorld = pImpl->linkVelocitiesSmoothed[linkName];
 
         // Get link acceleration A_a_A,L
-        const iDynTree::Twist linkAccelerationExpressedInWorld = pImpl->linkAccelerationsMeasured[linkName];
+        const iDynTree::Twist linkAccelerationExpressedInWorld = pImpl->linkAccelerationsSmoothed[linkName];
 
         // Compute centroidal momentum bias term
         {

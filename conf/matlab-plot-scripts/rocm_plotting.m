@@ -31,10 +31,10 @@ acc_term_1 = ["${}^{L}\dot{v}_{B,L} = {}^{L}{X}_{A} {}^{A}\dot{v}_{A,L}$"];
 acc_term_2 = ["${}^{L}\dot{v}_{B,L} = {}^{L}{X}_{B} {}^{B}{X}_{A}{}^{A}\dot{v}_{A,B}$"];
 acc_term_3 = ["${}^{L}\dot{v}_{B,L} = {}^{L}X_{A} {}^{A}v_{A,B} \times {}^{L}v_{B,L}$"];
 a = axes;
-t = title(strcat(" ", TotalTerm),'Interpreter', 'latex');
+t = title(strcat(" ", strcat(TotalTerm, " Original Velocities and Accelerations")),'Interpreter', 'latex');
 t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
 
 %% Save figure
-save2pdf("ROCMInBaseTotalTerm.pdf", fH,300);
+save2pdf("ROCMInBaseTotalTerm-Original.pdf", fH,300);
