@@ -190,6 +190,12 @@ public:
     std::unordered_map<std::string, iDynTree::Twist> linkVelocitiesMeasured;
     std::unordered_map<std::string, iDynTree::SpatialAcc> linkAccelerationsMeasured;
 
+    bool firstMeasurementData;
+    double velocitySmoothingFactor;
+    double accelerationSmoothingFactor;
+    std::unordered_map<std::string, iDynTree::Twist> linkVelocitiesSmoothed;
+    std::unordered_map<std::string, iDynTree::SpatialAcc> linkAccelerationsSmoothed;
+
     // Link Spatial Inertia container
     std::unordered_map<std::string, iDynTree::SpatialInertia> linkSpatialInertia;
 
@@ -913,6 +919,24 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
             integrationBasedIKIntegralCorrectionGainsLinRot->get(1).asFloat64();
     }
 
+    // ==========================================
+    // PARSE THE MEASUREMENT SMOOTHING PARAMETERS
+    // ==========================================
+
+    if (!(config.check("velocitySmoothingFactor") && config.find("velocitySmoothingFactor").isDouble())) {
+        pImpl->velocitySmoothingFactor = 0.1; //Default value
+    }
+    else {
+        pImpl->velocitySmoothingFactor = config.find("velocitySmoothingFactor").asDouble();
+    }
+
+    if (!(config.check("accelerationSmoothingFactor") && config.find("accelerationSmoothingFactor").isDouble())) {
+        pImpl->accelerationSmoothingFactor = 0.1; //Default value
+    }
+    else {
+        pImpl->accelerationSmoothingFactor = config.find("accelerationSmoothingFactor").asDouble();
+    }
+
     // ===================================
     // PRINT CURRENT CONFIGURATION OPTIONS
     // ===================================
@@ -958,6 +982,8 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
         yInfo() << LogPrefix << "*** Inverse Velocity Kinematics solver:"
                 << pImpl->inverseVelocityKinematicsSolver;
     }
+    yInfo() << LogPrefix << "*** Velocity measurements smoothing factor    :" << pImpl->velocitySmoothingFactor;
+    yInfo() << LogPrefix << "*** Acceleration measurements smoothing factor:" << pImpl->accelerationSmoothingFactor;
     yInfo() << LogPrefix << "*** ===========================================";
 
     // ==========================
@@ -1042,6 +1068,8 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
 
     }
 
+    // Set first measurement data to true
+    pImpl->firstMeasurementData = true;
 
     // ================================
     // INITIALIZE ACCELEROMETER SENSORS
@@ -1348,6 +1376,84 @@ bool HumanStateProvider::close()
     return true;
 }
 
+// TODO: Update smoothing to measurement retrival calls
+void HumanStateProvider::measurementSmoothing()
+{
+    double velSmootingFactor = pImpl->velocitySmoothingFactor;
+    double accSmoothingFactor = pImpl->accelerationSmoothingFactor;
+
+    if (pImpl->firstMeasurementData)
+    {
+        velSmootingFactor = 1;
+        accSmoothingFactor = 1;
+
+        // Initialize smoothed velocity and acceleration buffers to zero
+        // TODO: Make it more concise
+        for (const std::pair<std::string, iDynTree::Twist> vel : pImpl->linkVelocitiesMeasured)
+        {
+            const std::string linkName = vel.first;
+            iDynTree::Twist velocity;
+            velocity.zero();
+            pImpl->linkVelocitiesSmoothed[linkName] = velocity;
+        }
+
+        for (const std::pair<std::string, iDynTree::Twist> acc: pImpl->linkAccelerationsMeasured)
+        {
+            const std::string linkName = acc.first;
+            iDynTree::Twist acceleration;
+            acceleration.zero();
+            pImpl->linkAccelerationsSmoothed[linkName] = acceleration;
+        }
+
+        pImpl->firstMeasurementData = false;
+    }
+
+    //yInfo() << LogPrefix << " velocity smoothing factor " << velSmootingFactor << " acceleration smoothing factor " << accSmoothingFactor;
+
+    for (const std::pair<std::string, iDynTree::Twist> vel : pImpl->linkVelocitiesMeasured)
+    {
+        const std::string linkName = vel.first;
+        const iDynTree::Twist linkMeasuredVel = vel.second;
+
+        iDynTree::Twist linkSmoothedVel;
+        linkSmoothedVel.zero();
+
+        // Compute smoothed link velocity
+        for (size_t i = 0; i < linkMeasuredVel.size(); i++)
+        {
+            double smoothedVel = velSmootingFactor * linkMeasuredVel.getVal(i) + (1 - velSmootingFactor) * pImpl->linkVelocitiesSmoothed[linkName].getVal(i);
+            linkSmoothedVel.setVal(i, smoothedVel);
+        }
+
+        // Update smoothed velocities buffer
+        pImpl->linkVelocitiesSmoothed[linkName] = linkSmoothedVel;
+
+        //yInfo() << LogPrefix << linkName << " measured velociy " << linkMeasuredVel.toString().c_str() << " smoothed velocity " << linkSmoothedVel.toString().c_str();
+    }
+
+    for (const std::pair<std::string, iDynTree::Twist> acc : pImpl->linkAccelerationsMeasured)
+    {
+        const std::string linkName = acc.first;
+        const iDynTree::Twist linkMeasuredAcc = acc.second;
+
+        iDynTree::Twist linkSmoothedAcc;
+        linkSmoothedAcc.zero();
+
+        // Compute smooothed link accleration
+        for (size_t i  = 0; i < linkMeasuredAcc.size(); i++)
+        {
+            double smoothedAcc = accSmoothingFactor * linkMeasuredAcc.getVal(i) + (1 - accSmoothingFactor) * pImpl->linkAccelerationsSmoothed[linkName].getVal(i);
+            linkSmoothedAcc.setVal(i, smoothedAcc);
+        }
+
+        // Update smoothed accelerations buffer
+        pImpl->linkAccelerationsSmoothed[linkName] = linkSmoothedAcc;
+
+        //yInfo() << LogPrefix << linkName << " measured acceleration " << linkMeasuredAcc.toString().c_str() << " smoothed acceleration " << linkSmoothedAcc.toString().c_str();
+    }
+
+}
+
 void HumanStateProvider::computeROCMInBaseUsingMeasurements()
 {
     static std::string baseLinkName = pImpl->floatingBaseFrame.model;
@@ -1373,10 +1479,10 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
     const iDynTree::Transform world_H_base = pImpl->linkTransformMatricesMeasured[baseLinkName];
 
     // Get base velocity A_v_A,B
-    const iDynTree::Twist baseVelocityExpressedInWorld = pImpl->linkVelocitiesMeasured[baseLinkName];
+    const iDynTree::Twist baseVelocityExpressedInWorld = pImpl->linkVelocitiesSmoothed[baseLinkName];
 
     // Get base acceleration A_a_A,B
-    const iDynTree::Twist baseAccelerationExpressedInWorld = pImpl->linkAccelerationsMeasured[baseLinkName];
+    const iDynTree::Twist baseAccelerationExpressedInWorld = pImpl->linkAccelerationsSmoothed[baseLinkName];
 
     // Iterate over measurements
     for (const std::pair<std::string, iDynTree::Transform> linkNameTransform : pImpl->linkTransformMatricesMeasured) {
@@ -1394,10 +1500,10 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
         const iDynTree::Transform centroidal_H_link = world_H_centroidal.inverse() * world_H_link;
 
         // Get link velocity A_v_A,L
-        const iDynTree::Twist linkVelocityExpressedInWorld = pImpl->linkVelocitiesMeasured[linkName];
+        const iDynTree::Twist linkVelocityExpressedInWorld = pImpl->linkVelocitiesSmoothed[linkName];
 
         // Get link acceleration A_a_A,L
-        const iDynTree::Twist linkAccelerationExpressedInWorld = pImpl->linkAccelerationsMeasured[linkName];
+        const iDynTree::Twist linkAccelerationExpressedInWorld = pImpl->linkAccelerationsSmoothed[linkName];
 
         // Compute centroidal momentum bias term
         {
@@ -1634,6 +1740,7 @@ void HumanStateProvider::run()
     // Compute rate of change of momentum in base that is considered as the new measurement input for centroidal dynamics
     // Expose it through IHumanState interface
     {
+        measurementSmoothing();
 
         computeROCMInBaseUsingMeasurements();
 

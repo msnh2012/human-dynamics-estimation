@@ -1973,12 +1973,12 @@ void HumanDynamicsEstimator::run()
                 case iDynTree::COM_ACCELEROMETER_SENSOR:
                 {
                     // Set rate of change of momentum measurements equal to the sum of measured wrench in base frame
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(0);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(1);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(2);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(3);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(4);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(5);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = rateOfChangeOfMomentumInBaseFrame[0];
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = rateOfChangeOfMomentumInBaseFrame[1];
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = rateOfChangeOfMomentumInBaseFrame[2];
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = rateOfChangeOfMomentumInBaseFrame[3];
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = rateOfChangeOfMomentumInBaseFrame[4];
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = rateOfChangeOfMomentumInBaseFrame[5];
                 }
                 break;
                 case iDynTree::NET_EXT_WRENCH_SENSOR:

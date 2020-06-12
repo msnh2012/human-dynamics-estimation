@@ -38,6 +38,7 @@ public:
     HumanStateProvider();
     ~HumanStateProvider() override;
 
+    void measurementSmoothing();
     void computeROCMInBaseUsingMeasurements();
 
     // DeviceDriver interface
