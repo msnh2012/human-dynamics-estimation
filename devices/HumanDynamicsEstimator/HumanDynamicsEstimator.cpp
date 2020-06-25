@@ -44,6 +44,7 @@
 #include <vector>
 #include <algorithm>
 #include <atomic>
+#include <numeric>
 
 #include <iostream>
 #include <fstream>
@@ -1063,6 +1064,9 @@ public:
 
     // Offset wrench
     iDynTree::Wrench wrenchOffset;
+    std::vector<iDynTree::Wrench> wrenchOffsetVec;
+    const int wrenchOffsetMaxCount = 100;
+    int wrenchOffsetCount;
 
     // Link net external wrench analog sensor variable
     LinkNetExternalWrenchEstimatesAnalogSensorData linkNetExternalWrenchEstimatesAnalogSensorData;
@@ -1662,6 +1666,8 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
 
     // Set Offset wrench to zero
     pImpl->wrenchOffset.zero();
+    pImpl->wrenchOffsetCount = 0;
+    pImpl->wrenchOffsetVec.resize(pImpl->wrenchOffsetMaxCount, iDynTree::Wrench::Zero());
 
     // ----------------------------
     // Run a first dummy estimation
@@ -1973,9 +1979,9 @@ void HumanDynamicsEstimator::run()
                 case iDynTree::COM_ACCELEROMETER_SENSOR:
                 {
                     // Set rate of change of momentum measurements equal to the sum of measured wrench in base frame
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = rateOfChangeOfMomentumInBaseFrame[0];
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = rateOfChangeOfMomentumInBaseFrame[1];
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = rateOfChangeOfMomentumInBaseFrame[2];
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = rateOfChangeOfMomentumInBaseFrame[0] - pImpl->wrenchOffset.getVal(0);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = rateOfChangeOfMomentumInBaseFrame[1] - pImpl->wrenchOffset.getVal(1);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = rateOfChangeOfMomentumInBaseFrame[2] - pImpl->wrenchOffset.getVal(2);
                     pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = rateOfChangeOfMomentumInBaseFrame[3];
                     pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = rateOfChangeOfMomentumInBaseFrame[4];
                     pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = rateOfChangeOfMomentumInBaseFrame[5];
@@ -2081,34 +2087,60 @@ void HumanDynamicsEstimator::run()
 
     // Check for rpc command status for the offset, and in case update or reset the offsets
     if (pImpl->commandPro->cmdOffsetStatus && !pImpl->commandPro->resetOffset) {
-        if (pImpl->removeOffsetOption == "source") {
 
-            // TODO: Get the sum of wrenches from the allWrenchesMap buffer
+        if (pImpl->wrenchOffsetCount != pImpl->wrenchOffsetMaxCount)
+        {
+            // Calculate the difference between rocm and sum of wrench measurements
+            iDynTree::Wrench wrenchDiff;
 
-            // Compute offset to be removed at the rate of change of momentum level in world frame
-            pImpl->wrenchOffset.setVal(0, rateOfChangeOfMomentumInWorldFrame.at(0) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(0));
-            pImpl->wrenchOffset.setVal(1, rateOfChangeOfMomentumInWorldFrame.at(1) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(1));
-            pImpl->wrenchOffset.setVal(2, rateOfChangeOfMomentumInWorldFrame.at(2) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(2));
-            pImpl->wrenchOffset.setVal(3, rateOfChangeOfMomentumInWorldFrame.at(3) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(3));
-            pImpl->wrenchOffset.setVal(4, rateOfChangeOfMomentumInWorldFrame.at(4) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(4));
-            pImpl->wrenchOffset.setVal(5, rateOfChangeOfMomentumInWorldFrame.at(5) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInWorldFrame.at(5));
+            wrenchDiff.setVal(0, rateOfChangeOfMomentumInBaseFrame.at(0) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(0));
+            wrenchDiff.setVal(1, rateOfChangeOfMomentumInBaseFrame.at(1) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(1));
+            wrenchDiff.setVal(2, rateOfChangeOfMomentumInBaseFrame.at(2) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(2));
+            wrenchDiff.setVal(3, rateOfChangeOfMomentumInBaseFrame.at(3) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(3));
+            wrenchDiff.setVal(4, rateOfChangeOfMomentumInBaseFrame.at(4) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(4));
+            wrenchDiff.setVal(5, rateOfChangeOfMomentumInBaseFrame.at(5) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInBaseFrame.at(5));
 
-            // Compute offset to be removed at the rate of change of momentum level in centroidal frame
-            iDynTree::Wrench offset;
-            offset.zero();
 
-            offset.setVal(0, rateOfChangeOfMomentumInCentroidalFrame.at(0) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(0));
-            offset.setVal(1, rateOfChangeOfMomentumInCentroidalFrame.at(1) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(1));
-            offset.setVal(2, rateOfChangeOfMomentumInCentroidalFrame.at(2) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(2));
-            offset.setVal(3, rateOfChangeOfMomentumInCentroidalFrame.at(3) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(3));
-            offset.setVal(4, rateOfChangeOfMomentumInCentroidalFrame.at(4) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(4));
-            offset.setVal(5, rateOfChangeOfMomentumInCentroidalFrame.at(5) - pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Measured].sumOfWrenchesInCentroidalFrame.at(5));
+            // Set the wrench diff to a vec
+            pImpl->wrenchOffsetVec.at(pImpl->wrenchOffsetCount) = wrenchDiff;
 
-            yInfo() << LogPrefix << "Offset in centroidal frame is " << offset.toString().c_str();
-
+            // Increase wrench offset count
+            pImpl->wrenchOffsetCount++;
         }
-        else {
-            yWarning() << LogPrefix << "The choosen removeOffsetOption " << pImpl->removeOffsetOption << " is not valid";
+        else
+        {
+            // Get wrench elements from the offset wrench vector
+            std::vector<std::vector<double>> wrenchElements(6, std::vector<double>(pImpl->wrenchOffsetVec.size(), 0));
+            int count = 0;
+            for (iDynTree::Wrench wrench : pImpl->wrenchOffsetVec)
+            {
+                wrenchElements.at(0).at(count) = wrench.getVal(0);
+                wrenchElements.at(1).at(count) = wrench.getVal(1);
+                wrenchElements.at(2).at(count) = wrench.getVal(2);
+                wrenchElements.at(3).at(count) = wrench.getVal(3);
+                wrenchElements.at(4).at(count) = wrench.getVal(4);
+                wrenchElements.at(5).at(count) = wrench.getVal(5);
+
+                count++;
+
+            }
+
+            // Set average of wrench differecen to offset wrench variable
+            for (size_t c = 0; c < wrenchElements.size(); c++) {
+
+                double average = std::accumulate(wrenchElements.at(c).begin(), wrenchElements.at(c).end(), 0.0) / wrenchElements.at(c).size();
+                pImpl->wrenchOffset.setVal(c, average);
+
+            }
+
+            yInfo() << LogPrefix << "Offset to be removed " << pImpl->wrenchOffset.toString().c_str();
+
+            // Reset wrench offset count
+            pImpl->wrenchOffsetCount = 0;
+
+            // Reset rpc command status flags
+            pImpl->commandPro->cmdOffsetStatus = false;
+            pImpl->commandPro->resetOffset = false;
         }
     }
     else if (pImpl->commandPro->cmdOffsetStatus && pImpl->commandPro->resetOffset) {
@@ -2116,15 +2148,22 @@ void HumanDynamicsEstimator::run()
         yInfo() << LogPrefix << "Clearing offsets";
         pImpl->wrenchOffset.zero();
 
+        // Reset wrench offset count
+        pImpl->wrenchOffsetCount = 0;
+
+        // Reset rpc command status flags
+        pImpl->commandPro->cmdOffsetStatus = false;
+        pImpl->commandPro->resetOffset = false;
+
     }
 
-    // Set rpc command status to false
-    pImpl->commandPro->cmdOffsetStatus = false;
-    pImpl->commandPro->cmdDynamicStatus = false;
-    pImpl->commandPro->resetOffset = false;
-    pImpl->commandPro->cmdTask1Status = false;
-    pImpl->commandPro->resetTask1 = false;
-    pImpl->commandPro->zeroWrench = false;
+//    // Set rpc command status to false
+//    pImpl->commandPro->cmdOffsetStatus = false;
+//    pImpl->commandPro->cmdDynamicStatus = false;
+//    pImpl->commandPro->resetOffset = false;
+//    pImpl->commandPro->cmdTask1Status = false;
+//    pImpl->commandPro->resetTask1 = false;
+//    pImpl->commandPro->zeroWrench = false;
 
     // ================================
     // LOW PRIORITY TASK 2 - FULL BERDY
