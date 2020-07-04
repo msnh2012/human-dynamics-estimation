@@ -32,6 +32,10 @@ RightHandMeasuredWrenchInWorldFrame = data.task1_wrenchMeasurementsInWorldFrame(
 
 sumWrenchMeasurementsInWorldFrame = LeftFootMeasuredWrenchInWorldFrame + RightFootMeasuredWrenchInWorldFrame +...
                                     LeftHandMeasuredWrenchInWorldFrame + RightHandMeasuredWrenchInWorldFrame;
+                                
+sumFeetWrenchMeasurementsInWorldFrame = LeftFootMeasuredWrenchInWorldFrame + RightFootMeasuredWrenchInWorldFrame;
+
+sumHandWrenchMeasurementsInWorldFrame = LeftHandMeasuredWrenchInWorldFrame + RightHandMeasuredWrenchInWorldFrame;
 
 %% Measurement wrenches in centroidal frame
 LeftFootMeasuredWrenchInCentroidalFrame  = data.task1_wrenchMeasurementsInCentroidalFrame(1:6,:)';
@@ -56,6 +60,10 @@ RightHandEstimatedWrenchInBaseFrame = data.task1_wrenchEstimatesInBaseFrame(19:2
 
 sumWrenchEstimatesInBaseFrame = LeftFootEstimatedWrenchInBaseFrame + RightFootEstimatedWrenchInBaseFrame +...
                                 LeftHandEstimatedWrenchInBaseFrame + RightHandEstimatedWrenchInBaseFrame;
+                            
+sumFeetWrenchEstimatesInBaseFrame = LeftFootEstimatedWrenchInBaseFrame + RightFootEstimatedWrenchInBaseFrame;
+                            
+sumHandWrenchEstimatesInBaseFrame = LeftHandEstimatedWrenchInBaseFrame + RightHandEstimatedWrenchInBaseFrame;
 
 %% Estimate wrenches in world frame
 LeftFootEstimatedWrenchInWorldFrame  = data.task1_wrenchEstimatesInWorldFrame(1:6,:)';
@@ -65,6 +73,11 @@ RightHandEstimatedWrenchInWorldFrame = data.task1_wrenchEstimatesInWorldFrame(19
 
 sumWrenchEstimatesInWorldFrame = LeftFootEstimatedWrenchInWorldFrame + RightFootEstimatedWrenchInWorldFrame +...
                                  LeftHandEstimatedWrenchInWorldFrame + RightHandEstimatedWrenchInWorldFrame;
+                             
+sumFeetWrenchEstimatesInWorldFrame = LeftFootEstimatedWrenchInWorldFrame + RightFootEstimatedWrenchInWorldFrame;
+
+sumHandWrenchEstimatesInWorldFrame = LeftHandEstimatedWrenchInWorldFrame + RightHandEstimatedWrenchInWorldFrame;
+
 
 %% Estimate wrenches in centroidal frame
 LeftFootEstimatedWrenchInCentroidalFrame  = data.task1_wrenchEstimatesInCentroidalFrame(1:6,:)';
@@ -80,40 +93,65 @@ sumWrenchEstimatesInCentroidalFrame = LeftFootEstimatedWrenchInCentroidalFrame +
 wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y [Nm]$", "$m_z [Nm]$"];
 wrenchEstimatesLegendString = ["$\hat{f}_x [N]$", "$\hat{f}_y [N]$", "$\hat{f}_z [N]$","$\hat{m}_x [Nm]$", "$\hat{m}_y [Nm]$", "$\hat{m}_z [Nm]$"];
 wrenchSourceName = ["Left Foot Wrench", "Right Foot Wrench", "Left Hand Wrench", "Right Hand Wrench"];
-momentumLegendString = ["$\dot{H}_{L_x}$", "$\dot{H}_{L_y}$", "$\dot{H}_{L_z}$", "$\dot{H}_{\omega_x}$", "$\dot{H}_{\omega_y}$", "$\dot{H}_{\omega_z}$"];
+momentumLegendString = ["$^{B}\underline{\dot{h}}_{L_x}$", "$^{B}\underline{\dot{h}}_{L_y}$", "$^{B}\underline{\dot{h}}_{L_z}$",...
+                        "$^{B}\underline{\dot{h}}_{\omega_x}$", "$^{B}\underline{\dot{h}}_{\omega_y}$", "$^{B}\underline{\dot{h}}_{\omega_z}$"];
 
 %% Measurement Vs Estimates Wrench In Base Frame
 
 numberOfWrenchSources = 4;
 
-% % for i = 1:numberOfWrenchSources
-% %     
-% %     fH = figure('units','normalized','outerposition',[0 0 1 1]);
-% %     
-% %     for s = 1:6
-% %         
-% %         subplot(2,3,s);
-% %         plot(data.task1_wrenchMeasurementsInBaseFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth);
-% %         hold on;
-% %         plot(data.task1_wrenchEstimatesInBaseFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth, 'LineStyle', '--');
-% %         hold on;
-% %         xlabel('Samples', 'FontSize', fontSize);
-% %         ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
-% %         set (gca, 'FontSize' , fontSize)
-% %         legend('Measured Wrench', 'Estimated Wrench', 'FontSize', fontSize, 'Location', 'Best');
-% %         
-% %     end
-% %     
-% %     a = axes;
-% %     t = title (strcat(wrenchSourceName(i) + " In Base Frame"));
-% %     t.FontSize = fontSize;
-% %     a.Visible = 'off' ;
-% %     t.Visible = 'on' ;
-% %     
-% %     %% Save figure
-% %     save2pdf(strcat(t.String + ".pdf"), fH,300);
-% %     
-% % end
+for i = 1:numberOfWrenchSources
+    
+    fH = figure('units','normalized','outerposition',[0 0 1 1]);
+    
+    for s = 1:6
+        
+        subplot(2,3,s);
+        plot(data.task1_wrenchMeasurementsInLinkFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth);
+        hold on;
+        plot(data.task1_wrenchEstimatesInLinkFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth, 'LineStyle', '--');
+        hold on;
+        ylim([-400 800])
+        xlabel('Samples', 'FontSize', fontSize);
+        ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
+        set (gca, 'FontSize' , fontSize)
+        legend('Measured Wrench', 'Estimated Wrench', 'FontSize', fontSize, 'Location', 'Best');
+        
+    end
+    
+    a = axes;
+    t = title (strcat(wrenchSourceName(i) + " In Link Frame"));
+    t.FontSize = fontSize;
+    a.Visible = 'off' ;
+    t.Visible = 'on' ;
+    
+    %% Save figure
+    save2pdf(strcat(t.String + ".pdf"), fH,300);
+    
+end
+
+fH = figure('units','normalized','outerposition',[0 0 1 1]);
+    
+for s = 1:6
+        
+    subplot(2,3,s);
+    plot(sumHandWrenchMeasurementsInWorldFrame(:,s), 'LineWidth', lineWidth);
+    hold on;
+    plot(sumHandWrenchEstimatesInWorldFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+    hold on;
+    ylim([-400 800])
+    xlabel('Samples', 'FontSize', fontSize);
+    ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
+    set (gca, 'FontSize' , fontSize)
+    legend('Measured Wrench', 'Estimated Wrench', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+        
+end
+
+a = axes;
+t = title ("Sum of wrench measurements and estimates at the hands expressed in world frame");
+t.FontSize = fontSize;
+a.Visible = 'off' ;
+t.Visible = 'on' ;
 
 % % %% Sum of measured wrench vs sum of estimated wrench in Base frame
 % % fH = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -158,6 +196,7 @@ for s = 1:6
     hold on;
     plot(sumWrenchEstimatesInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '-.');
     hold on;
+    ylim([-400 1000])
     xlabel('Samples', 'FontSize', fontSize);
     legend(momentumLegendString(s), wrenchLegendString(s), wrenchEstimatesLegendString(s),...
            'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
