@@ -54,8 +54,8 @@
         <param name="integrationBasedIKMeasuredVelocityGainLinRot">(1.0 1.0)</param>
         <param name="integrationBasedIKCorrectionGainsLinRot">(8.0 20.0)</param>
         <param name="integrationBasedIKIntegralCorrectionGainsLinRot">(0.0 0.0)</param>
-        <param name="velocitySmoothingFactor">0.1</param>
-        <param name="accelerationSmoothingFactor">0.1</param>
+        <param name="velocitySmoothingFactor">0.01</param>
+        <param name="accelerationSmoothingFactor">0.01</param>
         <group name="MODEL_TO_DATA_LINK_NAMES">
             <param name="map_Pelvis">(Pelvis, XsensSuit::vLink::Pelvis)</param>
             <param name="map_L5">(L5, XsensSuit::vLink::L5)</param>
