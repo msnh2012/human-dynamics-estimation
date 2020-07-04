@@ -1064,6 +1064,8 @@ public:
 
     // Offset wrench
     iDynTree::Wrench wrenchOffset;
+    iDynTree::Wrench wrenchOffsetInworld;
+    iDynTree::Wrench wrenchOffsetInBase;
     std::vector<iDynTree::Wrench> wrenchOffsetVec;
     const int wrenchOffsetMaxCount = 100;
     int wrenchOffsetCount;
@@ -1666,6 +1668,8 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
 
     // Set Offset wrench to zero
     pImpl->wrenchOffset.zero();
+    pImpl->wrenchOffsetInworld.zero();
+    pImpl->wrenchOffsetInBase.zero();
     pImpl->wrenchOffsetCount = 0;
     pImpl->wrenchOffsetVec.resize(pImpl->wrenchOffsetMaxCount, iDynTree::Wrench::Zero());
 
@@ -1978,10 +1982,13 @@ void HumanDynamicsEstimator::run()
             {
                 case iDynTree::COM_ACCELEROMETER_SENSOR:
                 {
+                    // Get wrench offset in base
+                    iDynTree::Transform w_H_base = kinDynComputations.getWorldTransform(pImpl->humanModel.getLinkName(pImpl->berdyData.state.floatingBaseFrameIndex));
+                    iDynTree::fromEigen(pImpl->wrenchOffsetInBase, ( iDynTree::toEigen(w_H_base.inverse().asAdjointTransformWrench()) * iDynTree::toEigen(pImpl->wrenchOffsetInworld) ));
                     // Set rate of change of momentum measurements equal to the sum of measured wrench in base frame
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = rateOfChangeOfMomentumInBaseFrame[0] - pImpl->wrenchOffset.getVal(0);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = rateOfChangeOfMomentumInBaseFrame[1] - pImpl->wrenchOffset.getVal(1);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = rateOfChangeOfMomentumInBaseFrame[2] - pImpl->wrenchOffset.getVal(2);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = rateOfChangeOfMomentumInBaseFrame[0] - pImpl->wrenchOffsetInBase.getVal(0);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = rateOfChangeOfMomentumInBaseFrame[1] - pImpl->wrenchOffsetInBase.getVal(1);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = rateOfChangeOfMomentumInBaseFrame[2] - pImpl->wrenchOffsetInBase.getVal(2);
                     pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = rateOfChangeOfMomentumInBaseFrame[3];
                     pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = rateOfChangeOfMomentumInBaseFrame[4];
                     pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = rateOfChangeOfMomentumInBaseFrame[5];
@@ -2135,6 +2142,12 @@ void HumanDynamicsEstimator::run()
 
             yInfo() << LogPrefix << "Offset to be removed " << pImpl->wrenchOffset.toString().c_str();
 
+            // Express wrench offset in world frame
+            iDynTree::Transform w_H_base = kinDynComputations.getWorldTransform(pImpl->humanModel.getLinkName(pImpl->berdyData.state.floatingBaseFrameIndex));
+            iDynTree::fromEigen(pImpl->wrenchOffsetInworld, (iDynTree::toEigen(w_H_base.asAdjointTransformWrench()) * iDynTree::toEigen(pImpl->wrenchOffset)));
+
+            yInfo() << LogPrefix << "Offset to be removed expressed in world " << pImpl->wrenchOffsetInworld.toString().c_str();
+
             // Reset wrench offset count
             pImpl->wrenchOffsetCount = 0;
 
@@ -2147,6 +2160,8 @@ void HumanDynamicsEstimator::run()
 
         yInfo() << LogPrefix << "Clearing offsets";
         pImpl->wrenchOffset.zero();
+        pImpl->wrenchOffsetInworld.zero();
+        pImpl->wrenchOffsetInBase.zero();
 
         // Reset wrench offset count
         pImpl->wrenchOffsetCount = 0;
