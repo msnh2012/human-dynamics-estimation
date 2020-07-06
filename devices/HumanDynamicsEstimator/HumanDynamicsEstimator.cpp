@@ -1228,7 +1228,7 @@ void HumanDynamicsEstimator::publishRosMarkerMsg(const double& mass)
     // Update the marker and publish
     estimatedObjectMassMsg.header.frame_id = "ground";
     estimatedObjectMassMsg.header.stamp = yarp::os::Time::now();
-    estimatedObjectMassMsg.text = "Estimated Object Mass : " + std::to_string(mass) + " Kgs";
+    estimatedObjectMassMsg.text = "Estimated Object Mass : " + std::to_string(mass).substr(0, std::to_string(mass).find(".") + 3) + " Kgs";
     estimatedObjectMassMarkerMsgPub.write(estimatedObjectMassMsg);
 }
 
@@ -2146,6 +2146,9 @@ void HumanDynamicsEstimator::run()
     pImpl->estimatedObjectMass = std::sqrt(std::pow(sumOfHandEstimatedTask1Forces.getVal(0), 2) +
                                            std::pow(sumOfHandEstimatedTask1Forces.getVal(1), 2) +
                                            std::pow(sumOfHandEstimatedTask1Forces.getVal(2), 2) ) / pImpl->gravity.getVal(2);
+
+    // Round to 2 decimals
+    pImpl->estimatedObjectMass = std::ceil(pImpl->estimatedObjectMass * 100.0) / 100.0;
 
     // Publish estimated object mass to ros topic
     publishRosMarkerMsg(pImpl->estimatedObjectMass);
