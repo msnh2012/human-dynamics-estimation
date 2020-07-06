@@ -1087,7 +1087,7 @@ public:
     // Analog sensor variable containing the offset removed wrench measurements and the extimates link net external wrench estimates
     AllWrenchAnalogSensorData allWrenchAnalogSensorData;
 
-    // Estimated mass buffer
+    // Estimated object mass buffer
     double estimatedObjectMass;
 
     // Constructor
@@ -1192,7 +1192,28 @@ HumanDynamicsEstimator::Impl::Impl()
 HumanDynamicsEstimator::HumanDynamicsEstimator()
     : PeriodicThread(DefaultPeriod)
     , pImpl{new Impl()}
-{}
+{
+    // Initialize ros node and publisher
+    rosNode.prepare("/HDE/HumanDynamicsEstimator");
+    std::string rosTopicName = "/HDE/HumanDynamicsEstimator/EstimatedObjectMass";
+    if (!estimatedObjectMassMarkerMsgPub.topic(rosTopicName))
+    {
+        yWarning() << LogPrefix << "Failed to open " << rosTopicName;
+        return;
+    }
+
+    // Initialize estimated object marker message visualization
+    // TODO: Update color and other parameters
+    estimatedObjectMassMsg.text = std::to_string(0);
+}
+
+void HumanDynamicsEstimator::publishRosMarkerMsg(const double& mass)
+{
+
+    // Update the marker and publish
+    estimatedObjectMassMsg.text = std::to_string(mass);
+    estimatedObjectMassMarkerMsgPub.write(estimatedObjectMassMsg);
+}
 
 // Without this destructor here, the linker complains for
 // undefined reference to vtable
@@ -1353,7 +1374,7 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
     task2_sumOfWrench[hde::interfaces::IHumanWrench::WrenchType::Estimated] = task2_sumOfEstimatedWrench;
     pImpl->sumOfWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2] = task2_sumOfWrench;
 
-    // Initialize estimated mass
+    // Initialize estimated object mass
     pImpl->estimatedObjectMass = 0;
 
     // Initialize the number of channels of the equivalent IAnalogSensor
@@ -2108,6 +2129,9 @@ void HumanDynamicsEstimator::run()
     pImpl->estimatedObjectMass = std::sqrt(std::pow(sumOfHandEstimatedTask1Forces.getVal(0), 2) +
                                            std::pow(sumOfHandEstimatedTask1Forces.getVal(1), 2) +
                                            std::pow(sumOfHandEstimatedTask1Forces.getVal(2), 2) ) / pImpl->gravity.getVal(2);
+
+    // Publish estimated object mass to ros topic
+    publishRosMarkerMsg(pImpl->estimatedObjectMass);
 
     // NOTE: Task 1 estimate wrenches are Task 2 measurement wrenches
     // Express task 2 measurement wrenches in different frames
