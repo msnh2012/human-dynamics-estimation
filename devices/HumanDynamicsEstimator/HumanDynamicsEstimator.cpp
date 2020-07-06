@@ -1203,7 +1203,22 @@ HumanDynamicsEstimator::HumanDynamicsEstimator()
     }
 
     // Initialize estimated object marker message visualization
-    // TODO: Update color and other parameters
+    estimatedObjectMassMsg.ns = "/HDE/HumanDynamicsEstimator";
+    estimatedObjectMassMsg.id = 0;
+    estimatedObjectMassMsg.type = yarp::rosmsg::visualization_msgs::Marker::TEXT_VIEW_FACING;
+    estimatedObjectMassMsg.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
+    estimatedObjectMassMsg.pose.position.x = 0;
+    estimatedObjectMassMsg.pose.position.y = 0;
+    estimatedObjectMassMsg.pose.position.z = 2.25;
+    estimatedObjectMassMsg.pose.orientation.x = 0;
+    estimatedObjectMassMsg.pose.orientation.y = 0;
+    estimatedObjectMassMsg.pose.orientation.z = 0;
+    estimatedObjectMassMsg.pose.orientation.w = 1;
+    estimatedObjectMassMsg.scale.z = 0.25;
+    estimatedObjectMassMsg.color.a = 0.8;
+    estimatedObjectMassMsg.color.r = 0.05;
+    estimatedObjectMassMsg.color.g = 0.1;
+    estimatedObjectMassMsg.color.b = 0.55;
     estimatedObjectMassMsg.text = std::to_string(0);
 }
 
@@ -1211,7 +1226,9 @@ void HumanDynamicsEstimator::publishRosMarkerMsg(const double& mass)
 {
 
     // Update the marker and publish
-    estimatedObjectMassMsg.text = std::to_string(mass);
+    estimatedObjectMassMsg.header.frame_id = "ground";
+    estimatedObjectMassMsg.header.stamp = yarp::os::Time::now();
+    estimatedObjectMassMsg.text = "Estimated Object Mass : " + std::to_string(mass) + " Kgs";
     estimatedObjectMassMarkerMsgPub.write(estimatedObjectMassMsg);
 }
 
@@ -2827,5 +2844,7 @@ std::vector<double> HumanDynamicsEstimator::getWrenchesInFrame(hde::interfaces::
     {
         return pImpl->allWrenchesMap[taskType][wrenchType].wrenchesInWorldFrame;
     }
+
+    return {};
 }
 
