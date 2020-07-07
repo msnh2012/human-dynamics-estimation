@@ -2143,9 +2143,9 @@ void HumanDynamicsEstimator::run()
     }
 
 
-    pImpl->estimatedObjectMass = std::sqrt(std::pow(sumOfHandEstimatedTask1Forces.getVal(0), 2) +
-                                           std::pow(sumOfHandEstimatedTask1Forces.getVal(1), 2) +
-                                           std::pow(sumOfHandEstimatedTask1Forces.getVal(2), 2) ) / pImpl->gravity.getVal(2);
+    pImpl->estimatedObjectMass = std::abs(std::sqrt(std::pow(sumOfHandEstimatedTask1Forces.getVal(0), 2) +
+                                                    std::pow(sumOfHandEstimatedTask1Forces.getVal(1), 2) +
+                                                    std::pow(sumOfHandEstimatedTask1Forces.getVal(2), 2) ) / pImpl->gravity.getVal(2));
 
     // Round to 2 decimals
     pImpl->estimatedObjectMass = std::ceil(pImpl->estimatedObjectMass * 100.0) / 100.0;
