@@ -7,7 +7,7 @@ fontSize = 20;
 lineWidth = 2;
 
 %% Load data
-load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estimation/conf/xml/testData/matLogFileFrontSquat.mat');
+load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estimation/conf/xml/testData/matLogFileNpose.mat');
 
 subjectWeight = 75.5 * 9.81;
 
@@ -16,6 +16,17 @@ LeftFootMeasuredWrenchInLinkFrame  = data.task1_wrenchMeasurementsInLinkFrame(1:
 RightFootMeasuredWrenchInLinkFrame = data.task1_wrenchMeasurementsInLinkFrame(7:12,:)';
 LeftHandMeasuredWrenchInLinkFrame  = data.task1_wrenchMeasurementsInLinkFrame(13:18,:)';
 RightHandMeasuredWrenchInLinkFrame = data.task1_wrenchMeasurementsInLinkFrame(19:24,:)';
+
+normLeftFootMeasuredWrenchInLinkFrame = [];
+normRightFootMeasuredWrenchInLinkFrame = [];
+
+for i=1:size(LeftFootMeasuredWrenchInLinkFrame, 1)
+    normLeftFootMeasuredWrenchInLinkFrame(i) = norm(LeftFootMeasuredWrenchInLinkFrame(i,1:3));
+end
+
+for i=1:size(RightFootMeasuredWrenchInLinkFrame, 1)
+    normRightFootMeasuredWrenchInLinkFrame(i) = norm(RightFootMeasuredWrenchInLinkFrame(i,1:3));
+end
 
 %% Measurement wrenches in base frame
 LeftFootMeasuredWrenchInBaseFrame  = data.task1_wrenchMeasurementsInBaseFrame(1:6,:)';
@@ -150,63 +161,106 @@ numberOfWrenchSources = 4;
 
 % % fH = figure('units','normalized','outerposition',[0 0 1 1]);
     
-for s = 1:6
-        
-    subplot(2,3,s);
-    plot(sumHandWrenchMeasurementsInWorldFrame(:,s), 'LineWidth', lineWidth);
-    hold on;
-    plot(sumHandWrenchEstimatesInWorldFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
-    hold on;
-    ylim([-400 800])
-    xlabel('Samples', 'FontSize', fontSize);
-    ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
-    set (gca, 'FontSize' , fontSize)
-    legend('Measured Wrench', 'Estimated Wrench', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
-        
-end
+% % for s = 1:6
+% %         
+% %     subplot(2,3,s);
+% %     plot(sumHandWrenchMeasurementsInWorldFrame(:,s), 'LineWidth', lineWidth);
+% %     hold on;
+% %     plot(sumHandWrenchEstimatesInWorldFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+% %     hold on;
+% %     ylim([-400 800])
+% %     xlabel('Samples', 'FontSize', fontSize);
+% %     ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
+% %     set (gca, 'FontSize' , fontSize)
+% %     legend('Measured Wrench', 'Estimated Wrench', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% %         
+% % end
+% % 
+% % a = axes;
+% % t = title ("Sum of hands wrench measurements and estimates expressed in world frame");
+% % t.FontSize = fontSize;
+% % a.Visible = 'off' ;
+% % t.Visible = 'on' ;
+% % 
+% % 
+% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
+% %     
+% % for s = 1:6
+% %         
+% %     subplot(2,3,s);
+% %     plot(sumFeetWrenchMeasurementsInWorldFrame(:,s), 'LineWidth', lineWidth);
+% %     hold on;
+% %     plot(sumFeetWrenchEstimatesInWorldFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+% %     hold on;
+% %     ylim([-800 1200])
+% %     xlabel('Samples', 'FontSize', fontSize);
+% %     ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
+% %     set (gca, 'FontSize' , fontSize)
+% %     legend('Measured Wrench', 'Estimated Wrench', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% %         
+% % end
+% % 
+% % a = axes;
+% % t = title ("Sum of feet wrench measurements expressed in world frame");
+% % t.FontSize = fontSize;
+% % a.Visible = 'off' ;
+% % t.Visible = 'on' ;
+% % 
+% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
+% % plot(feetForceMeasurementsNormInWorldFrame, 'LineWidth', lineWidth);
+% % hold on;
+% % yline(subjectWeight, 'LineWidth', lineWidth, 'LineStyle', '--');
+% % hold on;
+% % ylim([600 900])
+% % xlabel('Samples', 'FontSize', fontSize);
+% % ylabel('$Weight$', 'Interpreter', 'latex', 'FontSize', fontSize);
+% % legend('Measured Weight', 'Subject Weight', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% % 
+% % a = axes;
+% % t = title ("Norm of sum of feet force measurements expressed in world frame Vs subject weight");
+% % t.FontSize = fontSize;
+% % a.Visible = 'off' ;
+% % t.Visible = 'on' ;
 
-a = axes;
-t = title ("Sum of hands wrench measurements and estimates expressed in world frame");
-t.FontSize = fontSize;
-a.Visible = 'off' ;
-t.Visible = 'on' ;
-
+%% Feet measured force norm expressed in link frames
 
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
-    
-for s = 1:6
-        
-    subplot(2,3,s);
-    plot(sumFeetWrenchMeasurementsInWorldFrame(:,s), 'LineWidth', lineWidth);
-    hold on;
-    plot(sumFeetWrenchEstimatesInWorldFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
-    hold on;
-    ylim([-800 1200])
-    xlabel('Samples', 'FontSize', fontSize);
-    ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
-    set (gca, 'FontSize' , fontSize)
-    legend('Measured Wrench', 'Estimated Wrench', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
-        
-end
+subplot(3,1,1)
+plot(normLeftFootMeasuredWrenchInLinkFrame', 'LineWidth', lineWidth);
+hold on;
+yline(subjectWeight/2, 'LineWidth', lineWidth, 'LineStyle', '--');
+hold on;
 
-a = axes;
-t = title ("Sum of feet wrench measurements expressed in world frame");
-t.FontSize = fontSize;
-a.Visible = 'off' ;
-t.Visible = 'on' ;
+ylim([200 1000])
+xlabel('Samples', 'FontSize', fontSize);
+ylabel('$Weight$', 'Interpreter', 'latex', 'FontSize', fontSize);
+legend('Measured Weight', '$\frac{Subject Weight}{2}$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
 
-fH = figure('units','normalized','outerposition',[0 0 1 1]);
-plot(feetForceMeasurementsNormInWorldFrame, 'LineWidth', lineWidth);
+subplot(3,1,2)
+plot(normRightFootMeasuredWrenchInLinkFrame', 'LineWidth', lineWidth);
+hold on;
+yline(subjectWeight/2, 'LineWidth', lineWidth, 'LineStyle', '--');
+hold on;
+
+ylim([200 1000])
+xlabel('Samples', 'FontSize', fontSize);
+ylabel('$Weight$', 'Interpreter', 'latex', 'FontSize', fontSize);
+legend('Measured Weight', '$\frac{Subject Weight}{2}$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+
+subplot(3,1,3)
+plot(normLeftFootMeasuredWrenchInLinkFrame'+normRightFootMeasuredWrenchInLinkFrame', 'LineWidth', lineWidth);
 hold on;
 yline(subjectWeight, 'LineWidth', lineWidth, 'LineStyle', '--');
 hold on;
-ylim([600 900])
+
+
+ylim([200 1000])
 xlabel('Samples', 'FontSize', fontSize);
 ylabel('$Weight$', 'Interpreter', 'latex', 'FontSize', fontSize);
 legend('Measured Weight', 'Subject Weight', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
 
 a = axes;
-t = title ("Norm of sum of feet force measurements expressed in world frame Vs subject weight");
+t = title ("Norm of sum of feet force measurements expressed in link frame Vs subject weight");
 t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
@@ -243,31 +297,31 @@ RateOfChangeOfMomentumInBaseFrame = data.rateOfChangeOfMomentumInBaseFrame;
 RateOfChangeOfMomentumInCentroidalFrame = data.rateOfChangeOfMomentumInCentroidalFrame;
 
 %% %%   Rate of Change of Momentum In Base Frame Vs Sum of External Wrenches Measurements In Base Frame
-fH = figure('units','normalized','outerposition',[0 0 1 1]);
-
-for s = 1:6
-    
-    subplot(2,3,s);
-    plot( RateOfChangeOfMomentumInBaseFrame(s,:)', 'LineWidth', lineWidth);
-    hold on;
-    plot(sumWrenchMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
-    hold on;
-    plot(sumWrenchEstimatesInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '-.');
-    hold on;
-    ylim([-400 1000])
-    xlabel('Samples', 'FontSize', fontSize);
-    legend(momentumLegendString(s), wrenchLegendString(s), wrenchEstimatesLegendString(s),...
-           'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
-    
-end
-
-a = axes;
-t = title ("Rate of Change of Momentum - Sum of External Wrenches Measurements In Base Frame");
-t.FontSize = fontSize;
-a.Visible = 'off' ;
-t.Visible = 'on' ;
-
-save2pdf("rateOfMomentumVsMeasuredWrenchesInBaseFrame.pdf", fH,300);
+% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
+% % 
+% % for s = 1:6
+% %     
+% %     subplot(2,3,s);
+% %     plot( RateOfChangeOfMomentumInBaseFrame(s,:)', 'LineWidth', lineWidth);
+% %     hold on;
+% %     plot(sumWrenchMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+% %     hold on;
+% %     plot(sumWrenchEstimatesInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '-.');
+% %     hold on;
+% %     ylim([-400 1000])
+% %     xlabel('Samples', 'FontSize', fontSize);
+% %     legend(momentumLegendString(s), wrenchLegendString(s), wrenchEstimatesLegendString(s),...
+% %            'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% %     
+% % end
+% % 
+% % a = axes;
+% % t = title ("Rate of Change of Momentum - Sum of External Wrenches Measurements In Base Frame");
+% % t.FontSize = fontSize;
+% % a.Visible = 'off' ;
+% % t.Visible = 'on' ;
+% % 
+% % save2pdf("rateOfMomentumVsMeasuredWrenchesInBaseFrame.pdf", fH,300);
 
 
 % % %% %% Center of Mass Position Expressed in World Frame
