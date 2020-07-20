@@ -7,7 +7,7 @@ fontSize = 20;
 lineWidth = 2;
 
 %% Load data
-load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estimation/conf/xml/testData/matLogFileNpose.mat');
+load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estimation/conf/xml/testData/matLogFileFrontSquat.mat');
 
 subjectWeight = 75.5 * 9.81;
 
@@ -233,8 +233,8 @@ hold on;
 
 ylim([200 1000])
 xlabel('Samples', 'FontSize', fontSize);
-ylabel('$Weight$', 'Interpreter', 'latex', 'FontSize', fontSize);
-legend('Measured Weight', '$\frac{Subject Weight}{2}$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+ylabel('$Weight (Left Foot )$', 'Interpreter', 'latex', 'FontSize', fontSize);
+legend('Measured Weight $|| {}^{\mathcal{LF}}{f}_{LF} ||$', '$\frac{Subject Weight}{2}$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
 
 subplot(3,1,2)
 plot(normRightFootMeasuredWrenchInLinkFrame', 'LineWidth', lineWidth);
@@ -244,8 +244,8 @@ hold on;
 
 ylim([200 1000])
 xlabel('Samples', 'FontSize', fontSize);
-ylabel('$Weight$', 'Interpreter', 'latex', 'FontSize', fontSize);
-legend('Measured Weight', '$\frac{Subject Weight}{2}$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+ylabel('$Weight (Right Foot)$', 'Interpreter', 'latex', 'FontSize', fontSize);
+legend('Measured Weight $|| {}^{\mathcal{RF}}{f}_{RF} ||$', '$\frac{Subject Weight}{2}$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
 
 subplot(3,1,3)
 plot(normLeftFootMeasuredWrenchInLinkFrame'+normRightFootMeasuredWrenchInLinkFrame', 'LineWidth', lineWidth);
@@ -256,11 +256,11 @@ hold on;
 
 ylim([200 1000])
 xlabel('Samples', 'FontSize', fontSize);
-ylabel('$Weight$', 'Interpreter', 'latex', 'FontSize', fontSize);
-legend('Measured Weight', 'Subject Weight', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+ylabel('$Weight (Total)$', 'Interpreter', 'latex', 'FontSize', fontSize);
+legend('Measured Weight $|| {}^{\mathcal{LF}}{f}_{LF} || + || {}^{\mathcal{RF}}{f}_{RF} ||$', 'Subject Weight', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
 
 a = axes;
-t = title ("Norm of sum of feet force measurements expressed in link frame Vs subject weight");
+t = title ("Norm of feet force measurements expressed in link frame Vs subject weight");
 t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
