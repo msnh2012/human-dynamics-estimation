@@ -222,48 +222,76 @@ numberOfWrenchSources = 4;
 % % a.Visible = 'off' ;
 % % t.Visible = 'on' ;
 
-%% Feet measured force norm expressed in link frames
+% % %% Feet measured force norm expressed in link frames
+% % 
+% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
+% % subplot(3,1,1)
+% % plot(normLeftFootMeasuredWrenchInLinkFrame', 'LineWidth', lineWidth);
+% % hold on;
+% % yline(subjectWeight/2, 'LineWidth', lineWidth, 'LineStyle', '--');
+% % hold on;
+% % 
+% % ylim([200 1000])
+% % xlabel('Samples', 'FontSize', fontSize);
+% % ylabel('$Weight (Left Foot )$', 'Interpreter', 'latex', 'FontSize', fontSize);
+% % legend('Measured Weight $|| {}^{\mathcal{LF}}{f}_{LF} ||$', '$\frac{Subject Weight}{2}$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% % 
+% % subplot(3,1,2)
+% % plot(normRightFootMeasuredWrenchInLinkFrame', 'LineWidth', lineWidth);
+% % hold on;
+% % yline(subjectWeight/2, 'LineWidth', lineWidth, 'LineStyle', '--');
+% % hold on;
+% % 
+% % ylim([200 1000])
+% % xlabel('Samples', 'FontSize', fontSize);
+% % ylabel('$Weight (Right Foot)$', 'Interpreter', 'latex', 'FontSize', fontSize);
+% % legend('Measured Weight $|| {}^{\mathcal{RF}}{f}_{RF} ||$', '$\frac{Subject Weight}{2}$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% % 
+% % subplot(3,1,3)
+% % plot(normLeftFootMeasuredWrenchInLinkFrame'+normRightFootMeasuredWrenchInLinkFrame', 'LineWidth', lineWidth);
+% % hold on;
+% % yline(subjectWeight, 'LineWidth', lineWidth, 'LineStyle', '--');
+% % hold on;
+% % 
+% % 
+% % ylim([200 1000])
+% % xlabel('Samples', 'FontSize', fontSize);
+% % ylabel('$Weight (Total)$', 'Interpreter', 'latex', 'FontSize', fontSize);
+% % legend('Measured Weight $|| {}^{\mathcal{LF}}{f}_{LF} || + || {}^{\mathcal{RF}}{f}_{RF} ||$', 'Subject Weight', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+% % 
+% % a = axes;
+% % t = title ("Norm of feet force measurements expressed in link frame Vs subject weight");
+% % t.FontSize = fontSize;
+% % a.Visible = 'off' ;
+% % t.Visible = 'on' ;
 
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
-subplot(3,1,1)
-plot(normLeftFootMeasuredWrenchInLinkFrame', 'LineWidth', lineWidth);
+subplot(2,1,1)
+plot(feetForceMeasurementsNormInWorldFrame, 'LineWidth', lineWidth);
 hold on;
-yline(subjectWeight/2, 'LineWidth', lineWidth, 'LineStyle', '--');
-hold on;
-
-ylim([200 1000])
-xlabel('Samples', 'FontSize', fontSize);
-ylabel('$Weight (Left Foot )$', 'Interpreter', 'latex', 'FontSize', fontSize);
-legend('Measured Weight $|| {}^{\mathcal{LF}}{f}_{LF} ||$', '$\frac{Subject Weight}{2}$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
-
-subplot(3,1,2)
-plot(normRightFootMeasuredWrenchInLinkFrame', 'LineWidth', lineWidth);
-hold on;
-yline(subjectWeight/2, 'LineWidth', lineWidth, 'LineStyle', '--');
-hold on;
-
-ylim([200 1000])
-xlabel('Samples', 'FontSize', fontSize);
-ylabel('$Weight (Right Foot)$', 'Interpreter', 'latex', 'FontSize', fontSize);
-legend('Measured Weight $|| {}^{\mathcal{RF}}{f}_{RF} ||$', '$\frac{Subject Weight}{2}$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
-
-subplot(3,1,3)
 plot(normLeftFootMeasuredWrenchInLinkFrame'+normRightFootMeasuredWrenchInLinkFrame', 'LineWidth', lineWidth);
 hold on;
 yline(subjectWeight, 'LineWidth', lineWidth, 'LineStyle', '--');
 hold on;
-
-
-ylim([200 1000])
+ylim([600 900])
 xlabel('Samples', 'FontSize', fontSize);
-ylabel('$Weight (Total)$', 'Interpreter', 'latex', 'FontSize', fontSize);
-legend('Measured Weight $|| {}^{\mathcal{LF}}{f}_{LF} || + || {}^{\mathcal{RF}}{f}_{RF} ||$', 'Subject Weight', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+ylabel('$Weight$', 'Interpreter', 'latex', 'FontSize', fontSize);
+legend('Measured Weight $|| {}^{\mathcal{I}}{f}_{LF} + {}^{\mathcal{I}}{f}_{RF} ||$', 'Measured Weight $|| {}^{\mathcal{LF}}{f}_{LF} || + || {}^{\mathcal{RF}}{f}_{RF} ||$', 'Subject Weight', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+
+subplot(2,1,2)
+plot(feetForceMeasurementsNormInWorldFrame - (normLeftFootMeasuredWrenchInLinkFrame'+normRightFootMeasuredWrenchInLinkFrame')', 'LineWidth', lineWidth);
+hold on;
+xlabel('Samples', 'FontSize', fontSize);
+ylabel('$Weight$', 'Interpreter', 'latex', 'FontSize', fontSize);
+legend('$|| {}^{\mathcal{I}}{f}_{LF} + {}^{\mathcal{I}}{f}_{RF} || - \Big( || {}^{\mathcal{LF}}{f}_{LF} || + || {}^{\mathcal{RF}}{f}_{RF} || \Big)$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
+
 
 a = axes;
-t = title ("Norm of feet force measurements expressed in link frame Vs subject weight");
+t = title ("Norm of sum of feet force measurements expressed in world frame Vs Sum of norm of feet force measurements expressed in link frame");
 t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
+
 
 % % %% Sum of measured wrench vs sum of estimated wrench in Base frame
 % % fH = figure('units','normalized','outerposition',[0 0 1 1]);
