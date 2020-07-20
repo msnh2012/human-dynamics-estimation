@@ -27,6 +27,11 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include <random>
+#include <iostream>
+#include <math.h>
+
+#define PI 3.14159265
 
 const std::string DeviceName = "HumanWrenchProvider";
 const std::string LogPrefix = DeviceName + " :";
@@ -84,6 +89,16 @@ public:
     iDynTree::Model humanModel;
     iDynTree::VectorDynSize humanJointPositionsVec;
     iDynTree::VectorDynSize humanJointVelocitiesVec;
+
+    // Simulated wrench amplitude from uniform distribution
+    std::vector<std::vector<int>> simulatedWrenchesAmplitude;
+
+    // Simulated wrench frequency from uniform distribution
+    std::vector<std::vector<double>> simulatedWrenchesFrequency;
+
+    // Time params
+    double t;
+    double step;
 
     // Robot variables
     iDynTree::Model robotModel;
@@ -495,6 +510,36 @@ bool HumanWrenchProvider::open(yarp::os::Searchable& config)
         pImpl->wrenchSourceNameAndType.push_back(std::pair<std::string, WrenchSourceType>(wrenchSource.name, wrenchSource.type));
     }
 
+    // Initialize uniform distribution for wrench amplitude and frequency
+    std::random_device rd;
+    unsigned seed = rd();
+    std::default_random_engine gen(seed);
+    std::uniform_int_distribution<int> dist(10.0, 200.0);
+    std::cout << dist(gen) << std::endl;
+
+    // Initialize and set simulated wrench amplitude and frequency
+    pImpl->simulatedWrenchesAmplitude.resize(pImpl->wrenchSources.size());
+    pImpl->simulatedWrenchesFrequency.resize(pImpl->wrenchSources.size());
+
+    for (size_t i = 0; i < pImpl->wrenchSources.size(); i++) {
+        std::vector<int> wrench(6, 0);
+        std::vector<double> frequency(6, 0.0);
+        for (size_t v = 0; v < 6; v++) {
+            while (wrench.at(v) == 0) {
+                wrench.at(v) = dist(gen);
+            }
+            while(frequency.at(v) == 0) {
+                frequency.at(v) = dist(gen)/20;
+            }
+        }
+
+        pImpl->simulatedWrenchesAmplitude.at(i) = wrench;
+        pImpl->simulatedWrenchesFrequency.at(i) = frequency;
+    }
+
+    pImpl->step = 0.01;
+    pImpl->t = 0;
+
     return true;
 }
 
@@ -573,6 +618,8 @@ void HumanWrenchProvider::run()
         }
 
     }
+
+    pImpl->t = pImpl->t + pImpl->step;
 
     for (unsigned i = 0; i < pImpl->wrenchSources.size(); ++i) {
         auto& forceSource = pImpl->wrenchSources[i];
@@ -669,7 +716,7 @@ void HumanWrenchProvider::run()
                 forceSource.frameTransformer.reset(ptr);
             }
 
-            if (!forceSource.frameTransformer->transformWrenchFrame(inputWrench, transformedWrench)) {
+            if (!forceSource.frameTransformer->transformWrenchFrame(inputWrench, transformedWrench, pImpl->humanModel)) {
                 askToStop();
                 return;
             }

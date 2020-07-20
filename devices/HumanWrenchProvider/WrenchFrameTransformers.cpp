@@ -13,7 +13,8 @@
 using namespace hde::devices::impl;
 
 bool FixedFrameWrenchTransformer::transformWrenchFrame(const iDynTree::Wrench inputWrench,
-                                                       iDynTree::Wrench& transformedWrench)
+                                                       iDynTree::Wrench& transformedWrench,
+                                                       const iDynTree::Model& model)
 {
     Eigen::Matrix<double,6,1> transformedWrenchEigen = iDynTree::toEigen(transform.asAdjointTransformWrench())
                                                        * iDynTree::toEigen(inputWrench.asVector());
@@ -22,7 +23,8 @@ bool FixedFrameWrenchTransformer::transformWrenchFrame(const iDynTree::Wrench in
 }
 
 bool RobotFrameWrenchTransformer::transformWrenchFrame(const iDynTree::Wrench inputWrench,
-                                                       iDynTree::Wrench& transformedWrench)
+                                                       iDynTree::Wrench& transformedWrench,
+                                                       const iDynTree::Model& model)
 {
     std::lock_guard<std::mutex> lock(_mutex);
 

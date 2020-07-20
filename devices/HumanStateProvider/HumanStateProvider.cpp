@@ -18,6 +18,7 @@
 #include <iDynTree/Sensors/AccelerometerSensor.h>
 #include <iDynTree/Core/EigenHelpers.h>
 #include <iDynTree/Model/Traversal.h>
+#include <iDynTree/Core/TransformDerivative.h>
 
 
 #include <yarp/os/LogStream.h>
@@ -185,6 +186,19 @@ public:
     std::unordered_map<std::string, iDynTree::Twist> linkVelocities;
     std::unordered_map<std::string, iDynTree::SpatialAcc> linkAccelerations;
 
+    std::unordered_map<std::string, iDynTree::Transform> linkTransformMatricesMeasured;
+    std::unordered_map<std::string, iDynTree::Twist> linkVelocitiesMeasured;
+    std::unordered_map<std::string, iDynTree::SpatialAcc> linkAccelerationsMeasured;
+
+    bool firstMeasurementData;
+    double velocitySmoothingFactor;
+    double accelerationSmoothingFactor;
+    std::unordered_map<std::string, iDynTree::Twist> linkVelocitiesSmoothed;
+    std::unordered_map<std::string, iDynTree::SpatialAcc> linkAccelerationsSmoothed;
+
+    // Link Spatial Inertia container
+    std::unordered_map<std::string, iDynTree::SpatialInertia> linkSpatialInertia;
+
     // Accelerometer fbAcc and Orientation wearable  data buffers
     std::unordered_map<std::string, iDynTree::AngAcceleration> fbAccelerationMatrices;
     std::unordered_map<std::string, iDynTree::Rotation> sensorOrientationMatrices;
@@ -211,8 +225,18 @@ public:
     bool useFBAccelerationFromWearableData;
     HumanSensorData humanSensorData;
 
-    std::array<double, 6> CoMProperAccelerationExpressedInBaseFrame;
-    std::array<double, 6> CoMProperAccelerationExpressedInWorldFrame;
+    // Momentum variables
+    std::array<double, 6> centroidalMomentum;
+
+    // Computed Rate of change of momentum buffers
+    std::array<double, 6> computedRateOfChangeOfMomentumInBase;
+
+    iDynTree::SpatialForceVector biasTermFromCentroidalMomentum;
+
+    // Rate of change of momentum buffers
+    std::array<double, 6> rateOfChangeOfMomentumInCentroidalFrame;
+    std::array<double, 6> rateOfChangeOfMomentumInBaseFrame;
+    std::array<double, 6> rateOfChangeOfMomentumInWorldFrame;
 
     // IK parameters
     int ikPoolSize{1};
@@ -266,8 +290,12 @@ public:
     double lastTime{-1.0};
 
     // kinDynComputation
-    std::unique_ptr<iDynTree::KinDynComputations> kinDynComputations;
+    iDynTree::KinDynComputations kinDynComputations;
     iDynTree::Vector3 worldGravity;
+
+    // Gravitational wrench vector
+    iDynTree::SpatialForceVector gravitationalWrenchInCentroidal;
+    iDynTree::Vector6 gravitationalWrenchInBase;
 
     // get input data
     bool getJointAnglesFromInputData(iDynTree::VectorDynSize& jointAngles);
@@ -891,6 +919,24 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
             integrationBasedIKIntegralCorrectionGainsLinRot->get(1).asFloat64();
     }
 
+    // ==========================================
+    // PARSE THE MEASUREMENT SMOOTHING PARAMETERS
+    // ==========================================
+
+    if (!(config.check("velocitySmoothingFactor") && config.find("velocitySmoothingFactor").isDouble())) {
+        pImpl->velocitySmoothingFactor = 0.1; //Default value
+    }
+    else {
+        pImpl->velocitySmoothingFactor = config.find("velocitySmoothingFactor").asDouble();
+    }
+
+    if (!(config.check("accelerationSmoothingFactor") && config.find("accelerationSmoothingFactor").isDouble())) {
+        pImpl->accelerationSmoothingFactor = 0.1; //Default value
+    }
+    else {
+        pImpl->accelerationSmoothingFactor = config.find("accelerationSmoothingFactor").asDouble();
+    }
+
     // ===================================
     // PRINT CURRENT CONFIGURATION OPTIONS
     // ===================================
@@ -936,6 +982,8 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
         yInfo() << LogPrefix << "*** Inverse Velocity Kinematics solver:"
                 << pImpl->inverseVelocityKinematicsSolver;
     }
+    yInfo() << LogPrefix << "*** Velocity measurements smoothing factor    :" << pImpl->velocitySmoothingFactor;
+    yInfo() << LogPrefix << "*** Acceleration measurements smoothing factor:" << pImpl->accelerationSmoothingFactor;
     yInfo() << LogPrefix << "*** ===========================================";
 
     // ==========================
@@ -962,11 +1010,66 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
     // Get the model from the loader
     pImpl->humanModel = modelLoader.model();
 
+    // Set gravitational wrench vector
+    pImpl->gravitationalWrenchInCentroidal.zero();
+    pImpl->gravitationalWrenchInCentroidal(2) = pImpl->humanModel.getTotalMass() * pImpl->worldGravity(2);
+    pImpl->gravitationalWrenchInBase.zero();
+
     // Initialize kinDyn computation
-    pImpl->kinDynComputations =
-        std::unique_ptr<iDynTree::KinDynComputations>(new iDynTree::KinDynComputations());
-    pImpl->kinDynComputations->loadRobotModel(modelLoader.model());
-    pImpl->kinDynComputations->setFloatingBase(pImpl->floatingBaseFrame.model);
+    pImpl->kinDynComputations.loadRobotModel(modelLoader.model());
+    pImpl->kinDynComputations.setFloatingBase(pImpl->floatingBaseFrame.model);
+
+    // Get link spatial inertias
+    iDynTree::VectorDynSize linksInertialParametersVec;
+    pImpl->humanModel.getInertialParameters(linksInertialParametersVec);
+    for(size_t linkIdx = 0; linkIdx < pImpl->humanModel.getNrOfLinks(); linkIdx++) {
+
+        std::string linkName = pImpl->humanModel.getLinkName(linkIdx);
+
+        // Get link mass
+        double linkMass = linksInertialParametersVec.getVal(10 * linkIdx + 0);
+
+        // Get link center of mass with respect to the link frame
+        iDynTree::PositionRaw linkComPosition(linksInertialParametersVec.getVal(10 * linkIdx + 1),
+                                              linksInertialParametersVec.getVal(10 * linkIdx + 2),
+                                              linksInertialParametersVec.getVal(10 * linkIdx + 3));
+
+        // Get link 6D rotation inertia
+        // I_{xx} \\  I_{xy} \\  I_{xz} \\  I_{yy} \\  I_{yz} \\  I_{zz}
+        double I_xx = linksInertialParametersVec.getVal(10 * linkIdx + 4);
+        double I_xy = linksInertialParametersVec.getVal(10 * linkIdx + 5);
+        double I_xz = linksInertialParametersVec.getVal(10 * linkIdx + 6);
+        double I_yy = linksInertialParametersVec.getVal(10 * linkIdx + 7);
+        double I_yz = linksInertialParametersVec.getVal(10 * linkIdx + 8);
+        double I_zz = linksInertialParametersVec.getVal(10 * linkIdx + 9);
+
+        iDynTree::Matrix3x3 inertiaMatrix;
+        inertiaMatrix.zero();
+
+        inertiaMatrix.setVal(0, 0, I_xx);
+        inertiaMatrix.setVal(0, 1, -I_xy);
+        inertiaMatrix.setVal(0, 2, -I_xz);
+
+        inertiaMatrix.setVal(1, 0, -I_xy);
+        inertiaMatrix.setVal(1, 1, I_yy);
+        inertiaMatrix.setVal(1, 2, -I_yz);
+
+        inertiaMatrix.setVal(2, 0, -I_xz);
+        inertiaMatrix.setVal(2, 1, -I_yz);
+        inertiaMatrix.setVal(2, 2, I_zz);
+
+        iDynTree::RotationalInertiaRaw link3DRotationalInertia(inertiaMatrix.data(), 3, 3);
+
+        // Initialize link spatial inertia variable
+        iDynTree::SpatialInertia linkSpatialInertia(linkMass, linkComPosition, link3DRotationalInertia);
+
+        // Set link spatial inertia to the unordered map
+        pImpl->linkSpatialInertia[linkName] = linkSpatialInertia;
+
+    }
+
+    // Set first measurement data to true
+    pImpl->firstMeasurementData = true;
 
     // ================================
     // INITIALIZE ACCELEROMETER SENSORS
@@ -999,9 +1102,14 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
 
     }
 
-    // Initialize CoM proper acceleration to zero
-    pImpl->CoMProperAccelerationExpressedInBaseFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    pImpl->CoMProperAccelerationExpressedInWorldFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    // Initialize momentum buffers to zero
+    pImpl->centroidalMomentum = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+    // Initialize rate of change of momentum buffers to zero
+    pImpl->computedRateOfChangeOfMomentumInBase = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    pImpl->rateOfChangeOfMomentumInCentroidalFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    pImpl->rateOfChangeOfMomentumInBaseFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    pImpl->rateOfChangeOfMomentumInWorldFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     // =========================
     // INITIALIZE JOINTS BUFFERS
@@ -1019,7 +1127,11 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
     pImpl->jointVelocitiesSolution.resize(nrOfDOFs);
     pImpl->jointVelocitiesSolution.zero();
 
-    pImpl->baseTransformSolution.setRotation(iDynTree::Rotation::Identity());
+    // =======================
+    // INITIALIZE BASE BUFFERS
+    // =======================
+    pImpl->baseTransformSolution = iDynTree::Transform::Identity();
+    pImpl->baseVelocitySolution.zero();
 
     pImpl->basePositionOffset.zero();
     pImpl->baseOrientationOffsetFlag.fill(false);
@@ -1264,6 +1376,243 @@ bool HumanStateProvider::close()
     return true;
 }
 
+// TODO: Update smoothing to measurement retrival calls
+void HumanStateProvider::measurementSmoothing()
+{
+    double velSmootingFactor = pImpl->velocitySmoothingFactor;
+    double accSmoothingFactor = pImpl->accelerationSmoothingFactor;
+
+    if (pImpl->firstMeasurementData)
+    {
+        velSmootingFactor = 1;
+        accSmoothingFactor = 1;
+
+        // Initialize smoothed velocity and acceleration buffers to zero
+        // TODO: Make it more concise
+        for (const std::pair<std::string, iDynTree::Twist> vel : pImpl->linkVelocitiesMeasured)
+        {
+            const std::string linkName = vel.first;
+            iDynTree::Twist velocity;
+            velocity.zero();
+            pImpl->linkVelocitiesSmoothed[linkName] = velocity;
+        }
+
+        for (const std::pair<std::string, iDynTree::Twist> acc: pImpl->linkAccelerationsMeasured)
+        {
+            const std::string linkName = acc.first;
+            iDynTree::Twist acceleration;
+            acceleration.zero();
+            pImpl->linkAccelerationsSmoothed[linkName] = acceleration;
+        }
+
+        pImpl->firstMeasurementData = false;
+    }
+
+    //yInfo() << LogPrefix << " velocity smoothing factor " << velSmootingFactor << " acceleration smoothing factor " << accSmoothingFactor;
+
+    for (const std::pair<std::string, iDynTree::Twist> vel : pImpl->linkVelocitiesMeasured)
+    {
+        const std::string linkName = vel.first;
+        const iDynTree::Twist linkMeasuredVel = vel.second;
+
+        iDynTree::Twist linkSmoothedVel;
+        linkSmoothedVel.zero();
+
+        // Compute smoothed link velocity
+        for (size_t i = 0; i < linkMeasuredVel.size(); i++)
+        {
+            double smoothedVel = velSmootingFactor * linkMeasuredVel.getVal(i) + (1 - velSmootingFactor) * pImpl->linkVelocitiesSmoothed[linkName].getVal(i);
+            linkSmoothedVel.setVal(i, smoothedVel);
+        }
+
+        // Update smoothed velocities buffer
+        pImpl->linkVelocitiesSmoothed[linkName] = linkSmoothedVel;
+
+        //yInfo() << LogPrefix << linkName << " measured velociy " << linkMeasuredVel.toString().c_str() << " smoothed velocity " << linkSmoothedVel.toString().c_str();
+    }
+
+    for (const std::pair<std::string, iDynTree::Twist> acc : pImpl->linkAccelerationsMeasured)
+    {
+        const std::string linkName = acc.first;
+        const iDynTree::Twist linkMeasuredAcc = acc.second;
+
+        iDynTree::Twist linkSmoothedAcc;
+        linkSmoothedAcc.zero();
+
+        // Compute smooothed link accleration
+        for (size_t i  = 0; i < linkMeasuredAcc.size(); i++)
+        {
+            double smoothedAcc = accSmoothingFactor * linkMeasuredAcc.getVal(i) + (1 - accSmoothingFactor) * pImpl->linkAccelerationsSmoothed[linkName].getVal(i);
+            linkSmoothedAcc.setVal(i, smoothedAcc);
+        }
+
+        // Update smoothed accelerations buffer
+        pImpl->linkAccelerationsSmoothed[linkName] = linkSmoothedAcc;
+
+        //yInfo() << LogPrefix << linkName << " measured acceleration " << linkMeasuredAcc.toString().c_str() << " smoothed acceleration " << linkSmoothedAcc.toString().c_str();
+    }
+
+}
+
+void HumanStateProvider::computeROCMInBaseUsingMeasurements()
+{
+    static std::string baseLinkName = pImpl->floatingBaseFrame.model;
+
+    iDynTree::Vector6 centroidalMomentum;
+    centroidalMomentum.zero();
+
+    iDynTree::Vector6 rocmInBase;
+    rocmInBase.zero();
+
+    // Set centroidal to world transform
+    iDynTree::Transform world_H_centroidal = iDynTree::Transform::Identity();
+    world_H_centroidal.setPosition(pImpl->kinDynComputations.getCenterOfMassPosition());
+
+    // base_H_centroidal transform
+    const iDynTree::Transform base_H_centroidal = pImpl->linkTransformMatricesMeasured[baseLinkName].inverse() * world_H_centroidal;
+
+    // Compute gravitational wrench expressed in base
+    pImpl->gravitationalWrenchInBase.zero();
+    iDynTree::toEigen(pImpl->gravitationalWrenchInBase) = iDynTree::toEigen(base_H_centroidal.asAdjointTransformWrench()) * iDynTree::toEigen(pImpl->gravitationalWrenchInCentroidal);
+
+    // Get base transform A_H_B
+    const iDynTree::Transform world_H_base = pImpl->linkTransformMatricesMeasured[baseLinkName];
+
+    // Get base velocity A_v_A,B
+    const iDynTree::Twist baseVelocityExpressedInWorld = pImpl->linkVelocitiesSmoothed[baseLinkName];
+
+    // Get base acceleration A_a_A,B
+    const iDynTree::Twist baseAccelerationExpressedInWorld = pImpl->linkAccelerationsSmoothed[baseLinkName];
+
+    // Iterate over measurements
+    for (const std::pair<std::string, iDynTree::Transform> linkNameTransform : pImpl->linkTransformMatricesMeasured) {
+
+        // Get link name
+        const std::string linkName = linkNameTransform.first;
+
+        // Get world_H_link transform
+        const iDynTree::Transform world_H_link = linkNameTransform.second;
+
+        // Get link to base transform
+        const iDynTree::Transform base_H_link = world_H_base.inverse() * world_H_link;
+
+        // Compute link to centroidal transform
+        const iDynTree::Transform centroidal_H_link = world_H_centroidal.inverse() * world_H_link;
+
+        // Get link velocity A_v_A,L
+        const iDynTree::Twist linkVelocityExpressedInWorld = pImpl->linkVelocitiesSmoothed[linkName];
+
+        // Get link acceleration A_a_A,L
+        const iDynTree::Twist linkAccelerationExpressedInWorld = pImpl->linkAccelerationsSmoothed[linkName];
+
+        // Compute centroidal momentum bias term
+        {
+            iDynTree::Vector6 linkVelocityExpressedInBody;
+            linkVelocityExpressedInBody.zero();
+            iDynTree::toEigen(linkVelocityExpressedInBody) = iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(linkVelocityExpressedInWorld);
+
+            // Compute link momentum - G_X*_L * I_L * L_v_A,L
+            iDynTree::Vector6 linkMomentum;
+            linkMomentum.zero();
+            iDynTree::toEigen(linkMomentum) = iDynTree::toEigen(centroidal_H_link.asAdjointTransformWrench()) *
+                                              iDynTree::toEigen(pImpl->linkSpatialInertia[linkName].asMatrix()) *
+                                              iDynTree::toEigen(linkVelocityExpressedInBody);
+
+            // Update centroidal momentum
+            iDynTree::toEigen(centroidalMomentum) = iDynTree::toEigen(centroidalMomentum) + iDynTree::toEigen(linkMomentum);
+        }
+
+        // Compute ROCM in base
+        {
+
+            // compute L_v_B,L = (L_X_A * A_v_A,L) - (L_X_B * B_X_A * A_v_A,B)
+            // from Eq (3.5a) from silvio's thesis https://traversaro.github.io/phd-thesis/traversaro-phd-thesis.pdf
+            iDynTree::Vector6 linkVelocityExpressedInBody;
+            linkVelocityExpressedInBody.zero();
+
+            iDynTree::toEigen(linkVelocityExpressedInBody) = (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(linkVelocityExpressedInWorld)) -
+                                                             (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(baseVelocityExpressedInWorld));
+
+
+            // Compute A_a_B,L = (L_X_A * A_a_A,L) - (L_X_B * B_X_A * A_a_A,B) - (L_X_A * A_v_A,B * L_v_B,L)
+            // from Eq (3.5b) from silvio's thesis https://traversaro.github.io/phd-thesis/traversaro-phd-thesis.pdf
+            iDynTree::Vector6 linkAccelerationExpressedInBody;
+            linkAccelerationExpressedInBody.zero();
+
+            iDynTree::toEigen(linkAccelerationExpressedInBody) = (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(linkAccelerationExpressedInWorld)) -
+                                                                 (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(baseAccelerationExpressedInWorld)) -
+                                                                 (iDynTree::toEigen(world_H_link.inverse().asAdjointTransform()) * iDynTree::toEigen(baseVelocityExpressedInWorld.asCrossProductMatrixWrench()) * iDynTree::toEigen(linkVelocityExpressedInBody));
+
+            // Compute link rate of change of momentum (expressed in base) term with accelerations -  B_X*_L * I_L * L_a_B,L
+            iDynTree::Vector6 linkROCMInBase_acc_term;
+            linkROCMInBase_acc_term.zero();
+            iDynTree::toEigen(linkROCMInBase_acc_term) = iDynTree::toEigen(base_H_link.asAdjointTransformWrench()) *
+                                                         iDynTree::toEigen(pImpl->linkSpatialInertia[linkName].asMatrix()) *
+                                                         iDynTree::toEigen(linkAccelerationExpressedInBody);
+
+            // Compute link rate of change of momentum (expressed in base) bias term - B_dotX*_L * I_L * L_v_B,L
+            iDynTree::Vector6 linkROCMInBase_bias_term;
+            linkROCMInBase_bias_term.zero();
+
+            iDynTree::Twist linkVelocityExpressedInBodyTwist;
+            linkVelocityExpressedInBodyTwist.zero();
+            linkVelocityExpressedInBodyTwist.setVal(0, linkVelocityExpressedInBody.getVal(0));
+            linkVelocityExpressedInBodyTwist.setVal(1, linkVelocityExpressedInBody.getVal(1));
+            linkVelocityExpressedInBodyTwist.setVal(2, linkVelocityExpressedInBody.getVal(2));
+            linkVelocityExpressedInBodyTwist.setVal(3, linkVelocityExpressedInBody.getVal(3));
+            linkVelocityExpressedInBodyTwist.setVal(4, linkVelocityExpressedInBody.getVal(4));
+            linkVelocityExpressedInBodyTwist.setVal(5, linkVelocityExpressedInBody.getVal(5));
+
+            iDynTree::toEigen(linkROCMInBase_bias_term) = iDynTree::toEigen(base_H_link.asAdjointTransformWrench()) *
+                                                          iDynTree::toEigen(linkVelocityExpressedInBodyTwist.asCrossProductMatrixWrench()) *
+                                                          iDynTree::toEigen(pImpl->linkSpatialInertia[linkName].asMatrix()) *
+                                                          iDynTree::toEigen(linkVelocityExpressedInBody);
+
+            // Update rate of change of momnentum
+            iDynTree::toEigen(rocmInBase) = iDynTree::toEigen(rocmInBase) +
+                                            iDynTree::toEigen(linkROCMInBase_acc_term) +
+                                            iDynTree::toEigen(linkROCMInBase_bias_term);
+
+        }
+
+    }
+
+    // Update computed rate of change of momentum in base buffer
+    pImpl->computedRateOfChangeOfMomentumInBase[0] = rocmInBase.getVal(0);
+    pImpl->computedRateOfChangeOfMomentumInBase[1] = rocmInBase.getVal(1);
+    pImpl->computedRateOfChangeOfMomentumInBase[2] = rocmInBase.getVal(2);
+    pImpl->computedRateOfChangeOfMomentumInBase[3] = rocmInBase.getVal(3);
+    pImpl->computedRateOfChangeOfMomentumInBase[4] = rocmInBase.getVal(4);
+    pImpl->computedRateOfChangeOfMomentumInBase[5] = rocmInBase.getVal(5);
+
+    // Compute base_dotH_centroidal transform derivative
+
+    // Compute position derivative (comVel - baseLinVel)
+    iDynTree::Vector3 posDerivative;
+
+    posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(0) - pImpl->linkVelocitiesMeasured[baseLinkName].getLinearVec3().getVal(0));
+    posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(1) - pImpl->linkVelocitiesMeasured[baseLinkName].getLinearVec3().getVal(1));
+    posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(2) - pImpl->linkVelocitiesMeasured[baseLinkName].getLinearVec3().getVal(2));
+
+    // Compute rotation derivative ( base_dotR_world = ( Skew(baseAngVel) * world_R_base)' )
+    iDynTree::Matrix3x3 rotDerivative;
+    iDynTree::toEigen(rotDerivative) = iDynTree::toEigen(pImpl->linkTransformMatricesMeasured[baseLinkName].getRotation()).transpose() *
+                                       iDynTree::skew( iDynTree::toEigen( pImpl->linkVelocitiesMeasured[baseLinkName].getAngularVec3() ) ).transpose();
+
+    iDynTree::TransformDerivative base_dotH_centroidal(rotDerivative, posDerivative);
+
+    // Compute the bias term with centroidal momentum
+    iDynTree::SpatialMomentum centroidalMom;
+    for (size_t i = 0; i < pImpl->centroidalMomentum.size(); i++) {
+        centroidalMom.setVal(i, pImpl->centroidalMomentum[i]);
+    }
+
+    // Compute base_dotX*_centroidal * centroidal momentum
+    pImpl->biasTermFromCentroidalMomentum.zero();
+    pImpl->biasTermFromCentroidalMomentum = base_dotH_centroidal.transform(base_H_centroidal, centroidalMom);
+
+}
+
 void HumanStateProvider::run()
 {
     // Get the link transformations from input data
@@ -1273,8 +1622,20 @@ void HumanStateProvider::run()
         return;
     }
 
+    if (!pImpl->getLinkQuantitiesFromInputData(pImpl->linkTransformMatricesMeasured, pImpl->linkAccelerationsMeasured)) {
+        yError() << LogPrefix << "Failed to get link transforms from input data";
+        askToStop();
+        return;
+    }
+
     // Get the link velocity from input data
     if (!pImpl->getLinkVelocityFromInputData(pImpl->linkVelocities)) {
+        yError() << LogPrefix << "Failed to get link velocity from input data";
+        askToStop();
+        return;
+    }
+
+    if (!pImpl->getLinkVelocityFromInputData(pImpl->linkVelocitiesMeasured)) {
         yError() << LogPrefix << "Failed to get link velocity from input data";
         askToStop();
         return;
@@ -1363,27 +1724,52 @@ void HumanStateProvider::run()
         solvedJointVelocities.setVal(j, pImpl->solution.jointVelocities.at(j));
     }
 
-    pImpl->kinDynComputations->setRobotState(pImpl->baseTransformSolution,
+    // Set kindyn robot state
+    pImpl->kinDynComputations.setRobotState(pImpl->baseTransformSolution,
                                              solvedJointPositions,
                                              pImpl->baseVelocitySolution,
                                              solvedJointVelocities,
                                              pImpl->worldGravity);
 
+    if (!pImpl->kinDynComputations.isValid()) {
+        yError() << "KinDyn object is not valid";
+        return;
+    }
+
+
+    // Compute rate of change of momentum in base that is considered as the new measurement input for centroidal dynamics
+    // Expose it through IHumanState interface
+    {
+        measurementSmoothing();
+
+        computeROCMInBaseUsingMeasurements();
+
+        std::lock_guard<std::mutex> lock(pImpl->mutex);
+
+        // Compute and set the rate of change of momentum expressed in base to be used as the new measurement input for centroidal dynamics expressed in base
+        pImpl->rateOfChangeOfMomentumInBaseFrame = {pImpl->computedRateOfChangeOfMomentumInBase[0] - pImpl->biasTermFromCentroidalMomentum.getVal(0) - pImpl->gravitationalWrenchInBase.getVal(0),
+                                                    pImpl->computedRateOfChangeOfMomentumInBase[1] - pImpl->biasTermFromCentroidalMomentum.getVal(1) - pImpl->gravitationalWrenchInBase.getVal(1),
+                                                    pImpl->computedRateOfChangeOfMomentumInBase[2] - pImpl->biasTermFromCentroidalMomentum.getVal(2) - pImpl->gravitationalWrenchInBase.getVal(2),
+                                                    pImpl->computedRateOfChangeOfMomentumInBase[3] - pImpl->biasTermFromCentroidalMomentum.getVal(3) - pImpl->gravitationalWrenchInBase.getVal(3),
+                                                    pImpl->computedRateOfChangeOfMomentumInBase[4] - pImpl->biasTermFromCentroidalMomentum.getVal(4) - pImpl->gravitationalWrenchInBase.getVal(4),
+                                                    pImpl->computedRateOfChangeOfMomentumInBase[5] - pImpl->biasTermFromCentroidalMomentum.getVal(5) - pImpl->gravitationalWrenchInBase.getVal(5)};
+    }
+
     // CoM position and velocity
     std::array<double, 3> CoM_position, CoM_velocity;
-    CoM_position = {pImpl->kinDynComputations->getCenterOfMassPosition().getVal(0),
-                    pImpl->kinDynComputations->getCenterOfMassPosition().getVal(1),
-                    pImpl->kinDynComputations->getCenterOfMassPosition().getVal(2)};
+    CoM_position = {pImpl->kinDynComputations.getCenterOfMassPosition().getVal(0),
+                    pImpl->kinDynComputations.getCenterOfMassPosition().getVal(1),
+                    pImpl->kinDynComputations.getCenterOfMassPosition().getVal(2)};
 
-    CoM_velocity = {pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(0),
-                    pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(1),
-                    pImpl->kinDynComputations->getCenterOfMassVelocity().getVal(2)};
+    CoM_velocity = {pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(0),
+                    pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(1),
+                    pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(2)};
 
     // CoM acceleration
     std::array<double, 3> CoM_biasacceleration;
-    CoM_biasacceleration = {pImpl->kinDynComputations->getCenterOfMassBiasAcc().getVal(0),
-                            pImpl->kinDynComputations->getCenterOfMassBiasAcc().getVal(1),
-                            pImpl->kinDynComputations->getCenterOfMassBiasAcc().getVal(2)};
+    CoM_biasacceleration = {pImpl->kinDynComputations.getCenterOfMassBiasAcc().getVal(0),
+                            pImpl->kinDynComputations.getCenterOfMassBiasAcc().getVal(1),
+                            pImpl->kinDynComputations.getCenterOfMassBiasAcc().getVal(2)};
 
     // Compute proper acceleration
     if (pImpl->useFBAccelerationFromWearableData) {
@@ -1404,7 +1790,7 @@ void HumanStateProvider::run()
                 continue;
             }
 
-            iDynTree::Transform base_H_sensor = pImpl->kinDynComputations->getRelativeTransform(pImpl->humanModel.getFrameIndex(pImpl->floatingBaseFrame.model),
+            iDynTree::Transform base_H_sensor = pImpl->kinDynComputations.getRelativeTransform(pImpl->humanModel.getFrameIndex(pImpl->floatingBaseFrame.model),
                                                                                          pImpl->humanModel.getFrameIndex(pImpl->humanSensorData.accelerometerSensorNames.at(accelerometerCount)));
 
             iDynTree::Transform world_H_accelerometer = pImpl->baseTransformSolution *
@@ -1460,53 +1846,6 @@ void HumanStateProvider::run()
 
 
             }
-
-        }
-
-        // Compute CoM proper acceleration
-        iDynTree::SpatialAcc comSpatialAccExpressedInWorld;
-
-        if (pImpl->humanSensorData.accelerometerSensorMeasurementsOption == "proper") {
-
-            // Set the linear part of com spatial acceleartion
-            comSpatialAccExpressedInWorld.setVal(0, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[0] - pImpl->worldGravity(0)));
-            comSpatialAccExpressedInWorld.setVal(1, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[1] - pImpl->worldGravity(1)));
-            comSpatialAccExpressedInWorld.setVal(2, pImpl->humanModel.getTotalMass() * (CoM_biasacceleration[2] - pImpl->worldGravity(2)));
-        }
-        else if (pImpl->humanSensorData.accelerometerSensorMeasurementsOption == "gravity") {
-
-            // Set the linear part of com spatial acceleartion
-            comSpatialAccExpressedInWorld.setVal(0,  - pImpl->worldGravity(0) * pImpl->humanModel.getTotalMass());
-            comSpatialAccExpressedInWorld.setVal(1,  - pImpl->worldGravity(1) * pImpl->humanModel.getTotalMass());
-            comSpatialAccExpressedInWorld.setVal(2,  - pImpl->worldGravity(2) * pImpl->humanModel.getTotalMass());
-        }
-
-        // Set the angular part of com spatial acceleration to zero
-        comSpatialAccExpressedInWorld.setVal(3, 0.0);
-        comSpatialAccExpressedInWorld.setVal(4, 0.0);
-        comSpatialAccExpressedInWorld.setVal(5, 0.0);
-
-        // Compute com proper acceleration and multiply with the total model mass
-        iDynTree::SpatialAcc CoMProperAccelerationExpressedInBaseFrame = pImpl->baseTransformSolution.getRotation().inverse() * comSpatialAccExpressedInWorld;
-
-        // Expose proper com acceleration for IHumanState interface
-        {
-
-            std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-            pImpl->CoMProperAccelerationExpressedInBaseFrame = {CoMProperAccelerationExpressedInBaseFrame.getVal(0),
-                                                                CoMProperAccelerationExpressedInBaseFrame.getVal(1),
-                                                                CoMProperAccelerationExpressedInBaseFrame.getVal(2),
-                                                                0.0,
-                                                                0.0,
-                                                                0.0};
-
-            pImpl->CoMProperAccelerationExpressedInWorldFrame = {comSpatialAccExpressedInWorld.getVal(0),
-                                                                 comSpatialAccExpressedInWorld.getVal(1),
-                                                                 comSpatialAccExpressedInWorld.getVal(2),
-                                                                 comSpatialAccExpressedInWorld.getVal(3),
-                                                                 comSpatialAccExpressedInWorld.getVal(4),
-                                                                 comSpatialAccExpressedInWorld.getVal(5)};
 
         }
 
@@ -2302,14 +2641,13 @@ bool HumanStateProvider::impl::solveIntegrationBasedInverseKinematics()
     lastTime = yarp::os::Time::now();
 
     // LINK VELOCITY CORRECTION
-    iDynTree::KinDynComputations* computations = kinDynComputations.get();
 
     if (useDirectBaseMeasurement) {
-        computations->setRobotState(
+        kinDynComputations.setRobotState(
             jointConfigurationSolution, jointVelocitiesSolution, worldGravity);
     }
     else {
-        computations->setRobotState(baseTransformSolution,
+        kinDynComputations.setRobotState(baseTransformSolution,
                                     jointConfigurationSolution,
                                     baseVelocitySolution,
                                     jointVelocitiesSolution,
@@ -2326,7 +2664,7 @@ bool HumanStateProvider::impl::solveIntegrationBasedInverseKinematics()
         }
 
         iDynTree::Rotation rotationError =
-            computations->getWorldTransform(humanModel.getFrameIndex(linkName)).getRotation()
+            kinDynComputations.getWorldTransform(humanModel.getFrameIndex(linkName)).getRotation()
             * linkTransformMatrices[linkName].getRotation().inverse();
         iDynTree::Vector3 angularVelocityError;
 
@@ -2344,7 +2682,7 @@ bool HumanStateProvider::impl::solveIntegrationBasedInverseKinematics()
 
             iDynTree::Vector3 linearVelocityError;
             linearVelocityError =
-                computations->getWorldTransform(humanModel.getFrameIndex(linkName)).getPosition()
+                kinDynComputations.getWorldTransform(humanModel.getFrameIndex(linkName)).getPosition()
                 - linkTransformMatrices[linkName].getPosition();
             iDynTree::toEigen(integralLinearVelocityError) =
                 iDynTree::toEigen(integralLinearVelocityError)
@@ -2601,14 +2939,13 @@ bool HumanStateProvider::impl::computeLinksOrientationErrors(
     iDynTree::Twist zeroBaseVelocity;
     zeroBaseVelocity.zero();
 
-    iDynTree::KinDynComputations* computations = kinDynComputations.get();
-    computations->setRobotState(
+    kinDynComputations.setRobotState(
         floatingBasePose, jointConfigurations, zeroBaseVelocity, zeroJointVelocities, worldGravity);
 
     for (const auto& linkMapEntry : linkDesiredTransforms) {
         const ModelLinkName& linkName = linkMapEntry.first;
         linkErrorOrientations[linkName] = iDynTreeHelper::Rotation::rotationDistance(
-            computations->getWorldTransform(linkName).getRotation(),
+            kinDynComputations.getWorldTransform(linkName).getRotation(),
             linkDesiredTransforms[linkName].getRotation());
     }
     return true;
@@ -2622,15 +2959,14 @@ bool HumanStateProvider::impl::computeLinksAngularVelocityErrors(
     iDynTree::Twist baseVelocity,
     std::unordered_map<std::string, iDynTree::Vector3>& linkAngularVelocityError)
 {
-    iDynTree::KinDynComputations* computations = kinDynComputations.get();
-    computations->setRobotState(
+    kinDynComputations.setRobotState(
         floatingBasePose, jointConfigurations, baseVelocity, jointVelocities, worldGravity);
 
     for (const auto& linkMapEntry : linkDesiredVelocities) {
         const ModelLinkName& linkName = linkMapEntry.first;
         iDynTree::toEigen(linkAngularVelocityError[linkName]) =
             iDynTree::toEigen(linkDesiredVelocities[linkName].getLinearVec3())
-            - iDynTree::toEigen(computations->getFrameVel(linkName).getLinearVec3());
+            - iDynTree::toEigen(kinDynComputations.getFrameVel(linkName).getLinearVec3());
     }
 
     return true;
@@ -2896,6 +3232,7 @@ std::vector<double> HumanStateProvider::getJointPositions() const
 {
     std::lock_guard<std::mutex> lock(pImpl->mutex);
     return pImpl->solution.jointPositions;
+
 }
 
 std::vector<double> HumanStateProvider::getJointVelocities() const
@@ -2939,16 +3276,22 @@ std::array<double, 3> HumanStateProvider::getCoMBiasAcceleration() const
     return pImpl->solution.CoMBiasAcceleration;
 }
 
-std::array<double, 6> HumanStateProvider::getCoMProperAccelerationExpressedInBaseFrame() const
+std::array<double, 6> HumanStateProvider::getRateOfChangeOfMomentumInCentroidalFrame() const
 {
     std::lock_guard<std::mutex> lock(pImpl->mutex);
-    return pImpl->CoMProperAccelerationExpressedInBaseFrame;
+    return pImpl->rateOfChangeOfMomentumInCentroidalFrame;
 }
 
-std::array<double, 6> HumanStateProvider::getCoMProperAccelerationExpressedInWorldFrame() const
+std::array<double, 6> HumanStateProvider::getRateOfChangeOfMomentumInBaseFrame() const
 {
     std::lock_guard<std::mutex> lock(pImpl->mutex);
-    return pImpl->CoMProperAccelerationExpressedInWorldFrame;
+    return pImpl->rateOfChangeOfMomentumInBaseFrame;
+}
+
+std::array<double, 6> HumanStateProvider::getRateOfChangeOfMomentumInWorldFrame() const
+{
+    std::lock_guard<std::mutex> lock(pImpl->mutex);
+    return pImpl->rateOfChangeOfMomentumInWorldFrame;
 }
 
 std::vector<std::string> HumanStateProvider::getAccelerometerNames() const

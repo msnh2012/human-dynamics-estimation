@@ -38,6 +38,9 @@ public:
     HumanStateProvider();
     ~HumanStateProvider() override;
 
+    void measurementSmoothing();
+    void computeROCMInBaseUsingMeasurements();
+
     // DeviceDriver interface
     bool open(yarp::os::Searchable& config) override;
     bool close() override;
@@ -66,8 +69,9 @@ public:
     std::array<double, 3> getCoMPosition() const override;
     std::array<double, 3> getCoMVelocity() const override;
     std::array<double, 3> getCoMBiasAcceleration() const override;
-    std::array<double, 6> getCoMProperAccelerationExpressedInBaseFrame() const override;
-    std::array<double, 6> getCoMProperAccelerationExpressedInWorldFrame() const override;
+    std::array<double, 6> getRateOfChangeOfMomentumInCentroidalFrame() const override;
+    std::array<double, 6> getRateOfChangeOfMomentumInBaseFrame() const override;
+    std::array<double, 6> getRateOfChangeOfMomentumInWorldFrame() const override;
 
     std::vector<std::string> getAccelerometerNames() const override;
     std::vector<std::array<double, 3>> getProperLinAccelerations() const override;

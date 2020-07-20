@@ -14,6 +14,12 @@
 #include <yarp/dev/Wrapper.h>
 #include <yarp/os/PeriodicThread.h>
 
+#include <yarp/os/Node.h>
+#include <yarp/os/Publisher.h>
+#include <yarp/rosmsg/visualization_msgs/Marker.h>
+
+#include <iDynTree/KinDynComputations.h>
+
 #include "IHumanWrench.h"
 #include "IHumanDynamics.h"
 
@@ -38,9 +44,21 @@ private:
     class Impl;
     std::unique_ptr<Impl> pImpl;
 
+    yarp::os::Node rosNode;
+    yarp::rosmsg::visualization_msgs::Marker estimatedObjectMassMsg;
+    yarp::os::Publisher<yarp::rosmsg::visualization_msgs::Marker> estimatedObjectMassMarkerMsgPub;
+
 public:
     HumanDynamicsEstimator();
     ~HumanDynamicsEstimator() override;
+
+    // Method to express wrenches in different frame
+    void expressWrenchInDifferentFrames(const std::vector<double>& wrenchInLinkFrame,
+                                        hde::interfaces::IHumanWrench::TaskType taskType,
+                                        hde::interfaces::IHumanWrench::WrenchType wrenchType,
+                                        iDynTree::KinDynComputations& kinDyn);
+    // Publish ros marker message
+    void publishRosMarkerMsg(const double& mass);
 
     // DeviceDriver interface
     bool open(yarp::os::Searchable& config) override;
@@ -72,6 +90,7 @@ public:
     std::vector<std::string> getWrenchSourceNames() const override;
     size_t getNumberOfWrenchSources() const override;
     std::vector<double> getWrenches() const override;
+    std::vector<double> getWrenchesInFrame(TaskType, WrenchType, WrenchReferenceFrame) const override;
 
     // IHumanDynamics
     std::vector<std::string> getJointNames() const override;

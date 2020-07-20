@@ -53,8 +53,8 @@ void writeVectorOfStringToMatCell(const std::string& name, const std::vector<std
     }
 
     size_t dims[2] = {strings.size(), 1};
-    MatVarPtr<matvar_t> matCellArray(Mat_VarCreate(name.c_str(), MAT_C_CELL, MAT_T_CELL, 2, dims, nullptr, 0),
-                                     matVarFree);
+  
+    MatVarPtr<matvar_t> matCellArray(Mat_VarCreate(name.c_str(), MAT_C_CELL, MAT_T_CELL, 2, dims, nullptr, 0), matVarFree);
 
     if (matCellArray == nullptr) {
         yError() << LogPrefix << "Failed to create mat cell array " << name;
@@ -99,8 +99,7 @@ void writeVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, 
     size_t matDataStructDims[2] = {1, 1};
 
     // Initialize mat struct variable
-     MatVarPtr<matvar_t> matDataStruct(Mat_VarCreateStruct("data", 1, matDataStructDims, fieldNames.data(), matStructFieldNamesVec.size()),
-                                       matVarFree);
+    MatVarPtr<matvar_t> matDataStruct(Mat_VarCreateStruct("data", 1, matDataStructDims, fieldNames.data(), matStructFieldNamesVec.size()), matVarFree);
 
     if (matDataStruct == nullptr) {
         yError() << LogPrefix << "Failed to initialize matio struct variable";
@@ -199,20 +198,45 @@ public:
     std::vector<double> comPositionVec;
     std::array<double, 3> comVelocity;
     std::vector<double> comVelocityVec;
-    std::array<double, 6> comProperAccInBaseFrame;
-    std::vector<double> comProperAccInBaseFrameVec;
-    std::array<double, 6> comProperAccInWorldFrame;
-    std::vector<double> comProperAccInWorldFrameVec;
+
+    // Rate of change of momentum quantities
+    std::array<double, 6> rateOfChangeOfMomentumInBaseFrame;
+    std::array<double, 6> rateOfChangeOfMomentumInWorldFrame;
+    std::array<double, 6> rateOfChangeOfMomentumInCentroidalFrame;
+
+    std::vector<double> rateOfChangeOfMomentumInBaseFrameVec;
+    std::vector<double> rateOfChangeOfMomentumInWorldFrameVec;
+    std::vector<double> rateOfChangeOfMomentumInCentroidalFrameVec;
 
     // Wrench Measurements
     size_t numberOfWrenchMeasurementSources;
     std::vector<std::string> wrenchMeasurementSourceNames;
     std::vector<double> wrenchMeasurementValuesVec;
 
+    std::vector<double> task1_wrenchMeasurementsInLinkFrameVec;
+    std::vector<double> task1_wrenchMeasurementsInCentroidalFrameVec;
+    std::vector<double> task1_wrenchMeasurementsInBaseFrameVec;
+    std::vector<double> task1_wrenchMeasurementsInWorldFrameVec;
+
+    std::vector<double> task2_wrenchMeasurementsInLinkFrameVec;
+    std::vector<double> task2_wrenchMeasurementsInCentroidalFrameVec;
+    std::vector<double> task2_wrenchMeasurementsInBaseFrameVec;
+    std::vector<double> task2_wrenchMeasurementsInWorldFrameVec;
+
     // Wrench Estimates
     size_t numberOfWrenchEstimateSources;
     std::vector<std::string> wrenchEstimateSourceNames;
     std::vector<double> wrenchEstimateValuesVec;
+
+    std::vector<double> task1_wrenchEstimatesInLinkFrameVec;
+    std::vector<double> task1_wrenchEstimatesInCentroidalFrameVec;
+    std::vector<double> task1_wrenchEstimatesInBaseFrameVec;
+    std::vector<double> task1_wrenchEstimatesInWorldFrameVec;
+
+    std::vector<double> task2_wrenchEstimatesInLinkFrameVec;
+    std::vector<double> task2_wrenchEstimatesInCentroidalFrameVec;
+    std::vector<double> task2_wrenchEstimatesInBaseFrameVec;
+    std::vector<double> task2_wrenchEstimatesInWorldFrameVec;
 
     // Joint Torques
     size_t dynamicsNumberOfJoints;
@@ -227,8 +251,9 @@ public:
     yarp::os::BufferedPort<yarp::sig::Vector> jointVelocitiesDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> comPositionDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> comVelocityDataPort;
-    yarp::os::BufferedPort<yarp::sig::Vector> comProperAccelerationInBaseFrameDataPort;
-    yarp::os::BufferedPort<yarp::sig::Vector> comProperAccelerationInWorldFrameDataPort;
+    yarp::os::BufferedPort<yarp::sig::Vector> rateOfChangeOfMomentumInBaseFrameDataPort;
+    yarp::os::BufferedPort<yarp::sig::Vector> rateOfChangeOfMomentumInWorldFrameDataPort;
+    yarp::os::BufferedPort<yarp::sig::Vector> rateOfChangeOfMomentumInCentroidalFrameDataPort;
 
     // Yarp ports for streaming data from IHumanWrench interface of HumanWrenchProvider
     yarp::os::BufferedPort<yarp::os::Bottle> wrenchMeasurementSourceNamesDataPort;
@@ -306,6 +331,8 @@ bool HumanDataCollector::open(yarp::os::Searchable &config) {
     pImpl->matLogFileName = config.check("matLogFileName", yarp::os::Value("matLogFile")).asString() + ".mat";
 
     //TODO: Define rpc to reset the data dump or restarting the visualization??
+    // Get matLogFileName value from config
+    pImpl->matLogFileName = config.check("matLogFileName", yarp::os::Value("matLogFile")).asString() + ".mat";
 
     yInfo() << LogPrefix << "*** ===========================";
     yInfo() << LogPrefix << "*** Period                    :" << period;
@@ -393,18 +420,26 @@ void HumanDataCollector::run()
                 return;
             }
 
-            // Open CoM acceleration in base frame data port
-            const std::string comProperAccelerationInBaseFramePortName = pImpl->portPrefix + DeviceName + "/comProperAccelerationInBaseFrame:o";
-            if (!pImpl->comProperAccelerationInBaseFrameDataPort.open(comProperAccelerationInBaseFramePortName)) {
-                yError() << LogPrefix << "Failed to open port " << comProperAccelerationInBaseFramePortName;
+            // Open rate of change of momentum in base frame data port
+            const std::string rateOfChangeOfMomentumInBaseFramePortName = pImpl->portPrefix + DeviceName + "/rateOfChangeOfMomentumInBaseFrame:o";
+            if (!pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.open(rateOfChangeOfMomentumInBaseFramePortName)) {
+                yError() << LogPrefix << "Failed to open port " << rateOfChangeOfMomentumInBaseFramePortName;
                 askToStop();
                 return;
             }
 
-            // Open CoM acceleration in world frame data port
-            const std::string comProperAccelerationInWorldFramePortName = pImpl->portPrefix + DeviceName + "/comProperAccelerationInWorldFrame:o";
-            if (!pImpl->comProperAccelerationInWorldFrameDataPort.open(comProperAccelerationInWorldFramePortName)) {
-                yError() << LogPrefix << "Failed to open port " << comProperAccelerationInWorldFramePortName;
+            // Open rate of change of momentum in world frame data port
+            const std::string rateOfChangeOfMomentumInWorldFramePortName = pImpl->portPrefix + DeviceName + "/rateOfChangeOfMomentumInWorldFrame:o";
+            if (!pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.open(rateOfChangeOfMomentumInWorldFramePortName)) {
+                yError() << LogPrefix << "Failed to open port " << rateOfChangeOfMomentumInWorldFramePortName;
+                askToStop();
+                return;
+            }
+
+            // Open rate of change of momentum in centroidal frame data port
+            const std::string rateOfChangeOfMomentumInCentroidalFramePortName = pImpl->portPrefix + DeviceName + "/rateOfChangeOfMomentumInCentroidalFrame:o";
+            if (!pImpl->rateOfChangeOfMomentumInCentroidalFrameDataPort.open(rateOfChangeOfMomentumInCentroidalFramePortName)) {
+                yError() << LogPrefix << "Failed to open port " << rateOfChangeOfMomentumInCentroidalFramePortName;
                 askToStop();
                 return;
             }
@@ -496,8 +531,9 @@ void HumanDataCollector::run()
 
                 pImpl->humanDataStruct.data["comPosition"] = std::vector<std::vector<double>>();
                 pImpl->humanDataStruct.data["comVelocity"] = std::vector<std::vector<double>>();
-                pImpl->humanDataStruct.data["comProperAccelerationInBaseFrame"] = std::vector<std::vector<double>>();
-                pImpl->humanDataStruct.data["comProperAccelerationInWorldFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["rateOfChangeOfMomentumInBaseFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["rateOfChangeOfMomentumInWorldFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["rateOfChangeOfMomentumInCentroidalFrame"] = std::vector<std::vector<double>>();
 
                 pImpl->humanDataStruct.data["jointPositions"] = std::vector<std::vector<double>>();
                 pImpl->humanDataStruct.data["jointVelocities"] = std::vector<std::vector<double>>();
@@ -513,6 +549,26 @@ void HumanDataCollector::run()
 
                 pImpl->humanDataStruct.wrenchEstimateSourceNames.clear();
                 pImpl->humanDataStruct.data["wrenchEstimates"] = std::vector<std::vector<double>>();
+
+                pImpl->humanDataStruct.data["task1_wrenchMeasurementsInLinkFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task1_wrenchMeasurementsInCentroidalFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task1_wrenchMeasurementsInBaseFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task1_wrenchMeasurementsInWorldFrame"] = std::vector<std::vector<double>>();
+
+                pImpl->humanDataStruct.data["task1_wrenchEstimatesInLinkFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task1_wrenchEstimatesInCentroidalFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task1_wrenchEstimatesInBaseFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task1_wrenchEstimatesInWorldFrame"] = std::vector<std::vector<double>>();
+
+                pImpl->humanDataStruct.data["task2_wrenchMeasurementsInLinkFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task2_wrenchMeasurementsInCentroidalFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task2_wrenchMeasurementsInBaseFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task2_wrenchMeasurementsInWorldFrame"] = std::vector<std::vector<double>>();
+
+                pImpl->humanDataStruct.data["task2_wrenchEstimatesInLinkFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task2_wrenchEstimatesInCentroidalFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task2_wrenchEstimatesInBaseFrame"] = std::vector<std::vector<double>>();
+                pImpl->humanDataStruct.data["task2_wrenchEstimatesInWorldFrame"] = std::vector<std::vector<double>>();
 
                 pImpl->humanDataStruct.dynamicsJointNames.clear();
                 pImpl->humanDataStruct.data["jointTorques"] = std::vector<std::vector<double>>();
@@ -558,8 +614,11 @@ void HumanDataCollector::run()
         // CoM Quantities
         pImpl->comPosition = pImpl->iHumanState->getCoMPosition();
         pImpl->comVelocity = pImpl->iHumanState->getCoMVelocity();
-        pImpl->comProperAccInBaseFrame = pImpl->iHumanState->getCoMProperAccelerationExpressedInBaseFrame();
-        pImpl->comProperAccInWorldFrame = pImpl->iHumanState->getCoMProperAccelerationExpressedInWorldFrame();
+
+        // Rate of change of momentum Quantities
+        pImpl->rateOfChangeOfMomentumInBaseFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInBaseFrame();
+        pImpl->rateOfChangeOfMomentumInWorldFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInWorldFrame();
+        pImpl->rateOfChangeOfMomentumInCentroidalFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInCentroidalFrame();
 
     }
 
@@ -575,15 +634,78 @@ void HumanDataCollector::run()
     if (pImpl->isAttached.dynamicsEstimator) {
 
         // Get data from IHumanWrench interface of HumanDynamicsEstimator
-        // NOTE: The wrench values coming from HumanDynamicsEstimators are (offsetRemovedWrenchMeasurements & WrenchEstimates) of each link
         pImpl->numberOfWrenchEstimateSources = pImpl->iHumanWrenchEstimates->getNumberOfWrenchSources();
         pImpl->wrenchEstimateSourceNames = pImpl->iHumanWrenchEstimates->getWrenchSourceNames();
         pImpl->wrenchEstimateValuesVec = pImpl->iHumanWrenchEstimates->getWrenches();
+
+        pImpl->task1_wrenchMeasurementsInLinkFrameVec       = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task1,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchReferenceFrame::Link);
+
+        pImpl->task1_wrenchMeasurementsInCentroidalFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task1,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchReferenceFrame::Centroidal);
+
+        pImpl->task1_wrenchMeasurementsInBaseFrameVec       = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task1,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchReferenceFrame::Base);
+
+        pImpl->task1_wrenchMeasurementsInWorldFrameVec      = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task1,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchReferenceFrame::World);
+
+        pImpl->task2_wrenchMeasurementsInLinkFrameVec       = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task2,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchReferenceFrame::Link);
+
+        pImpl->task2_wrenchMeasurementsInCentroidalFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task2,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchReferenceFrame::Centroidal);
+
+        pImpl->task2_wrenchMeasurementsInBaseFrameVec       = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task2,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchReferenceFrame::Base);
+
+        pImpl->task2_wrenchMeasurementsInWorldFrameVec      = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task2,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchType::Measured,
+                                                                                                               hde::interfaces::IHumanWrench::WrenchReferenceFrame::World);
 
         // Get data from IHumanDynamics interface of HumanDynamicsEstimator
         pImpl->dynamicsNumberOfJoints = pImpl->iHumanDynamics->getNumberOfJoints();
         pImpl->dynamicsJointNames = pImpl->iHumanDynamics->getJointNames();
         pImpl->jointTorquesVec = pImpl->iHumanDynamics->getJointTorques();
+
+        pImpl->task1_wrenchEstimatesInLinkFrameVec       = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task1,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchReferenceFrame::Link);
+
+        pImpl->task1_wrenchEstimatesInCentroidalFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task1,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchReferenceFrame::Centroidal);
+
+        pImpl->task1_wrenchEstimatesInBaseFrameVec       = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task1,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchReferenceFrame::Base);
+
+        pImpl->task1_wrenchEstimatesInWorldFrameVec      = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task1,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchReferenceFrame::World);
+
+        pImpl->task2_wrenchEstimatesInLinkFrameVec       = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task2,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchReferenceFrame::Link);
+
+        pImpl->task2_wrenchEstimatesInCentroidalFrameVec = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task2,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchReferenceFrame::Centroidal);
+
+        pImpl->task2_wrenchEstimatesInBaseFrameVec       = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task2,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchReferenceFrame::Base);
+
+        pImpl->task2_wrenchEstimatesInWorldFrameVec      = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task2,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchType::Estimated,
+                                                                                                            hde::interfaces::IHumanWrench::WrenchReferenceFrame::World);
 
     }
 
@@ -607,9 +729,11 @@ void HumanDataCollector::run()
 
         pImpl->comVelocityVec = std::vector<double>(pImpl->comVelocity.begin(), pImpl->comVelocity.end());
 
-        pImpl->comProperAccInBaseFrameVec = std::vector<double>(pImpl->comProperAccInBaseFrame.begin(), pImpl->comProperAccInBaseFrame.end());
+        pImpl->rateOfChangeOfMomentumInBaseFrameVec = std::vector<double>(pImpl->rateOfChangeOfMomentumInBaseFrame.begin(), pImpl->rateOfChangeOfMomentumInBaseFrame.end());
 
-        pImpl->comProperAccInWorldFrameVec = std::vector<double>(pImpl->comProperAccInWorldFrame.begin(), pImpl->comProperAccInWorldFrame.end());
+        pImpl->rateOfChangeOfMomentumInWorldFrameVec = std::vector<double>(pImpl->rateOfChangeOfMomentumInWorldFrame.begin(), pImpl->rateOfChangeOfMomentumInWorldFrame.end());
+
+        pImpl->rateOfChangeOfMomentumInCentroidalFrameVec = std::vector<double>(pImpl->rateOfChangeOfMomentumInCentroidalFrame.begin(), pImpl->rateOfChangeOfMomentumInCentroidalFrame.end());
 
     }
 
@@ -628,8 +752,10 @@ void HumanDataCollector::run()
 
             pImpl->humanDataStruct.data["comPosition"].push_back(pImpl->comPositionVec);
             pImpl->humanDataStruct.data["comVelocity"].push_back(pImpl->comVelocityVec);
-            pImpl->humanDataStruct.data["comProperAccelerationInBaseFrame"].push_back(pImpl->comProperAccInBaseFrameVec);
-            pImpl->humanDataStruct.data["comProperAccelerationInWorldFrame"].push_back(pImpl->comProperAccInWorldFrameVec);
+
+            pImpl->humanDataStruct.data["rateOfChangeOfMomentumInBaseFrame"].push_back(pImpl->rateOfChangeOfMomentumInBaseFrameVec);
+            pImpl->humanDataStruct.data["rateOfChangeOfMomentumInWorldFrame"].push_back(pImpl->rateOfChangeOfMomentumInWorldFrameVec);
+            pImpl->humanDataStruct.data["rateOfChangeOfMomentumInCentroidalFrame"].push_back(pImpl->rateOfChangeOfMomentumInCentroidalFrameVec);
 
             pImpl->humanDataStruct.data["jointPositions"].push_back(pImpl->jointPositionsVec);
             pImpl->humanDataStruct.data["jointVelocities"].push_back(pImpl->jointVelocitiesVec);
@@ -655,6 +781,27 @@ void HumanDataCollector::run()
             }
 
             pImpl->humanDataStruct.data["wrenchEstimates"].push_back(pImpl->wrenchEstimateValuesVec);
+
+            pImpl->humanDataStruct.data["task1_wrenchMeasurementsInLinkFrame"].push_back(pImpl->task1_wrenchMeasurementsInLinkFrameVec);
+            pImpl->humanDataStruct.data["task1_wrenchMeasurementsInCentroidalFrame"].push_back(pImpl->task1_wrenchMeasurementsInCentroidalFrameVec);
+            pImpl->humanDataStruct.data["task1_wrenchMeasurementsInBaseFrame"].push_back(pImpl->task1_wrenchMeasurementsInBaseFrameVec);
+            pImpl->humanDataStruct.data["task1_wrenchMeasurementsInWorldFrame"].push_back(pImpl->task1_wrenchMeasurementsInWorldFrameVec);
+
+            pImpl->humanDataStruct.data["task1_wrenchEstimatesInLinkFrame"].push_back(pImpl->task1_wrenchEstimatesInLinkFrameVec);
+            pImpl->humanDataStruct.data["task1_wrenchEstimatesInCentroidalFrame"].push_back(pImpl->task1_wrenchEstimatesInCentroidalFrameVec);
+            pImpl->humanDataStruct.data["task1_wrenchEstimatesInBaseFrame"].push_back(pImpl->task1_wrenchEstimatesInBaseFrameVec);
+            pImpl->humanDataStruct.data["task1_wrenchEstimatesInWorldFrame"].push_back(pImpl->task1_wrenchEstimatesInWorldFrameVec);
+
+            pImpl->humanDataStruct.data["task2_wrenchMeasurementsInLinkFrame"].push_back(pImpl->task2_wrenchMeasurementsInLinkFrameVec);
+            pImpl->humanDataStruct.data["task2_wrenchMeasurementsInCentroidalFrame"].push_back(pImpl->task2_wrenchMeasurementsInCentroidalFrameVec);
+            pImpl->humanDataStruct.data["task2_wrenchMeasurementsInBaseFrame"].push_back(pImpl->task2_wrenchMeasurementsInBaseFrameVec);
+            pImpl->humanDataStruct.data["task2_wrenchMeasurementsInWorldFrame"].push_back(pImpl->task2_wrenchMeasurementsInWorldFrameVec);
+
+            pImpl->humanDataStruct.data["task2_wrenchEstimatesInLinkFrame"].push_back(pImpl->task2_wrenchEstimatesInLinkFrameVec);
+            pImpl->humanDataStruct.data["task2_wrenchEstimatesInCentroidalFrame"].push_back(pImpl->task2_wrenchEstimatesInCentroidalFrameVec);
+            pImpl->humanDataStruct.data["task2_wrenchEstimatesInBaseFrame"].push_back(pImpl->task2_wrenchEstimatesInBaseFrameVec);
+            pImpl->humanDataStruct.data["task2_wrenchEstimatesInWorldFrame"].push_back(pImpl->task2_wrenchEstimatesInWorldFrameVec);
+
 
             // Set dynamics joint names once
             if (pImpl->humanDataStruct.dynamicsJointNames.empty()) {
@@ -700,14 +847,17 @@ void HumanDataCollector::run()
         yarp::sig::Vector& comVelocityYarpVector = pImpl->comVelocityDataPort.prepare();
         YarpConversionsHelper::toYarp(comVelocityYarpVector, pImpl->comVelocityVec);
 
-        // Prepare com proper acceleration in base frame
-        yarp::sig::Vector& comProperAccelerationInBaseFrameYarpVector = pImpl->comProperAccelerationInBaseFrameDataPort.prepare();
-        YarpConversionsHelper::toYarp(comProperAccelerationInBaseFrameYarpVector, pImpl->comProperAccInBaseFrameVec);
+        // Rate of change of momentum in base frame
+        yarp::sig::Vector& rateOfChangeOfMomentumInBaseFrameYarpVector = pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.prepare();
+        YarpConversionsHelper::toYarp(rateOfChangeOfMomentumInBaseFrameYarpVector, pImpl->rateOfChangeOfMomentumInBaseFrameVec);
 
+        // Rate of change of momentum in world frame
+        yarp::sig::Vector& rateOfChangeOfMomentumInWorldFrameYarpVector = pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.prepare();
+        YarpConversionsHelper::toYarp(rateOfChangeOfMomentumInWorldFrameYarpVector, pImpl->rateOfChangeOfMomentumInWorldFrameVec);
 
-        // Prepare com proper acceleration in world frame
-        yarp::sig::Vector& comProperAccelerationInWorldFrameYarpVector = pImpl->comProperAccelerationInWorldFrameDataPort.prepare();
-        YarpConversionsHelper::toYarp(comProperAccelerationInWorldFrameYarpVector, pImpl->comProperAccInWorldFrameVec);
+        // Rate of change of momentum in centroidal frame
+        yarp::sig::Vector& rateOfChangeOfMomentumInCentroidalFrameYarpVector = pImpl->rateOfChangeOfMomentumInCentroidalFrameDataPort.prepare();
+        YarpConversionsHelper::toYarp(rateOfChangeOfMomentumInCentroidalFrameYarpVector, pImpl->rateOfChangeOfMomentumInCentroidalFrameVec);
 
         // Send data through yarp ports
         pImpl->basePoseDataPort.write(true);
@@ -717,8 +867,9 @@ void HumanDataCollector::run()
         pImpl->jointVelocitiesDataPort.write(true);
         pImpl->comPositionDataPort.write(true);
         pImpl->comVelocityDataPort.write(true);
-        pImpl->comProperAccelerationInBaseFrameDataPort.write(true);
-        pImpl->comProperAccelerationInWorldFrameDataPort.write(true);
+        pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.write(true);
+        pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.write(true);
+        pImpl->rateOfChangeOfMomentumInCentroidalFrameDataPort.write(true);
     }
 
     if (pImpl->isAttached.wrenchProvider) {
@@ -924,12 +1075,16 @@ bool HumanDataCollector::detach()
             pImpl->comVelocityDataPort.close();
         }
 
-        if (!pImpl->comProperAccelerationInBaseFrameDataPort.isClosed()) {
-            pImpl->comProperAccelerationInBaseFrameDataPort.close();
+        if (!pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.isClosed()) {
+            pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.close();
         }
 
-        if (!pImpl->comProperAccelerationInWorldFrameDataPort.isClosed()) {
-            pImpl->comProperAccelerationInWorldFrameDataPort.close();
+        if (!pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.isClosed()) {
+            pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.close();
+        }
+
+        if (!pImpl->rateOfChangeOfMomentumInCentroidalFrameDataPort.isClosed()) {
+            pImpl->rateOfChangeOfMomentumInCentroidalFrameDataPort.close();
         }
 
         pImpl->iHumanState = nullptr;
