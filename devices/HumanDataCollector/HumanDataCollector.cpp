@@ -53,6 +53,7 @@ void writeVectorOfStringToMatCell(const std::string& name, const std::vector<std
     }
 
     size_t dims[2] = {strings.size(), 1};
+  
     MatVarPtr<matvar_t> matCellArray(Mat_VarCreate(name.c_str(), MAT_C_CELL, MAT_T_CELL, 2, dims, nullptr, 0), matVarFree);
 
     if (matCellArray == nullptr) {
@@ -99,7 +100,6 @@ void writeVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, 
 
     // Initialize mat struct variable
     MatVarPtr<matvar_t> matDataStruct(Mat_VarCreateStruct("data", 1, matDataStructDims, fieldNames.data(), matStructFieldNamesVec.size()), matVarFree);
-
 
     if (matDataStruct == nullptr) {
         yError() << LogPrefix << "Failed to initialize matio struct variable";
@@ -313,7 +313,8 @@ bool HumanDataCollector::open(yarp::os::Searchable &config) {
     pImpl->matioLogger = config.check("matioLogger", yarp::os::Value(false)).asBool();
 
     if (pImpl->matioLogger) {
-        pImpl->matLogDirectory =  pImpl->originalWorkingDirectory.string() + "/" + config.check("matLogDirectory", yarp::os::Value("matLogDirectory")).asString() + "/";
+        pImpl->matLogDirectory =  pImpl->originalWorkingDirectory.string() + "/" +
+                                  config.check("matLogDirectory", yarp::os::Value("matLogDirectory")).asString() + "/";
 
         struct stat info;
 
@@ -325,6 +326,9 @@ bool HumanDataCollector::open(yarp::os::Searchable &config) {
 
         std::experimental::filesystem::current_path(pImpl->matLogDirectory);
     }
+
+    // Get matLogFileName value from config
+    pImpl->matLogFileName = config.check("matLogFileName", yarp::os::Value("matLogFile")).asString() + ".mat";
 
     //TODO: Define rpc to reset the data dump or restarting the visualization??
     // Get matLogFileName value from config
@@ -506,7 +510,7 @@ void HumanDataCollector::run()
 
             // TODO: Handle multiple files
             std::string matLogFileFullPathName = pImpl->matLogDirectory + pImpl->matLogFileName;
-             pImpl->matFilePtr = {Mat_CreateVer(matLogFileFullPathName.c_str(), nullptr, MAT_FT_MAT73), matFileClose};
+            pImpl->matFilePtr = {Mat_CreateVer(matLogFileFullPathName.c_str(), nullptr, MAT_FT_MAT73), matFileClose};
 
             if (pImpl->matFilePtr == nullptr) {
                 yError() << LogPrefix << "Failed to create " << pImpl->matLogFileName << " MAT file for logging";
@@ -743,7 +747,6 @@ void HumanDataCollector::run()
                 pImpl->humanDataStruct.stateJointNames = pImpl->stateJointNames;
             }
 
-
             pImpl->humanDataStruct.data["basePose"].push_back(pImpl->basePoseVec);
             pImpl->humanDataStruct.data["baseVelocity"].push_back(pImpl->baseVeclocityVec);
 
@@ -756,7 +759,6 @@ void HumanDataCollector::run()
 
             pImpl->humanDataStruct.data["jointPositions"].push_back(pImpl->jointPositionsVec);
             pImpl->humanDataStruct.data["jointVelocities"].push_back(pImpl->jointVelocitiesVec);
-
 
         }
 
@@ -1019,7 +1021,8 @@ bool HumanDataCollector::detach()
         writeVectorOfStringToMatCell("dynamicsJointNames", pImpl->humanDataStruct.dynamicsJointNames, pImpl->matFilePtr.get());
 
         // Correct the time values stored in the time vector to zero start value
-        std::transform( pImpl->humanDataStruct.time.begin(), pImpl->humanDataStruct.time.end(), pImpl->humanDataStruct.time.begin(), std::bind2nd( std::plus<long>(), - pImpl->humanDataStruct.time.at(0) ) );
+        std::transform( pImpl->humanDataStruct.time.begin(), pImpl->humanDataStruct.time.end(), pImpl->humanDataStruct.time.begin(),
+                        std::bind2nd( std::plus<long>(), - pImpl->humanDataStruct.time.at(0) ) );
 
         // Create an array with time elements
         long time[pImpl->humanDataStruct.time.size()];
