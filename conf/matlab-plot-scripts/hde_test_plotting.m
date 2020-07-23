@@ -7,7 +7,7 @@ fontSize = 20;
 lineWidth = 2;
 
 %% Load data
-load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estimation/conf/xml/testData/matLogFileFrontSquat.mat');
+load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estimation/conf/xml/testData/matLogFile.mat');
 
 subjectWeight = 75.5 * 9.81;
 
