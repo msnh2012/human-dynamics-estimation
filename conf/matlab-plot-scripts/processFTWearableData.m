@@ -1,6 +1,24 @@
+close all;
+clear all;
+clc;
+
 %% Load FT Wearable data and extract FT values
 
-FTLeftShoe = readtable('/home/yeshi/Desktop/lo_hde_estimation_dataset/front-squat/trial2/wearable/FTshoes/left/data.log');
+FTLeftShoeTable = readtable('/home/yeshi/Desktop/lo_hde_estimation_dataset/front-squat/trial2/wearable/FTshoes/left/data.log');
+FTRightShoeTable = readtable('/home/yeshi/Desktop/lo_hde_estimation_dataset/front-squat/trial2/wearable/FTshoes/right/data.log');
+
+FTLeftShoe = table;
+FTRightShoe = table;
+
+%% Check size differences
+size_diff = size(FTLeftShoeTable, 1) - size(FTRightShoeTable , 1);
+if (size_diff < 0)
+    FTLeftShoe  = FTLeftShoeTable;
+    FTRightShoe = FTRightShoeTable(1:size(FTLeftShoeTable, 1), :);
+elseif (size_diff > 0)
+    FTLeftShoe = FTLeftShoeTable(1:size(FTRightShoeTable, 1), :);
+    FTRightShoe  = FTRightShoeTable;
+end
 
 FTLeftShoeData = {};
 FTLeftShoeData.t = FTLeftShoe.Var2;
@@ -21,8 +39,6 @@ end
 
 FTLeftShoeData.FT(:,6) = str2double(FTLeftShoeData.mz);
 
-
-FTRightShoe = readtable('/home/yeshi/Desktop/lo_hde_estimation_dataset/front-squat/trial2/wearable/FTshoes/right/data.log');
 
 FTRightShoeData = {};
 FTRightShoeData.t = FTRightShoe.Var2;
@@ -107,15 +123,6 @@ legend('Left Foot Measured Weight $|| {}^{\mathcal{LF}}{f}_{LF} || $',...
        '$\frac{Subject Weight}{2}$', 'Interpreter', 'latex', 'FontSize', fontSize, 'Location', 'Best');
    
 subplot(2,1,2)
-
-%% Check if the size of the norm vectors are different and add padding
-size_diff = size(FTLeftShoesData.ForceNorm' , 1) - size(FTRightShoesData.ForceNorm' , 1);
-if (size_diff < 0)
-    FTLeftShoesData.ForceNorm = [ FTLeftShoesData.ForceNorm zeros(1, abs(size_diff)) ] ;
-elseif (size_diff > 0)
-    FTRightShoesData.ForceNorm = [ FTRightShoesData.ForceNorm  zeros(1, abs(size_diff))];
-end
-
 plot(FTLeftShoesData.ForceNorm' + FTRightShoesData.ForceNorm', 'LineWidth', lineWidth);
 hold on;
 yline(subjectWeight, 'LineWidth', lineWidth, 'LineStyle', '--');
