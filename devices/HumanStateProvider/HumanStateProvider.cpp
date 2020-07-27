@@ -225,9 +225,6 @@ public:
     bool useFBAccelerationFromWearableData;
     HumanSensorData humanSensorData;
 
-    // Momentum variables
-    std::array<double, 6> centroidalMomentum;
-
     // Computed Rate of change of momentum buffers
     std::array<double, 6> computedRateOfChangeOfMomentumInBase;
 
@@ -1102,9 +1099,6 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
 
     }
 
-    // Initialize momentum buffers to zero
-    pImpl->centroidalMomentum = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-
     // Initialize rate of change of momentum buffers to zero
     pImpl->computedRateOfChangeOfMomentumInBase = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     pImpl->rateOfChangeOfMomentumInCentroidalFrame = std::array<double, 6>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -1603,8 +1597,8 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
 
     // Compute the bias term with centroidal momentum
     iDynTree::SpatialMomentum centroidalMom;
-    for (size_t i = 0; i < pImpl->centroidalMomentum.size(); i++) {
-        centroidalMom.setVal(i, pImpl->centroidalMomentum[i]);
+    for (size_t i = 0; i < centroidalMomentum.size(); i++) {
+        centroidalMom.setVal(i, centroidalMomentum.getVal(i));
     }
 
     // Compute base_dotX*_centroidal * centroidal momentum
