@@ -47,7 +47,7 @@ for s = 1:6
     hold on;
     plot(RightFootMeasuredWrenchInBaseFrame(:,s), 'LineWidth', lineWidth);
     hold on;
-    plot(sumFeetWrenchMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth);
+    plot(sumFeetWrenchMeasurementsInBaseFrame(:,s), 'Color', summercolors(120,:), 'LineWidth', lineWidth);
     hold on;
 %     ylim([-400 800])
     xlabel('Samples', 'FontSize', fontSize);
@@ -70,9 +70,9 @@ fH = figure('units','normalized','outerposition',[0 0 1 1]);
 for s = 1:6
     
     subplot(2,3,s);
-    plot( RateOfChangeOfMomentumInBaseFrame(s,:)', 'LineWidth', lineWidth);
+    plot( RateOfChangeOfMomentumInBaseFrame(s,:)',  'Color', bonecolors(120,:), 'LineWidth', lineWidth);
     hold on;
-    plot(sumWrenchMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
+    plot(sumWrenchMeasurementsInBaseFrame(:,s), 'Color', summercolors(120,:), 'LineWidth', lineWidth, 'LineStyle', '--');
     hold on;
 %     ylim([-400 1000])
     xlabel('Samples', 'FontSize', fontSize);
