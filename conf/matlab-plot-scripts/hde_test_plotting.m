@@ -130,35 +130,35 @@ momentumLegendString = ["$^{B}\underline{\dot{h}}_{L_x}$", "$^{B}\underline{\dot
 
 numberOfWrenchSources = 4;
 
-% % for i = 1:numberOfWrenchSources
-% %     
-% %     fH = figure('units','normalized','outerposition',[0 0 1 1]);
-% %     
-% %     for s = 1:6
-% %         
-% %         subplot(2,3,s);
-% %         plot(data.task1_wrenchMeasurementsInLinkFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth);
-% %         hold on;
-% %         plot(data.task1_wrenchEstimatesInLinkFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth, 'LineStyle', '--');
-% %         hold on;
-% %         ylim([-400 800])
-% %         xlabel('Samples', 'FontSize', fontSize);
-% %         ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
-% %         set (gca, 'FontSize' , fontSize)
-% %         legend('Measured Wrench', 'Estimated Wrench', 'FontSize', fontSize, 'Location', 'Best');
-% %         
-% %     end
-% %     
-% %     a = axes;
-% %     t = title (strcat(wrenchSourceName(i) + " In Link Frame"));
-% %     t.FontSize = fontSize;
-% %     a.Visible = 'off' ;
-% %     t.Visible = 'on' ;
-% %     
-% %     %% Save figure
-% %     save2pdf(strcat(t.String + ".pdf"), fH,300);
-% %     
-% % end
+for i = 1:numberOfWrenchSources
+    
+    fH = figure('units','normalized','outerposition',[0 0 1 1]);
+    
+    for s = 1:6
+        
+        subplot(2,3,s);
+        plot(data.task1_wrenchMeasurementsInLinkFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth);
+        hold on;
+        plot(data.task1_wrenchEstimatesInLinkFrame(s + 6 * (i-1),:)', 'LineWidth', lineWidth, 'LineStyle', '--');
+        hold on;
+%         ylim([-400 800])
+        xlabel('Samples', 'FontSize', fontSize);
+        ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
+        set (gca, 'FontSize' , fontSize)
+        legend('Measured Wrench', 'Estimated Wrench', 'FontSize', fontSize, 'Location', 'Best');
+        
+    end
+    
+    a = axes;
+    t = title (strcat(wrenchSourceName(i) + " In Link Frame"));
+    t.FontSize = fontSize;
+    a.Visible = 'off' ;
+    t.Visible = 'on' ;
+    
+    %% Save figure
+    save2pdf(strcat(t.String + ".pdf"), fH,300);
+    
+end
 
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
     
@@ -360,8 +360,8 @@ for s = 1:6
     hold on;
     plot(sumWrenchMeasurementsInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '--');
     hold on;
-%     plot(sumWrenchEstimatesInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '-.');
-%     hold on;
+    plot(sumWrenchEstimatesInBaseFrame(:,s), 'LineWidth', lineWidth, 'LineStyle', '-.');
+    hold on;
 %     ylim([-400 1000])
     xlabel('Samples', 'FontSize', fontSize);
     legend(momentumLegendString(s), wrenchLegendString(s), wrenchEstimatesLegendString(s),...
