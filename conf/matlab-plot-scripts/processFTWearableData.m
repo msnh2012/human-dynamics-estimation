@@ -3,9 +3,8 @@ clear all;
 clc;
 
 %% Load FT Wearable data and extract FT values
-
-FTLeftShoeTable = readtable('/home/yeshi/Desktop/lo_hde_estimation_dataset/front-squat/trial2/wearable/FTshoes/left/data.log');
-FTRightShoeTable = readtable('/home/yeshi/Desktop/lo_hde_estimation_dataset/front-squat/trial2/wearable/FTshoes/right/data.log');
+FTLeftShoeTable = readtable('/home/yeshi/Desktop/prash_hde_estimation_dataset/stati-Npose/trial3/wearable/FTshoes/left/data.log');
+FTRightShoeTable = readtable('/home/yeshi/Desktop/prash_hde_estimation_dataset/stati-Npose/trial3/wearable/FTshoes/right/data.log');
 
 FTLeftShoe = table;
 FTRightShoe = table;
@@ -67,6 +66,16 @@ lineWidth = 2;
 wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y [Nm]$", "$m_z [Nm]$"];
 
 
+base_X_leftfoot_ = [ 0.923054 0.228576 0.309392 0 0 0 
+                      0.245455 0.969272 -0.0162123 0 0 0
+                      0-0.29618 0.0909067 0.950796 0 0 0
+                      0.15096 0.812686 0.150023 0.923054 0.228576 0.309392
+                      -0.822251 0.207361 -0.051571 0.245455 0.969272 -0.0162123 
+                      -0.210957 -0.167524 -0.0496973 -0.29618 0.0909067 0.950796]
+                  
+FTLeftShoeData.FT_in_base = base_X_leftfoot_ * FTLeftShoeData.FT'
+
+
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
 
 for s = 1:6
@@ -74,9 +83,11 @@ for s = 1:6
     subplot(2,3,s);
     plot(FTLeftShoeData.FT(:,s), 'LineWidth', lineWidth);
     hold on;
+%     plot(FTLeftShoeData.FT_in_base(s,:), 'LineWidth', lineWidth);
+%     hold on;
     plot(FTRightShoeData.FT(:,s), 'LineWidth', lineWidth);
     hold on;
-    ylim([-400 800])
+%     ylim([-400 800])
     
     xlabel('Samples', 'FontSize', fontSize);
     ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
@@ -138,3 +149,5 @@ t = title ("Norm of FT Values in Link Frame from Wearable Data");
 t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
+
+

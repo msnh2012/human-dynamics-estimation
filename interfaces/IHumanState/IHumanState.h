@@ -12,6 +12,8 @@
 #include <array>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <iDynTree/Core/Transform.h> // TODO: Keep the interface clear of idyntree datatypes
 
 namespace hde {
     namespace interfaces {
@@ -47,6 +49,8 @@ public:
     virtual std::vector<std::array<double, 3>> getProperLinAccelerations() const = 0;
     virtual std::vector<std::array<double, 3>> getProperAngAccelerations() const = 0;
     virtual std::vector<std::array<double, 6>> getProperAccelerations() const = 0;
+
+    virtual std::unordered_map<std::string, iDynTree::Transform> getLinkTransformMeasurements() const = 0;
 };
 
 #endif // HDE_INTERFACES_IHUMANSTATE

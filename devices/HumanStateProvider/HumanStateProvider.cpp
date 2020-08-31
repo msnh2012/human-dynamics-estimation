@@ -3334,6 +3334,12 @@ std::vector<std::array<double, 3>> HumanStateProvider::getProperAngAccelerations
     return properAngAccelerations;
 }
 
+std::unordered_map<std::string, iDynTree::Transform> HumanStateProvider::getLinkTransformMeasurements() const
+{
+    std::lock_guard<std::mutex> lock(pImpl->mutex);
+    return pImpl->linkTransformMatricesMeasured;
+}
+
 // This method returns the all link pair names from the full human model
 static void createEndEffectorsPairs(
     const iDynTree::Model& model,

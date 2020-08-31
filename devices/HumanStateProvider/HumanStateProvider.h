@@ -77,6 +77,8 @@ public:
     std::vector<std::array<double, 3>> getProperLinAccelerations() const override;
     std::vector<std::array<double, 3>> getProperAngAccelerations() const override;
     std::vector<std::array<double, 6>> getProperAccelerations() const override;
+
+    std::unordered_map<std::string, iDynTree::Transform> getLinkTransformMeasurements() const override;
 };
 
 #endif // HDE_DEVICES_HUMANSTATEPROVIDER

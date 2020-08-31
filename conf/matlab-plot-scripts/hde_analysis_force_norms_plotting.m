@@ -116,6 +116,30 @@ for i=1:size(sumFeetWrenchMeasurementsInCentroidalFrame, 1)
 end
 
 
+%% Plot feet wrench in link frame
+fH = figure('units','normalized','outerposition',[0 0 1 1]);
+
+for s = 1:6
+        
+    subplot(2,3,s);
+    plot(LeftFootMeasuredWrenchInLinkFrame(:,s), 'LineWidth', lineWidth);
+    hold on;
+    plot(RightFootMeasuredWrenchInLinkFrame(:,s), 'LineWidth', lineWidth);
+    hold on;
+    ylim([-400 800])
+    xlabel('Samples', 'FontSize', fontSize);
+    ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
+    set (gca, 'FontSize' , fontSize)
+    legend('Left Foot', 'Right Foot', 'FontSize', fontSize, 'Location', 'Best');
+    
+end
+
+a = axes;
+t = title ("Feet wrench measurements expressed in link frame");
+t.FontSize = fontSize;
+a.Visible = 'off' ;
+t.Visible = 'on' ;
+
 
 %% Plot feet forces norm in link and base frame
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -148,6 +172,17 @@ t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
 
+%% Rate of change of momentum
+RateOfChangeOfMomentumInBaseFrame = data.rateOfChangeOfMomentumInBaseFrame';
+
+RateOfChangeOfMomentumInBaseFrameNorm = [];
+
+
+for i=1:size(RateOfChangeOfMomentumInBaseFrame, 1)
+    RateOfChangeOfMomentumInBaseFrameNorm(i) = norm(RateOfChangeOfMomentumInBaseFrame(i,1:3));
+end
+
+
 %% Plot feet forces norms in common frame
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
 
@@ -177,3 +212,5 @@ t = title ("Force Norms comparison base, world and centroidal frame");
 t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
+
+

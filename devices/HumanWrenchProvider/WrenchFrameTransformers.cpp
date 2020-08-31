@@ -16,6 +16,9 @@ bool FixedFrameWrenchTransformer::transformWrenchFrame(const iDynTree::Wrench in
                                                        iDynTree::Wrench& transformedWrench,
                                                        const iDynTree::Model& model)
 {
+//    iDynTree::Wrench inputWrenchSimulated;
+//    inputWrenchSimulated.zero();
+//    inputWrenchSimulated.setVal(2, (55.2/2) * 9.81);
     Eigen::Matrix<double,6,1> transformedWrenchEigen = iDynTree::toEigen(transform.asAdjointTransformWrench())
                                                        * iDynTree::toEigen(inputWrench.asVector());
     iDynTree::fromEigen(transformedWrench, transformedWrenchEigen);

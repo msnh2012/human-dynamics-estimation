@@ -1060,6 +1060,9 @@ public:
     bool enableTask1ExternalWrenchEstimation;
     std::unordered_map<std::string, iDynTree::Wrench> fixedExternalWrenchEstimationInWorldFrameMap;
 
+    // Link transform measurements
+    std::unordered_map<std::string, iDynTree::Transform> linkTransformMeasurements;
+
     // Model wrench offset
     iDynTree::Wrench modelWrenchOffset;
 
@@ -1817,10 +1820,12 @@ void HumanDynamicsEstimator::expressWrenchInDifferentFrames(const std::vector<do
         std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
 
         // Get link to world transform
-        iDynTree::Transform world_H_link = kinDyn.getWorldTransform(pImpl->humanModel.getLinkIndex(linkName));
+//        iDynTree::Transform world_H_link = kinDyn.getWorldTransform(pImpl->humanModel.getLinkIndex(linkName));
+        iDynTree::Transform world_H_link = pImpl->linkTransformMeasurements[linkName];
 
         // Get link to base transform
-        iDynTree::Transform base_H_link = kinDyn.getWorldBaseTransform().inverse() * world_H_link;
+//        iDynTree::Transform base_H_link = kinDyn.getWorldBaseTransform().inverse() * world_H_link;
+        iDynTree::Transform base_H_link = pImpl->linkTransformMeasurements[pImpl->humanModel.getLinkName(pImpl->berdyData.state.floatingBaseFrameIndex)].inverse() * world_H_link;
 
         // Link wrench
         iDynTree::Wrench linkWrench;
@@ -1933,6 +1938,9 @@ void HumanDynamicsEstimator::run()
     std::array<double, 6> rateOfChangeOfMomentumInCentroidalFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInCentroidalFrame();
     std::array<double, 6> rateOfChangeOfMomentumInBaseFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInBaseFrame();
     std::array<double, 6> rateOfChangeOfMomentumInWorldFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInWorldFrame();
+
+    // Get link transform measurements
+    pImpl->linkTransformMeasurements = pImpl->iHumanState->getLinkTransformMeasurements();
 
     // Set base angular velocity
     pImpl->berdyData.state.baseAngularVelocity.setVal(0, baseVelocity.at(3));
