@@ -50,7 +50,11 @@ public:
     virtual std::vector<std::array<double, 3>> getProperAngAccelerations() const = 0;
     virtual std::vector<std::array<double, 6>> getProperAccelerations() const = 0;
 
+    virtual size_t getNumberOfLinks() const = 0;
+    virtual std::vector<std::string> getLinkNames() const = 0;
     virtual std::unordered_map<std::string, iDynTree::Transform> getLinkTransformMeasurements() const = 0;
+    virtual std::unordered_map<std::string, iDynTree::Twist> getLinkVelocityMeasurements() const = 0;
+    virtual std::unordered_map<std::string, iDynTree::SpatialAcc> getLinkAccelerationMeasurements() const = 0;
 };
 
 #endif // HDE_INTERFACES_IHUMANSTATE
