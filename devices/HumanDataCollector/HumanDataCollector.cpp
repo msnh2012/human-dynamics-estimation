@@ -82,7 +82,24 @@ void writeVectorOfStringToMatCell(const std::string& name, const std::vector<std
     Mat_VarWrite(matFile, matCellArray.get(), MAT_COMPRESSION_NONE);
 }
 
-void writeVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, std::vector<std::vector<double>>>& humanData, mat_t* matFile) {
+void writeVectorOfVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::vector<double>>>>& data, std::string dataName, mat_t* matFile) {
+
+    const char *mainStructFieldName[1] = {"data"};
+    size_t matDataStructDims[2] = { 1, data.size() };
+    MatVarPtr<matvar_t> matDataStruct(Mat_VarCreateStruct(dataName.data(), 2, matDataStructDims, mainStructFieldName, 1), matVarFree);
+
+    char* mainStructFieldNameString = "data";
+
+    const char *Datafieldnames[3] = { "name", "unit", "value" };
+    size_t matSubDataStructDims[2] = { 1, 1 };
+    matvar_t* matSubDataStruct = Mat_VarCreateStruct(mainStructFieldNameString, 2, matSubDataStructDims, Datafieldnames, 3);
+
+    Mat_VarSetStructFieldByName(matDataStruct.get(), mainStructFieldName[0], 2, matSubDataStruct);
+    Mat_VarWrite(matFile, matDataStruct.get(), MAT_COMPRESSION_NONE);
+
+}
+
+void writeVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, std::vector<std::vector<double>>>& humanData, std::string dataName, mat_t* matFile) {
 
     // Set the mat struct field names
     std::vector<std::string> matStructFieldNamesVec;
@@ -101,7 +118,7 @@ void writeVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, 
     size_t matDataStructDims[2] = {1, 1};
 
     // Initialize mat struct variable
-    MatVarPtr<matvar_t> matDataStruct(Mat_VarCreateStruct("data", 1, matDataStructDims, fieldNames.data(), matStructFieldNamesVec.size()), matVarFree);
+    MatVarPtr<matvar_t> matDataStruct(Mat_VarCreateStruct(dataName.data(), 1, matDataStructDims, fieldNames.data(), matStructFieldNamesVec.size()), matVarFree);
 
     if (matDataStruct == nullptr) {
         yError() << LogPrefix << "Failed to initialize matio struct variable";
@@ -142,7 +159,7 @@ void writeVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, 
     // Write mat struct to mat file before closing
     Mat_VarWrite(matFile, matDataStruct.get(), MAT_COMPRESSION_NONE);
 
-    yDebug() << LogPrefix << "Finished writing mat struct to the mat file";
+    yDebug() << LogPrefix << "Finished writing " << dataName << " mat struct to the mat file";
 
 }
 
@@ -175,6 +192,7 @@ public:
         std::vector<std::string> wrenchEstimateSourceNames;
         std::vector<std::string> dynamicsJointNames;
         std::unordered_map<std::string, std::vector<std::vector<double>>> data;
+        std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::vector<double>>>> linkData;
 
     } humanDataStruct;
 
@@ -790,8 +808,7 @@ void HumanDataCollector::run()
                     linkVel.at(i) = pImpl->linkVelocitiesMap[linkName].getVal(i);
                 }
 
-                // TODO: Suffixing link names with qunaity is a quick way to store mat data without updating the "data" structure
-                pImpl->humanDataStruct.data[linkName + "_vel"].push_back(linkVel);
+                pImpl->humanDataStruct.linkData[linkName]["velocity"].push_back(linkVel);
             }
 
         }
@@ -1073,7 +1090,8 @@ bool HumanDataCollector::detach()
         }
 
         // Set human data to mat struct
-        writeVectorOfVectorDoubleToMatStruct(pImpl->humanDataStruct.data, pImpl->matFilePtr.get());
+        writeVectorOfVectorDoubleToMatStruct(pImpl->humanDataStruct.data, "data", pImpl->matFilePtr.get());
+        writeVectorOfVectorOfVectorDoubleToMatStruct(pImpl->humanDataStruct.linkData, "linkData", pImpl->matFilePtr.get());
 
     }
 
