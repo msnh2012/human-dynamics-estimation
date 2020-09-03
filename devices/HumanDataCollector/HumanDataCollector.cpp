@@ -29,6 +29,8 @@
 #include <unordered_map>
 #include <functional>
 
+#include <iDynTree/Core/Twist.h>
+
 const std::string DeviceName = "HumanDataCollector";
 const std::string LogPrefix = DeviceName + " :";
 constexpr double DefaultPeriod = 0.01;
@@ -212,7 +214,8 @@ public:
     // Link quantities
     size_t numberOfLinks;
     std::vector<std::string> linkNames;
-    // TODO: Think of a data structure for link measurements
+    // TODO: Think of a data structure for measurements
+    std::unordered_map<std::string, iDynTree::Twist> linkVelocitiesMap;
 
     // Wrench Measurements
     size_t numberOfWrenchMeasurementSources;
@@ -631,7 +634,7 @@ void HumanDataCollector::run()
         pImpl->numberOfLinks = pImpl->iHumanState->getNumberOfLinks();
         pImpl->linkNames = pImpl->iHumanState->getLinkNames();
         // TODO: Get link measurements
-
+        pImpl->linkVelocitiesMap = pImpl->iHumanState->getLinkVelocityMeasurements();
 
     }
 
@@ -777,6 +780,19 @@ void HumanDataCollector::run()
 
             pImpl->humanDataStruct.data["jointPositions"].push_back(pImpl->jointPositionsVec);
             pImpl->humanDataStruct.data["jointVelocities"].push_back(pImpl->jointVelocitiesVec);
+
+            // Iterate over links
+            // TODO: Improve idyntree vector handling
+            for (std::string linkName : pImpl->linkNames) {
+
+                std::vector<double> linkVel(6, 0.0);
+                for (size_t i = 0; i < pImpl->linkVelocitiesMap[linkName].size(); i++) {
+                    linkVel.at(i) = pImpl->linkVelocitiesMap[linkName].getVal(i);
+                }
+
+                // TODO: Suffixing link names with qunaity is a quick way to store mat data without updating the "data" structure
+                pImpl->humanDataStruct.data[linkName + "_vel"].push_back(linkVel);
+            }
 
         }
 
