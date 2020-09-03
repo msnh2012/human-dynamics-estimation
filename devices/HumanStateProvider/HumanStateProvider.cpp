@@ -3348,7 +3348,7 @@ std::vector<std::string> HumanStateProvider::getLinkNames() const
     std::vector<std::string> linkNames;
     for (const auto& linkMapEntry : pImpl->wearableStorage.modelToWearable_LinkName){
 
-        linkNames.push_back(linkMapEntry.second);
+        linkNames.push_back(linkMapEntry.first);
     }
 
     return linkNames;
