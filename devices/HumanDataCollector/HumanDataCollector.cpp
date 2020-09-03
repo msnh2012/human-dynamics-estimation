@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <functional>
 
+#include <iDynTree/Core/Transform.h>
 #include <iDynTree/Core/Twist.h>
 #include <iDynTree/Core/SpatialAcc.h>
 
@@ -85,7 +86,6 @@ void writeVectorOfStringToMatCell(const std::string& name, const std::vector<std
 
 void writeVectorOfVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::vector<double>>>>& data, std::string dataName, mat_t* matFile) {
 
-
     const char *mainStructFieldName[1] = {"data"};
     size_t matDataStructDims[2] = { 1, data.size() };
     MatVarPtr<matvar_t> matDataStruct(Mat_VarCreateStruct(dataName.data(), 2, matDataStructDims, mainStructFieldName, 1), matVarFree);
@@ -95,7 +95,6 @@ void writeVectorOfVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::
 
     auto pair = data.begin();
     for (auto& element : pair->second) {
-        yInfo() << "Sub field name : " << element.first;
         matSubStructFieldNamesVec.push_back(element.first);
     }
 
@@ -106,15 +105,13 @@ void writeVectorOfVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::
 
     }
 
-    char* mainStructFieldNameString = "data";
-
     // Iterate over human data and set to numeric arrays of mat struct
     int index = 0;
     for (const std::pair<std::string, std::unordered_map<std::string, std::vector<std::vector<double>>>> pair : data) {
 
 
         size_t matSubDataStructDims[2] = { 1, 1 };
-        matvar_t* matSubDataStruct = Mat_VarCreateStruct(mainStructFieldNameString, 2, matSubDataStructDims, subFieldNames.data(), matSubStructFieldNamesVec.size()); // NOTE: Using unique ptr for this struct is causing seg fault
+        matvar_t* matSubDataStruct = Mat_VarCreateStruct(mainStructFieldName[0], 2, matSubDataStructDims, subFieldNames.data(), matSubStructFieldNamesVec.size()); // NOTE: Using unique ptr for this struct is causing seg fault
 
         Mat_VarSetStructFieldByName(matDataStruct.get(), mainStructFieldName[0], index, matSubDataStruct);
 
@@ -139,7 +136,7 @@ void writeVectorOfVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::
             matvar_t *mat2darray = Mat_VarCreate(subPair.first.c_str(), MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dims, values.data(), 0);
 
             if (mat2darray == nullptr) {
-                yError() << LogPrefix << "Failed to create a 2d numeric array to store in the mat struct variable";
+                yError() << LogPrefix << "Failed to create a 2d numeric array to store in the mat sub struct variable";
                 Mat_VarFree(mat2darray);
                 return;
             }
@@ -152,8 +149,6 @@ void writeVectorOfVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::
 
         index++;
     }
-
-    yInfo() << LogPrefix << "Finished writing mat sub dat struct";
 
     // Write mat struct to mat file before closing
     Mat_VarWrite(matFile, matDataStruct.get(), MAT_COMPRESSION_NONE);
@@ -294,7 +289,7 @@ public:
     // Link quantities
     size_t numberOfLinks;
     std::vector<std::string> linkNames;
-    // TODO: Think of a data structure for measurements
+    std::unordered_map<std::string, iDynTree::Transform> linkTransformsMap;
     std::unordered_map<std::string, iDynTree::Twist> linkVelocitiesMap;
     std::unordered_map<std::string, iDynTree::SpatialAcc> linkAccelerationsMap;
 
@@ -714,7 +709,7 @@ void HumanDataCollector::run()
         // Link Quantities
         pImpl->numberOfLinks = pImpl->iHumanState->getNumberOfLinks();
         pImpl->linkNames = pImpl->iHumanState->getLinkNames();
-        // TODO: Get link measurements
+        pImpl->linkTransformsMap = pImpl->iHumanState->getLinkTransformMeasurements();
         pImpl->linkVelocitiesMap = pImpl->iHumanState->getLinkVelocityMeasurements();
         pImpl->linkAccelerationsMap = pImpl->iHumanState->getLinkAccelerationMeasurements();
 
@@ -867,21 +862,40 @@ void HumanDataCollector::run()
             // TODO: Improve idyntree vector handling
             for (std::string linkName : pImpl->linkNames) {
 
-                // Handle link velocity measurements buffers
-                std::vector<double> linkVel(6, 0.0);
-                for (size_t v = 0; v < pImpl->linkVelocitiesMap[linkName].size(); v++) {
-                    linkVel.at(v) = pImpl->linkVelocitiesMap[linkName].getVal(v);
+                {
+                    // Handle link transform measurements buffer
+                    // NOTE: Storing (pos, rot) of the transform with rot as RPY
+                    std::vector<double> linkPose(6, 0.0);
+                    linkPose.at(0) = pImpl->linkTransformsMap[linkName].getPosition().getVal(0);
+                    linkPose.at(1) = pImpl->linkTransformsMap[linkName].getPosition().getVal(1);
+                    linkPose.at(2) = pImpl->linkTransformsMap[linkName].getPosition().getVal(2);
+
+                    linkPose.at(3) = pImpl->linkTransformsMap[linkName].getRotation().asRPY().getVal(0);
+                    linkPose.at(4) = pImpl->linkTransformsMap[linkName].getRotation().asRPY().getVal(1);
+                    linkPose.at(5) = pImpl->linkTransformsMap[linkName].getRotation().asRPY().getVal(2);
+
+                    pImpl->humanDataStruct.linkData[linkName]["pose"].push_back(linkPose);
                 }
 
-                pImpl->humanDataStruct.linkData[linkName]["velocity"].push_back(linkVel);
+                {
+                    // Handle link velocity measurements buffer
+                    std::vector<double> linkVel(6, 0.0);
+                    for (size_t v = 0; v < pImpl->linkVelocitiesMap[linkName].size(); v++) {
+                        linkVel.at(v) = pImpl->linkVelocitiesMap[linkName].getVal(v);
+                    }
 
-                // Handle link acceleration measurements buffer
-                std::vector<double> linkAcc(6, 0.0);
-                for (size_t a = 0; a < pImpl->linkAccelerationsMap[linkName].size(); a++) {
-                    linkAcc.at(a) = pImpl->linkAccelerationsMap[linkName].getVal(a);
+                    pImpl->humanDataStruct.linkData[linkName]["velocity"].push_back(linkVel);
                 }
 
-                pImpl->humanDataStruct.linkData[linkName]["acceleration"].push_back(linkAcc);
+                {
+                    // Handle link acceleration measurements buffer
+                    std::vector<double> linkAcc(6, 0.0);
+                    for (size_t a = 0; a < pImpl->linkAccelerationsMap[linkName].size(); a++) {
+                        linkAcc.at(a) = pImpl->linkAccelerationsMap[linkName].getVal(a);
+                    }
+
+                    pImpl->humanDataStruct.linkData[linkName]["acceleration"].push_back(linkAcc);
+                }
             }
 
         }
