@@ -30,6 +30,7 @@
 #include <functional>
 
 #include <iDynTree/Core/Twist.h>
+#include <iDynTree/Core/SpatialAcc.h>
 
 const std::string DeviceName = "HumanDataCollector";
 const std::string LogPrefix = DeviceName + " :";
@@ -84,19 +85,80 @@ void writeVectorOfStringToMatCell(const std::string& name, const std::vector<std
 
 void writeVectorOfVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::vector<double>>>>& data, std::string dataName, mat_t* matFile) {
 
+
     const char *mainStructFieldName[1] = {"data"};
     size_t matDataStructDims[2] = { 1, data.size() };
     MatVarPtr<matvar_t> matDataStruct(Mat_VarCreateStruct(dataName.data(), 2, matDataStructDims, mainStructFieldName, 1), matVarFree);
 
+    // Set sub fields struct
+    std::vector<std::string> matSubStructFieldNamesVec;
+
+    auto pair = data.begin();
+    for (auto& element : pair->second) {
+        yInfo() << "Sub field name : " << element.first;
+        matSubStructFieldNamesVec.push_back(element.first);
+    }
+
+    // Construct vector of character pointers to field names
+    std::vector<const char*> subFieldNames;
+    for (size_t i = 0; i < matSubStructFieldNamesVec.size(); i++) {
+        subFieldNames.push_back(matSubStructFieldNamesVec[i].c_str());
+
+    }
+
     char* mainStructFieldNameString = "data";
 
-    const char *Datafieldnames[3] = { "name", "unit", "value" };
-    size_t matSubDataStructDims[2] = { 1, 1 };
-    matvar_t* matSubDataStruct = Mat_VarCreateStruct(mainStructFieldNameString, 2, matSubDataStructDims, Datafieldnames, 3);
+    // Iterate over human data and set to numeric arrays of mat struct
+    int index = 0;
+    for (const std::pair<std::string, std::unordered_map<std::string, std::vector<std::vector<double>>>> pair : data) {
 
-    Mat_VarSetStructFieldByName(matDataStruct.get(), mainStructFieldName[0], 2, matSubDataStruct);
+
+        size_t matSubDataStructDims[2] = { 1, 1 };
+        matvar_t* matSubDataStruct = Mat_VarCreateStruct(mainStructFieldNameString, 2, matSubDataStructDims, subFieldNames.data(), matSubStructFieldNamesVec.size()); // NOTE: Using unique ptr for this struct is causing seg fault
+
+        Mat_VarSetStructFieldByName(matDataStruct.get(), mainStructFieldName[0], index, matSubDataStruct);
+
+        for (const std::pair<std::string, std::vector<std::vector<double>>> subPair : pair.second) {
+
+
+            const size_t rows = subPair.second.size();
+            const size_t cols = subPair.second.at(0).size(); // Assuming same number of elements in the vector
+
+            std::vector<double> values;
+
+            // TODO: Check if this can be improved through STL
+            for (size_t r = 0; r < rows; r++) {
+                for (size_t c = 0; c < cols; c++) {
+                    values.push_back(subPair.second[r].at(c));
+                }
+            }
+
+            // Create a mat variable for 2d numeric array
+            // NOTE: rows and cols are reversed from the regular array because mat variables are column major
+            size_t dims[2] = {cols, rows};
+            matvar_t *mat2darray = Mat_VarCreate(subPair.first.c_str(), MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dims, values.data(), 0);
+
+            if (mat2darray == nullptr) {
+                yError() << LogPrefix << "Failed to create a 2d numeric array to store in the mat struct variable";
+                Mat_VarFree(mat2darray);
+                return;
+            }
+
+            // Set the 2d numeric array to the mat struct variable
+            Mat_VarSetStructFieldByName(matSubDataStruct, subPair.first.c_str(), 0, mat2darray);
+
+
+        }
+
+        index++;
+    }
+
+    yInfo() << LogPrefix << "Finished writing mat sub dat struct";
+
+    // Write mat struct to mat file before closing
     Mat_VarWrite(matFile, matDataStruct.get(), MAT_COMPRESSION_NONE);
 
+    yDebug() << LogPrefix << "Finished writing " << dataName << " mat struct to the mat file";
 }
 
 void writeVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, std::vector<std::vector<double>>>& humanData, std::string dataName, mat_t* matFile) {
@@ -234,6 +296,7 @@ public:
     std::vector<std::string> linkNames;
     // TODO: Think of a data structure for measurements
     std::unordered_map<std::string, iDynTree::Twist> linkVelocitiesMap;
+    std::unordered_map<std::string, iDynTree::SpatialAcc> linkAccelerationsMap;
 
     // Wrench Measurements
     size_t numberOfWrenchMeasurementSources;
@@ -653,6 +716,7 @@ void HumanDataCollector::run()
         pImpl->linkNames = pImpl->iHumanState->getLinkNames();
         // TODO: Get link measurements
         pImpl->linkVelocitiesMap = pImpl->iHumanState->getLinkVelocityMeasurements();
+        pImpl->linkAccelerationsMap = pImpl->iHumanState->getLinkAccelerationMeasurements();
 
     }
 
@@ -803,12 +867,21 @@ void HumanDataCollector::run()
             // TODO: Improve idyntree vector handling
             for (std::string linkName : pImpl->linkNames) {
 
+                // Handle link velocity measurements buffers
                 std::vector<double> linkVel(6, 0.0);
-                for (size_t i = 0; i < pImpl->linkVelocitiesMap[linkName].size(); i++) {
-                    linkVel.at(i) = pImpl->linkVelocitiesMap[linkName].getVal(i);
+                for (size_t v = 0; v < pImpl->linkVelocitiesMap[linkName].size(); v++) {
+                    linkVel.at(v) = pImpl->linkVelocitiesMap[linkName].getVal(v);
                 }
 
                 pImpl->humanDataStruct.linkData[linkName]["velocity"].push_back(linkVel);
+
+                // Handle link acceleration measurements buffer
+                std::vector<double> linkAcc(6, 0.0);
+                for (size_t a = 0; a < pImpl->linkAccelerationsMap[linkName].size(); a++) {
+                    linkAcc.at(a) = pImpl->linkAccelerationsMap[linkName].getVal(a);
+                }
+
+                pImpl->humanDataStruct.linkData[linkName]["acceleration"].push_back(linkAcc);
             }
 
         }
