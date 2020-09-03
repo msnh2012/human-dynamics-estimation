@@ -3334,10 +3334,42 @@ std::vector<std::array<double, 3>> HumanStateProvider::getProperAngAccelerations
     return properAngAccelerations;
 }
 
+size_t HumanStateProvider::getNumberOfLinks() const
+{
+    std::lock_guard<std::mutex> lock(pImpl->mutex);
+    return pImpl->wearableStorage.modelToWearable_LinkName.size();
+}
+
+std::vector<std::string> HumanStateProvider::getLinkNames() const
+{
+    std::lock_guard<std::mutex> lock(pImpl->mutex);
+
+    // NOTE: The link names are the same as the urdf name
+    std::vector<std::string> linkNames;
+    for (const auto& linkMapEntry : pImpl->wearableStorage.modelToWearable_LinkName){
+
+        linkNames.push_back(linkMapEntry.first);
+    }
+
+    return linkNames;
+}
+
 std::unordered_map<std::string, iDynTree::Transform> HumanStateProvider::getLinkTransformMeasurements() const
 {
     std::lock_guard<std::mutex> lock(pImpl->mutex);
     return pImpl->linkTransformMatricesMeasured;
+}
+
+std::unordered_map<std::string, iDynTree::Twist> HumanStateProvider::getLinkVelocityMeasurements() const
+{
+    std::lock_guard<std::mutex> lock(pImpl->mutex);
+    return pImpl->linkVelocitiesMeasured;
+}
+
+std::unordered_map<std::string, iDynTree::SpatialAcc> HumanStateProvider::getLinkAccelerationMeasurements() const
+{
+    std::lock_guard<std::mutex> lock(pImpl->mutex);
+    return pImpl->linkAccelerationsMeasured;
 }
 
 // This method returns the all link pair names from the full human model
