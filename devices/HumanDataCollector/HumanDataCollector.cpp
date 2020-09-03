@@ -168,6 +168,7 @@ public:
 
         std::vector<long> time;
         std::vector<std::string> stateJointNames;
+        std::vector<std::string> linkNames;
         std::vector<std::string>  wrenchMeasurementSourceNames;
         std::vector<std::string> wrenchEstimateSourceNames;
         std::vector<std::string> dynamicsJointNames;
@@ -207,6 +208,11 @@ public:
     std::vector<double> rateOfChangeOfMomentumInBaseFrameVec;
     std::vector<double> rateOfChangeOfMomentumInWorldFrameVec;
     std::vector<double> rateOfChangeOfMomentumInCentroidalFrameVec;
+
+    // Link quantities
+    size_t numberOfLinks;
+    std::vector<std::string> linkNames;
+    // TODO: Think of a data structure for link measurements
 
     // Wrench Measurements
     size_t numberOfWrenchMeasurementSources;
@@ -266,6 +272,7 @@ public:
     yarp::os::BufferedPort<yarp::os::Bottle> dynamicsJointNamesDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> jointTorquesDataPort;
 
+    // TODO: Stream link quantities to yarp ports
 
     // MATIO Logging
     bool matioLogger = false;
@@ -620,6 +627,12 @@ void HumanDataCollector::run()
         pImpl->rateOfChangeOfMomentumInWorldFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInWorldFrame();
         pImpl->rateOfChangeOfMomentumInCentroidalFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInCentroidalFrame();
 
+        // Link Quantities
+        pImpl->numberOfLinks = pImpl->iHumanState->getNumberOfLinks();
+        pImpl->linkNames = pImpl->iHumanState->getLinkNames();
+        // TODO: Get link measurements
+
+
     }
 
     // Get data from IHumanWrench interface of HumanWrenchProvider
@@ -745,6 +758,11 @@ void HumanDataCollector::run()
             // Set state joint names once
             if (pImpl->humanDataStruct.stateJointNames.empty()) {
                 pImpl->humanDataStruct.stateJointNames = pImpl->stateJointNames;
+            }
+
+            // Set link names once
+            if (pImpl->humanDataStruct.linkNames.empty()) {
+                pImpl->humanDataStruct.linkNames = pImpl->linkNames;
             }
 
             pImpl->humanDataStruct.data["basePose"].push_back(pImpl->basePoseVec);
@@ -1016,6 +1034,7 @@ bool HumanDataCollector::detach()
 
         // Set the string variables elements as cell arrays to mat cell variables
         writeVectorOfStringToMatCell("stateJointNames", pImpl->humanDataStruct.stateJointNames, pImpl->matFilePtr.get());
+        writeVectorOfStringToMatCell("linkNames", pImpl->humanDataStruct.linkNames, pImpl->matFilePtr.get());
         writeVectorOfStringToMatCell("wrenchMeasurementSourceNames", pImpl->humanDataStruct.wrenchMeasurementSourceNames, pImpl->matFilePtr.get());
         writeVectorOfStringToMatCell("wrenchEstimateSourceNames", pImpl->humanDataStruct.wrenchEstimateSourceNames, pImpl->matFilePtr.get());
         writeVectorOfStringToMatCell("dynamicsJointNames", pImpl->humanDataStruct.dynamicsJointNames, pImpl->matFilePtr.get());
