@@ -6,10 +6,14 @@ clc;
 fontSize  = 20;
 lineWidth = 3;
 
+
+%% Legend or Title Index
+wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y [Nm]$", "$m_z [Nm]$"];
+
 %% Load data
 load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estimation/conf/xml/testData/matLogFile.mat');
 
-subjectMass = 55.2;
+subjectMass = 53.5;
 I_g         = [0 0 9.81]';
 I_f_g       = (subjectMass/2) * I_g;
 
@@ -24,6 +28,13 @@ rightFootLinkIndex = find(strcmp(linkNames, rightFootLinkName));
 
 left_foot_f_g  = [];
 right_foot_f_g = [];
+
+%% Get left foot wrench measurements expressed in link frame
+LeftFootMeasuredWrenchInLinkFrame  = data.task1_wrenchMeasurementsInLinkFrame(1:6,:)';
+RightFootMeasuredWrenchInLinkFrame = data.task1_wrenchMeasurementsInLinkFrame(7:12,:)';
+
+LeftFootMeasuredWrenchInLinkFrame_corrected_force = [];
+RightFootMeasuredWrenchInLinkFrame_corrected_force = [];
 
 for i = 1:size(linkData(baseLinkIndex).data.pose, 2) %% Assuming all the time series length is correct
     
@@ -44,14 +55,12 @@ for i = 1:size(linkData(baseLinkIndex).data.pose, 2) %% Assuming all the time se
     right_foot_R_w = w_R_right_foot.inverse;  
     right_foot_f_g(i, :) = right_foot_R_w.toMatlab * I_f_g;
     
+    %% Corrected force measurements
+    LeftFootMeasuredWrenchInLinkFrame_corrected_force(i,:) = left_foot_R_w.toMatlab * LeftFootMeasuredWrenchInLinkFrame(i, 1:3)';
+    RightootMeasuredWrenchInLinkFrame_corrected_force(i,:) = right_foot_R_w.toMatlab * RightFootMeasuredWrenchInLinkFrame(i, 1:3)';
+    
 end
 
-%% Get left foot wrench measurements expressed in link frame
-LeftFootMeasuredWrenchInLinkFrame  = data.task1_wrenchMeasurementsInLinkFrame(1:6,:)';
-RightFootMeasuredWrenchInLinkFrame = data.task1_wrenchMeasurementsInLinkFrame(7:12,:)';
-
-%% Legend or Title Index
-wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y [Nm]$", "$m_z [Nm]$"];
 
 
 %% Plot foot wrench measurements in link frame and half of weight expressed in same link frame
@@ -62,7 +71,7 @@ plotIndex = 1;
 for s = 1:2:6
     
     subplot(3,2,s);
-    plot(LeftFootMeasuredWrenchInLinkFrame(:,plotIndex), 'LineWidth', lineWidth);
+    plot(LeftFootMeasuredWrenchInLinkFrame_corrected_force(:,plotIndex), 'LineWidth', lineWidth);
     hold on;
     plot(left_foot_f_g(:,plotIndex), 'LineWidth', lineWidth, 'LineStyle', '--');
     hold on;
@@ -82,7 +91,7 @@ plotIndex = 1;
 for s = 2:2:6
     
     subplot(3,2,s);
-    plot(RightFootMeasuredWrenchInLinkFrame(:,plotIndex), 'LineWidth', lineWidth);
+    plot(RightootMeasuredWrenchInLinkFrame_corrected_force(:,plotIndex), 'LineWidth', lineWidth);
     hold on;
     plot(right_foot_f_g(:,plotIndex), 'LineWidth', lineWidth, 'LineStyle', '--');
     hold on;
