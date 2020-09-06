@@ -84,7 +84,7 @@ void writeVectorOfStringToMatCell(const std::string& name, const std::vector<std
     Mat_VarWrite(matFile, matCellArray.get(), MAT_COMPRESSION_NONE);
 }
 
-void writeVectorOfVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::vector<double>>>>& data, std::string dataName, mat_t* matFile) {
+void writeVectorOfVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::vector<double>>>>& data, std::string dataName, std::vector<std::string>& linkNames, mat_t* matFile) {
 
     const char *mainStructFieldName[1] = {"data"};
     size_t matDataStructDims[2] = { 1, data.size() };
@@ -107,15 +107,16 @@ void writeVectorOfVectorOfVectorDoubleToMatStruct(const std::unordered_map<std::
 
     // Iterate over human data and set to numeric arrays of mat struct
     int index = 0;
-    for (const std::pair<std::string, std::unordered_map<std::string, std::vector<std::vector<double>>>> pair : data) {
+    for (std::string linkName : linkNames) {
 
+        std::unordered_map<std::string, std::vector<std::vector<double>>> linkData = data.at(linkName);
 
         size_t matSubDataStructDims[2] = { 1, 1 };
         matvar_t* matSubDataStruct = Mat_VarCreateStruct(mainStructFieldName[0], 2, matSubDataStructDims, subFieldNames.data(), matSubStructFieldNamesVec.size()); // NOTE: Using unique ptr for this struct is causing seg fault
 
         Mat_VarSetStructFieldByName(matDataStruct.get(), mainStructFieldName[0], index, matSubDataStruct);
 
-        for (const std::pair<std::string, std::vector<std::vector<double>>> subPair : pair.second) {
+        for (const std::pair<std::string, std::vector<std::vector<double>>> subPair : linkData) {
 
 
             const size_t rows = subPair.second.size();
@@ -1178,7 +1179,7 @@ bool HumanDataCollector::detach()
 
         // Set human data to mat struct
         writeVectorOfVectorDoubleToMatStruct(pImpl->humanDataStruct.data, "data", pImpl->matFilePtr.get());
-        writeVectorOfVectorOfVectorDoubleToMatStruct(pImpl->humanDataStruct.linkData, "linkData", pImpl->matFilePtr.get());
+        writeVectorOfVectorOfVectorDoubleToMatStruct(pImpl->humanDataStruct.linkData, "linkData", pImpl->linkNames, pImpl->matFilePtr.get());
 
     }
 
