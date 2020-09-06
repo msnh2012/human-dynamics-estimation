@@ -79,7 +79,7 @@ for s = 1:2:6
     xlabel('Samples', 'FontSize', fontSize);
     ylabel(wrenchLegendString(plotIndex), 'Interpreter', 'latex', 'FontSize', fontSize);
     set (gca, 'FontSize' , fontSize)
-    legend('Left Foot Measured Force in Left Foot', 'Half of Gravity Force in Left Foot',...
+    legend('Left Foot Measured Force in Xsens Left Foot', 'Half of Gravity Force in Xsens Left Foot',...
            'FontSize', fontSize, 'Location', 'Best');
        
     plotIndex = plotIndex+1;
@@ -99,7 +99,7 @@ for s = 2:2:6
     xlabel('Samples', 'FontSize', fontSize);
     ylabel(wrenchLegendString(plotIndex), 'Interpreter', 'latex', 'FontSize', fontSize);
     set (gca, 'FontSize' , fontSize)
-    legend('Right Foot Measured Force in Right Foot', 'Half of Gravity Force in Right Foot',...
+    legend('Right Foot Measured Force in Xsens Right Foot', 'Half of Gravity Force in Xsens Right Foot',...
            'FontSize', fontSize, 'Location', 'Best');
     
     plotIndex = plotIndex+1;
@@ -108,57 +108,6 @@ end
 
 a = axes;
 t = title ("Foot measured force vs half of gravity force expressed in respective link frame");
-t.FontSize = fontSize;
-a.Visible = 'off' ;
-t.Visible = 'on' ;
-axis(a,'fill')
-
-
-%% Compute norms
-
-LeftFootMeasuredWrenchInLinkFrameNorm = [];
-RightFootMeasuredWrenchInLinkFrameNorm = [];
-
-left_foot_f_g_norm  = [];
-right_foot_f_g_norm = [];
-
-for i=1:size(LeftFootMeasuredWrenchInLinkFrame, 1)
-    LeftFootMeasuredWrenchInLinkFrameNorm(i) = norm(LeftFootMeasuredWrenchInLinkFrame(i,1:3));
-    RightFootMeasuredWrenchInLinkFrameNorm(i) = norm(RightFootMeasuredWrenchInLinkFrame(i,1:3));
-    left_foot_f_g_norm(i) = norm(left_foot_f_g(i,:));
-    right_foot_f_g_norm(i) = norm(right_foot_f_g(i,:));
-end
-
-fH = figure('units','normalized','outerposition',[0 0 1 1]);
-
-subplot(2,2,1)
-plot(LeftFootMeasuredWrenchInLinkFrameNorm, 'LineWidth', lineWidth);
-hold on;
-plot(left_foot_f_g_norm, 'LineWidth', lineWidth, 'LineStyle', '--');
-hold on;
-legend('Norm of Left Foot Measured Force in Left Foot', 'Norm of Half of Gravity Force in Left Foot',...
-       'FontSize', fontSize, 'Location', 'Best');
-       
-subplot(2,2,3)
-plot(LeftFootMeasuredWrenchInLinkFrameNorm - left_foot_f_g_norm, 'LineWidth', lineWidth);
-hold on;
-legend('Difference', 'FontSize', fontSize, 'Location', 'Best');
-
-subplot(2,2,2)
-plot(RightFootMeasuredWrenchInLinkFrameNorm, 'LineWidth', lineWidth);
-hold on;
-plot(right_foot_f_g_norm, 'LineWidth', lineWidth, 'LineStyle', '--');
-hold on;
-legend('Norm of Right Foot Measured Force in Right Foot', 'Norm of Half of Gravity Force in Right Foot',...
-       'FontSize', fontSize, 'Location', 'Best');
-       
-subplot(2,2,4)
-plot(RightFootMeasuredWrenchInLinkFrameNorm - right_foot_f_g_norm, 'LineWidth', lineWidth);
-hold on;
-legend('Difference', 'FontSize', fontSize, 'Location', 'Best');
-
-a = axes;
-t = title ("Norms comparison");
 t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
