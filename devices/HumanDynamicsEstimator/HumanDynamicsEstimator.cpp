@@ -2005,8 +2005,36 @@ void HumanDynamicsEstimator::run()
     // Fill in the y vector with sensor measurements for the FT sensors
     std::vector<double> wrenchValues = pImpl->iHumanWrench->getWrenches();
 
+    // Correct input wrench with inertial to xsens link rotation
+    // TODO: Better to do this HumanWrenchProvider device
+    std::vector<double> correctedWrenchValues(wrenchValues.size(), 0.0);
+
+    for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
+
+        std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
+
+        iDynTree::Transform t = iDynTree::Transform::Identity();
+        t.setRotation(pImpl->linkTransformMeasurements[linkName].getRotation());
+
+        iDynTree::Wrench inputWrench;
+
+        // TODO: Clean up this wrench handling
+        for (size_t e = 0; e < 6; e++) {
+            inputWrench.setVal(e, wrenchValues.at(6 * i + e));
+        }
+
+        Eigen::Matrix<double,6,1> correctedWrenchEigen;
+        correctedWrenchEigen = iDynTree::toEigen(t.inverse().asAdjointTransformWrench()) * iDynTree::toEigen(inputWrench);
+
+        // Set corrected wrench values buffer
+        for (size_t e = 0; e < 6; e++) {
+            correctedWrenchValues.at(6 * i + e) = correctedWrenchEigen[e];
+        }
+
+    }
+
     // Express task 1 measured wrench in different frames
-    expressWrenchInDifferentFrames(wrenchValues,
+    expressWrenchInDifferentFrames(correctedWrenchValues,
                                    hde::interfaces::IHumanWrench::TaskType::Task1,
                                    hde::interfaces::IHumanWrench::WrenchType::Measured,
                                    kinDynComputations);
@@ -2059,7 +2087,7 @@ void HumanDynamicsEstimator::run()
                                 int index = std::distance(pImpl->wrenchSensorsLinkNames.begin(), it);
                                 for (int i = 0; i < 6; i++)
                                 {
-                                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + i) = wrenchValues.at(index*6 + i);
+                                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + i) = correctedWrenchValues.at(index*6 + i);
                                 }
 
                             }
@@ -2491,20 +2519,20 @@ void HumanDynamicsEstimator::run()
         for (int i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
 
             // Expose input measured wrench from task 1 to analog sensor variable
-            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 0] = wrenchValues.at(i*6 + 0);
-            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 1] = wrenchValues.at(i*6 + 1);
-            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 2] = wrenchValues.at(i*6 + 2);
-            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 3] = wrenchValues.at(i*6 + 3);
-            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 4] = wrenchValues.at(i*6 + 4);
-            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 5] = wrenchValues.at(i*6 + 5);
+            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 0] = correctedWrenchValues.at(i*6 + 0);
+            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 1] = correctedWrenchValues.at(i*6 + 1);
+            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 2] = correctedWrenchValues.at(i*6 + 2);
+            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 3] = correctedWrenchValues.at(i*6 + 3);
+            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 4] = correctedWrenchValues.at(i*6 + 4);
+            pImpl->linkExternalWrenchMeasurementAnalogSensorData.measurements[6 * i + 5] = correctedWrenchValues.at(i*6 + 5);
 
             // Expose input measured wrench from task 1 to analog sensor variable
-            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 0] = wrenchValues.at(i*6 + 0);
-            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 1] = wrenchValues.at(i*6 + 1);
-            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 2] = wrenchValues.at(i*6 + 2);
-            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 3] = wrenchValues.at(i*6 + 3);
-            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 4] = wrenchValues.at(i*6 + 4);
-            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 5] = wrenchValues.at(i*6 + 5);
+            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 0] = correctedWrenchValues.at(i*6 + 0);
+            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 1] = correctedWrenchValues.at(i*6 + 1);
+            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 2] = correctedWrenchValues.at(i*6 + 2);
+            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 3] = correctedWrenchValues.at(i*6 + 3);
+            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 4] = correctedWrenchValues.at(i*6 + 4);
+            pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 5] = correctedWrenchValues.at(i*6 + 5);
 
             // Expose net link external wrench estimates from task 2 to analog sensor data variable
             std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
