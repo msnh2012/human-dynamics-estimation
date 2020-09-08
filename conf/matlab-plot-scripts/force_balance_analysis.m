@@ -15,7 +15,6 @@ load('/home/yeshi/software/robotology-superbuild/robotology/human-dynamics-estim
 
 subjectMass = 53.5;
 I_g         = [0 0 9.81]';
-I_f2_g       = (subjectMass/2) * I_g;
 I_f_g       = (subjectMass) * I_g;
 
 baseLinkName  = 'Pelvis';
@@ -35,9 +34,6 @@ b_f_g = [];
 LeftFootMeasuredWrenchInLinkFrame  = data.task1_wrenchMeasurementsInLinkFrame(1:6,:)';
 RightFootMeasuredWrenchInLinkFrame = data.task1_wrenchMeasurementsInLinkFrame(7:12,:)';
 
-LeftFootMeasuredWrenchInLinkFrame_corrected_force = [];
-RightFootMeasuredWrenchInLinkFrame_corrected_force = [];
-
 LeftFootMeasuredWrenchInLinkFrame_in_base = [];
 RightFootMeasuredWrenchInLinkFrame_in_base = [];
 
@@ -55,24 +51,9 @@ for i = 1:size(linkData(baseLinkIndex).data.pose, 2) %% Assuming all the time se
     
     w_R_right_foot_rpy = linkData(rightFootLinkIndex).data.pose(4:6, i);
     w_R_right_foot = iDynTree.Rotation.RPY(w_R_right_foot_rpy(1), w_R_right_foot_rpy(2), w_R_right_foot_rpy(3));
-    
-    %% gravity wrench expressed in left foot frame
-    left_foot_R_w = w_R_left_foot.inverse;  
-    left_foot_f2_g(i, :) = left_foot_R_w.toMatlab * I_f2_g;
-    
-    %% gravity wrench expressed in right foot frame
-    right_foot_R_w = w_R_right_foot.inverse;  
-    right_foot_f2_g(i, :) = right_foot_R_w.toMatlab * I_f2_g;
-    
-    %% Corrected force measurements
-    LeftFootMeasuredWrenchInLinkFrame_corrected_force(i,:) = left_foot_R_w.toMatlab * LeftFootMeasuredWrenchInLinkFrame(i, 1:3)';
-    RightFootMeasuredWrenchInLinkFrame_corrected_force(i,:) = right_foot_R_w.toMatlab * RightFootMeasuredWrenchInLinkFrame(i, 1:3)';
-    
-%     LeftFootMeasuredWrenchInLinkFrame_in_base(i,:) = b_R_w.toMatlab * w_R_left_foot.toMatlab * LeftFootMeasuredWrenchInLinkFrame_corrected_force(i, 1:3)';
-%     RightFootMeasuredWrenchInLinkFrame_in_base(i,:) = b_R_w.toMatlab * w_R_right_foot.toMatlab * RightFootMeasuredWrenchInLinkFrame_corrected_force(i, 1:3)';
-    
-    LeftFootMeasuredWrenchInLinkFrame_in_base(i,:) = b_R_w.toMatlab * LeftFootMeasuredWrenchInLinkFrame(i, 1:3)';
-    RightFootMeasuredWrenchInLinkFrame_in_base(i,:) = b_R_w.toMatlab * RightFootMeasuredWrenchInLinkFrame(i, 1:3)';
+     
+    LeftFootMeasuredWrenchInLinkFrame_in_base(i,:) = b_R_w.toMatlab * w_R_left_foot.toMatlab * LeftFootMeasuredWrenchInLinkFrame(i, 1:3)';
+    RightFootMeasuredWrenchInLinkFrame_in_base(i,:) = b_R_w.toMatlab * w_R_right_foot.toMatlab * RightFootMeasuredWrenchInLinkFrame(i, 1:3)';
     
 end
 
