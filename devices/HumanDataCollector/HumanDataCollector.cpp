@@ -243,7 +243,7 @@ public:
     // Human data buffer structs
     struct {
 
-        std::vector<long> time;
+        std::vector<int64_t> time;
         std::vector<std::string> stateJointNames;
         std::vector<std::string> linkNames;
         std::vector<std::string>  wrenchMeasurementSourceNames;
@@ -676,7 +676,7 @@ void HumanDataCollector::run()
         pImpl->currentTime = std::chrono::system_clock::now();
 
         // Get the duration from start time to current time
-        std::chrono::duration<long, std::nano> timeDuration = pImpl->currentTime - pImpl->startTime;
+        std::chrono::duration<int64_t, std::nano> timeDuration = pImpl->currentTime - pImpl->startTime;
 
         // Push back time duration to a vector
         pImpl->humanDataStruct.time.push_back(timeDuration.count());
@@ -1165,14 +1165,15 @@ bool HumanDataCollector::detach()
                         std::bind2nd( std::plus<long>(), - pImpl->humanDataStruct.time.at(0) ) );
 
         // Create an array with time elements
-        long time[pImpl->humanDataStruct.time.size()];
+        int64_t time[pImpl->humanDataStruct.time.size()];
         std::copy(pImpl->humanDataStruct.time.begin(), pImpl->humanDataStruct.time.end(), time);
 
-        for (long timeCount : pImpl->humanDataStruct.time) {
+        for (int64_t timeCount : pImpl->humanDataStruct.time) {
 
-            //TODO: Double check the long double conversion handling
+            //TODO: Double check the int64_t double conversion handling
             std::vector<double> count;
             count.push_back(timeCount);
+
             pImpl->humanDataStruct.data["time"].push_back(count);
 
         }
