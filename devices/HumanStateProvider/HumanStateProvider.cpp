@@ -188,6 +188,7 @@ public:
 
     std::unordered_map<std::string, iDynTree::Transform> linkTransformMatricesMeasured;
     std::unordered_map<std::string, iDynTree::Twist> linkVelocitiesMeasured;
+    std::unordered_map<std::string, iDynTree::Twist> linkVelocitiesMeasuredInWorld;
     std::unordered_map<std::string, iDynTree::SpatialAcc> linkAccelerationsMeasured;
 
     bool firstMeasurementData;
@@ -1383,7 +1384,7 @@ void HumanStateProvider::measurementSmoothing()
 
         // Initialize smoothed velocity and acceleration buffers to zero
         // TODO: Make it more concise
-        for (const std::pair<std::string, iDynTree::Twist> vel : pImpl->linkVelocitiesMeasured)
+        for (const std::pair<std::string, iDynTree::Twist> vel : pImpl->linkVelocitiesMeasuredInWorld)
         {
             const std::string linkName = vel.first;
             iDynTree::Twist velocity;
@@ -1402,9 +1403,7 @@ void HumanStateProvider::measurementSmoothing()
         pImpl->firstMeasurementData = false;
     }
 
-    //yInfo() << LogPrefix << " velocity smoothing factor " << velSmootingFactor << " acceleration smoothing factor " << accSmoothingFactor;
-
-    for (const std::pair<std::string, iDynTree::Twist> vel : pImpl->linkVelocitiesMeasured)
+    for (const std::pair<std::string, iDynTree::Twist> vel : pImpl->linkVelocitiesMeasuredInWorld)
     {
         const std::string linkName = vel.first;
         const iDynTree::Twist linkMeasuredVel = vel.second;
@@ -1421,8 +1420,6 @@ void HumanStateProvider::measurementSmoothing()
 
         // Update smoothed velocities buffer
         pImpl->linkVelocitiesSmoothed[linkName] = linkSmoothedVel;
-
-        //yInfo() << LogPrefix << linkName << " measured velociy " << linkMeasuredVel.toString().c_str() << " smoothed velocity " << linkSmoothedVel.toString().c_str();
     }
 
     for (const std::pair<std::string, iDynTree::Twist> acc : pImpl->linkAccelerationsMeasured)
@@ -1584,14 +1581,14 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
     // Compute position derivative (comVel - baseLinVel)
     iDynTree::Vector3 posDerivative;
 
-    posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(0) - pImpl->linkVelocitiesMeasured[baseLinkName].getLinearVec3().getVal(0));
-    posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(1) - pImpl->linkVelocitiesMeasured[baseLinkName].getLinearVec3().getVal(1));
-    posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(2) - pImpl->linkVelocitiesMeasured[baseLinkName].getLinearVec3().getVal(2));
+    posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(0) - pImpl->linkVelocitiesMeasuredInWorld[baseLinkName].getLinearVec3().getVal(0));
+    posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(1) - pImpl->linkVelocitiesMeasuredInWorld[baseLinkName].getLinearVec3().getVal(1));
+    posDerivative.setVal(0, pImpl->kinDynComputations.getCenterOfMassVelocity().getVal(2) - pImpl->linkVelocitiesMeasuredInWorld[baseLinkName].getLinearVec3().getVal(2));
 
     // Compute rotation derivative ( base_dotR_world = ( Skew(baseAngVel) * world_R_base)' )
     iDynTree::Matrix3x3 rotDerivative;
     iDynTree::toEigen(rotDerivative) = iDynTree::toEigen(pImpl->linkTransformMatricesMeasured[baseLinkName].getRotation()).transpose() *
-                                       iDynTree::skew( iDynTree::toEigen( pImpl->linkVelocitiesMeasured[baseLinkName].getAngularVec3() ) ).transpose();
+                                       iDynTree::skew( iDynTree::toEigen( pImpl->linkVelocitiesMeasuredInWorld[baseLinkName].getAngularVec3() ) ).transpose();
 
     iDynTree::TransformDerivative base_dotH_centroidal(rotDerivative, posDerivative);
 
@@ -1633,6 +1630,22 @@ void HumanStateProvider::run()
         yError() << LogPrefix << "Failed to get link velocity from input data";
         askToStop();
         return;
+    }
+
+    // Express measuremed velocity from mixed representation to world
+    for (const std::pair<std::string, iDynTree::Twist> elemenet : pImpl->linkVelocitiesMeasured) {
+
+        std::string linkName = elemenet.first;
+
+        iDynTree::Transform w_H_L_w = iDynTree::Transform(iDynTree::Rotation::Identity(), pImpl->linkTransformMatricesMeasured[linkName].getPosition());
+
+        iDynTree::Vector6 vel;
+        vel.zero();
+        iDynTree::toEigen(vel) = iDynTree::toEigen(w_H_L_w.asAdjointTransform()) * iDynTree::toEigen(elemenet.second);
+
+        for (size_t e = 0; e < vel.size(); e++) {
+            pImpl->linkVelocitiesMeasuredInWorld[linkName].setVal(e, vel.getVal(e));
+        }
     }
 
     // Get base transform from the suit
