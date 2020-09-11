@@ -318,6 +318,7 @@
         <param name="period">0.02</param>
         <param name="urdf">humanSubject08_66dof.urdf</param>
         <param name="baseLink">Pelvis</param>
+        <param name="wrenchSmoothingFactor">0.25</param>
         <param name="number_of_wrench_sensors">4</param>
         <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHand RightHand)</param>
         <param name="comConstraintIncludeAllLinks">false</param>

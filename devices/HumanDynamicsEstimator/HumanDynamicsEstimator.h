@@ -52,6 +52,9 @@ public:
     HumanDynamicsEstimator();
     ~HumanDynamicsEstimator() override;
 
+    // Wrench smoothing
+    void wrenchSmoothing(std::vector<double>& inputWrench);
+
     // Method to express wrenches in different frame
     void expressWrenchInDifferentFrames(const std::vector<double>& wrenchInLinkFrame,
                                         hde::interfaces::IHumanWrench::TaskType taskType,
