@@ -1460,7 +1460,7 @@ void HumanStateProvider::computeROCMInBaseUsingMeasurements()
     world_H_centroidal.setPosition(pImpl->kinDynComputations.getCenterOfMassPosition());
 
     // base_H_centroidal transform
-    const iDynTree::Transform base_H_centroidal = pImpl->linkTransformMatricesMeasured[baseLinkName].inverse() * world_H_centroidal;
+    const iDynTree::Transform base_H_centroidal = pImpl->kinDynComputations.getWorldBaseTransform().inverse() * world_H_centroidal;
 
     // Compute gravitational wrench expressed in base
     pImpl->gravitationalWrenchInBase.zero();

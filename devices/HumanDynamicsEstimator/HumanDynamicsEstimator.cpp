@@ -1820,12 +1820,10 @@ void HumanDynamicsEstimator::expressWrenchInDifferentFrames(const std::vector<do
         std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
 
         // Get link to world transform
-//        iDynTree::Transform world_H_link = kinDyn.getWorldTransform(pImpl->humanModel.getLinkIndex(linkName));
-        iDynTree::Transform world_H_link = pImpl->linkTransformMeasurements[linkName];
+        iDynTree::Transform world_H_link = kinDyn.getWorldTransform(pImpl->humanModel.getLinkIndex(linkName));
 
         // Get link to base transform
-//        iDynTree::Transform base_H_link = kinDyn.getWorldBaseTransform().inverse() * world_H_link;
-        iDynTree::Transform base_H_link = pImpl->linkTransformMeasurements[pImpl->humanModel.getLinkName(pImpl->berdyData.state.floatingBaseFrameIndex)].inverse() * world_H_link;
+        iDynTree::Transform base_H_link = kinDyn.getWorldBaseTransform().inverse() * world_H_link;
 
         // Link wrench
         iDynTree::Wrench linkWrench;
@@ -2014,7 +2012,7 @@ void HumanDynamicsEstimator::run()
         std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
 
         iDynTree::Transform t = iDynTree::Transform::Identity();
-        t.setRotation(pImpl->linkTransformMeasurements[linkName].getRotation());
+        t.setRotation(kinDynComputations.getWorldTransform(pImpl->humanModel.getLinkIndex(linkName)).getRotation());
 
         iDynTree::Wrench inputWrench;
 
