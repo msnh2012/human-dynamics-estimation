@@ -2066,9 +2066,9 @@ void HumanDynamicsEstimator::run()
                     pImpl->berdyData.buffers.task1_measurements(found->second.offset + 0) = rateOfChangeOfMomentumInBaseFrame[0] - pImpl->wrenchOffsetInBase.getVal(0);
                     pImpl->berdyData.buffers.task1_measurements(found->second.offset + 1) = rateOfChangeOfMomentumInBaseFrame[1] - pImpl->wrenchOffsetInBase.getVal(1);
                     pImpl->berdyData.buffers.task1_measurements(found->second.offset + 2) = rateOfChangeOfMomentumInBaseFrame[2] - pImpl->wrenchOffsetInBase.getVal(2);
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = rateOfChangeOfMomentumInBaseFrame[3];
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = rateOfChangeOfMomentumInBaseFrame[4];
-                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = rateOfChangeOfMomentumInBaseFrame[5];
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 3) = rateOfChangeOfMomentumInBaseFrame[3] - pImpl->wrenchOffsetInBase.getVal(3);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 4) = rateOfChangeOfMomentumInBaseFrame[4] - pImpl->wrenchOffsetInBase.getVal(4);
+                    pImpl->berdyData.buffers.task1_measurements(found->second.offset + 5) = rateOfChangeOfMomentumInBaseFrame[5] - pImpl->wrenchOffsetInBase.getVal(5);
                 }
                 break;
                 case iDynTree::NET_EXT_WRENCH_SENSOR:
