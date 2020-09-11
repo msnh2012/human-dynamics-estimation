@@ -921,14 +921,14 @@ bool HumanStateProvider::open(yarp::os::Searchable& config)
     // PARSE THE MEASUREMENT SMOOTHING PARAMETERS
     // ==========================================
 
-    if (!(config.check("velocitySmoothingFactor") && config.find("velocitySmoothingFactor").isDouble())) {
+    if (!(config.check("velocitySmoothingFactor") && (config.find("velocitySmoothingFactor").isDouble() || config.find("velocitySmoothingFactor").isInt()) )) {
         pImpl->velocitySmoothingFactor = 0.1; //Default value
     }
     else {
         pImpl->velocitySmoothingFactor = config.find("velocitySmoothingFactor").asDouble();
     }
 
-    if (!(config.check("accelerationSmoothingFactor") && config.find("accelerationSmoothingFactor").isDouble())) {
+    if (!(config.check("accelerationSmoothingFactor") && (config.find("accelerationSmoothingFactor").isDouble() || config.find("accelerationSmoothingFactor").isInt()) )) {
         pImpl->accelerationSmoothingFactor = 0.1; //Default value
     }
     else {
