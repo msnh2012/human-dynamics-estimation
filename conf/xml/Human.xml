@@ -211,7 +211,7 @@
                 <elem name="HumanStateWrapperLabel">HumanStateProvider</elem>
             </paramlist>
         </action>
-        <action phase="shutdown" level="4" type="detach"/>
+        <action phase="shutdown" level="2" type="detach"/>
     </device>
 
     <device type="human_state_publisher" name="HumanStatePublisher">
@@ -223,7 +223,7 @@
                 <elem name="HumanStatePublisherLabel">HumanStateProvider</elem>
             </paramlist>
         </action>
-        <action phase="shutdown" level="4" type="detach"/>
+        <action phase="shutdown" level="2" type="detach"/>
     </device>
 
     <device type="iwear_remapper" name="FTSourcesIWearRemapper">
@@ -274,7 +274,7 @@
                  <elem name="HumanWrenchProviderLabelFTShoeLeft">FTSourcesIWearRemapper</elem>
             </paramlist>
         </action>
-        <action phase="shutdown" level="5" type="detach" />
+        <action phase="shutdown" level="4" type="detach" />
     </device>
 
     <device type="analogServer" name="HumanWrenchWrapper">
@@ -285,7 +285,7 @@
                 <elem name="HumanWrenchWrapperLabel">HumanWrenchProvider</elem>
             </paramlist>
         </action>
-        <action phase="shutdown" level="4" type="detach" />
+        <action phase="shutdown" level="2" type="detach" />
     </device>
 
     <!--Wrapper to publish WrenchStamped message to Rviz-->
@@ -311,7 +311,7 @@
                 <elem name="HumanWrenchPublisherLabel">HumanWrenchProvider</elem>
             </paramlist>
         </action>
-        <action phase="shutdown" level="4" type="detach" />
+        <action phase="shutdown" level="2" type="detach" />
     </device>
 
     <device type="human_dynamics_estimator" name="HumanDynamicsEstimator">
@@ -353,7 +353,7 @@
                 <elem name="HumanDynamicsEstimatorLabel2">HumanWrenchProvider</elem>
             </paramlist>
         </action>
-        <action phase="shutdown" level="5" type="detach"/>
+        <action phase="shutdown" level="3" type="detach"/>
     </device>
 
     <device type="analogServer" name="HumanEstimatedWrenchWrapper">
@@ -364,7 +364,7 @@
                 <elem name="HumanEstimatedWrenchWrapperLabel">HumanDynamicsEstimator</elem>
             </paramlist>
         </action>
-        <action phase="shutdown" level="5" type="detach" />
+        <action phase="shutdown" level="2" type="detach" />
     </device>
 
     <!--Wrapper to publish EstimatedWrenchStamped message to Rviz-->
@@ -394,7 +394,7 @@
                 <elem name="HumanEstimatesWrenchPublisherLabel">HumanDynamicsEstimator</elem>
             </paramlist>
         </action>
-        <action phase="shutdown" level="4" type="detach" />
+        <action phase="shutdown" level="2" type="detach" />
     </device>
 
     <device type="human_dynamics_wrapper" name="HumanDynamicsWrapper">
@@ -405,7 +405,7 @@
                 <elem name="HumanDynamicsWrapperLabel">HumanDynamicsEstimator</elem>
             </paramlist>
         </action>
-        <action phase="shutdown" level="4" type="detach"/>
+        <action phase="shutdown" level="2" type="detach"/>
     </device>
 
     <device type="human_dynamics_publisher" name="HumanDynamicsPublisher">
@@ -419,7 +419,7 @@
                 <elem name="HumanDynamicsPublisherLabel">HumanDynamicsEstimator</elem>
             </paramlist>
         </action>
-        <action phase="shutdown" level="4" type="detach"/>
+        <action phase="shutdown" level="2" type="detach"/>
     </device>
 
     <device type="human_data_collector" name="HumanDataCollector">
@@ -435,7 +435,7 @@
                 <elem name="HumanDynamicsEstimatorLabel">HumanDynamicsEstimator</elem>
             </paramlist>
         </action>
-        <action phase="shutdown" level="4" type="detach"/>
+        <action phase="shutdown" level="1" type="detach"/>
     </device>
 
     <!-- <device type="human_control_board" name="HumanControlBoard">
