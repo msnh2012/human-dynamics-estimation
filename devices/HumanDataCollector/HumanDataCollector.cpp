@@ -277,6 +277,8 @@ public:
     std::vector<double> comPositionVec;
     std::array<double, 3> comVelocity;
     std::vector<double> comVelocityVec;
+    std::array<double, 3> comBiasAcceleration;
+    std::vector<double> comBiasAccelerationVec;
 
     // Rate of change of momentum quantities
     std::array<double, 6> rateOfChangeOfMomentumInBaseFrame;
@@ -337,6 +339,7 @@ public:
     yarp::os::BufferedPort<yarp::sig::Vector> jointVelocitiesDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> comPositionDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> comVelocityDataPort;
+    yarp::os::BufferedPort<yarp::sig::Vector> comBiasAccelerationDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> rateOfChangeOfMomentumInBaseFrameDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> rateOfChangeOfMomentumInWorldFrameDataPort;
     yarp::os::BufferedPort<yarp::sig::Vector> rateOfChangeOfMomentumInCentroidalFrameDataPort;
@@ -503,6 +506,14 @@ void HumanDataCollector::run()
             const std::string comVelocityPortName = pImpl->portPrefix + DeviceName + "/comVelocity:o";
             if (!pImpl->comVelocityDataPort.open(comVelocityPortName)) {
                 yError() << LogPrefix << "Failed to open port " << comVelocityPortName;
+                askToStop();
+                return;
+            }
+
+            // Open CoM bias acceleration data port
+            const std::string comBiasAccelerationPortName = pImpl->portPrefix + DeviceName + "/comBiasAcceleration:o";
+            if (!pImpl->comBiasAccelerationDataPort.open(comBiasAccelerationPortName)) {
+                yError() << LogPrefix << "Failed to open port " << comBiasAccelerationPortName;
                 askToStop();
                 return;
             }
@@ -699,8 +710,9 @@ void HumanDataCollector::run()
         pImpl->jointVelocitiesVec = pImpl->iHumanState->getJointVelocities();
 
         // CoM Quantities
-        pImpl->comPosition = pImpl->iHumanState->getCoMPosition();
-        pImpl->comVelocity = pImpl->iHumanState->getCoMVelocity();
+        pImpl->comPosition         = pImpl->iHumanState->getCoMPosition();
+        pImpl->comVelocity         = pImpl->iHumanState->getCoMVelocity();
+        pImpl->comBiasAcceleration = pImpl->iHumanState->getCoMBiasAcceleration();
 
         // Rate of change of momentum Quantities
         pImpl->rateOfChangeOfMomentumInBaseFrame = pImpl->iHumanState->getRateOfChangeOfMomentumInBaseFrame();
@@ -823,6 +835,8 @@ void HumanDataCollector::run()
 
         pImpl->comVelocityVec = std::vector<double>(pImpl->comVelocity.begin(), pImpl->comVelocity.end());
 
+        pImpl->comBiasAccelerationVec = std::vector<double>(pImpl->comBiasAcceleration.begin(), pImpl->comBiasAcceleration.end());
+
         pImpl->rateOfChangeOfMomentumInBaseFrameVec = std::vector<double>(pImpl->rateOfChangeOfMomentumInBaseFrame.begin(), pImpl->rateOfChangeOfMomentumInBaseFrame.end());
 
         pImpl->rateOfChangeOfMomentumInWorldFrameVec = std::vector<double>(pImpl->rateOfChangeOfMomentumInWorldFrame.begin(), pImpl->rateOfChangeOfMomentumInWorldFrame.end());
@@ -851,6 +865,7 @@ void HumanDataCollector::run()
 
             pImpl->humanDataStruct.data["comPosition"].push_back(pImpl->comPositionVec);
             pImpl->humanDataStruct.data["comVelocity"].push_back(pImpl->comVelocityVec);
+            pImpl->humanDataStruct.data["comBiasAcceleration"].push_back(pImpl->comBiasAccelerationVec);
 
             pImpl->humanDataStruct.data["rateOfChangeOfMomentumInBaseFrame"].push_back(pImpl->rateOfChangeOfMomentumInBaseFrameVec);
             pImpl->humanDataStruct.data["rateOfChangeOfMomentumInWorldFrame"].push_back(pImpl->rateOfChangeOfMomentumInWorldFrameVec);
@@ -982,9 +997,13 @@ void HumanDataCollector::run()
         yarp::sig::Vector& comPositionYarpVector = pImpl->comPositionDataPort.prepare();
         YarpConversionsHelper::toYarp(comPositionYarpVector, pImpl->comPositionVec);
 
-        // Preprate com velocity
+        // Prepare com velocity
         yarp::sig::Vector& comVelocityYarpVector = pImpl->comVelocityDataPort.prepare();
         YarpConversionsHelper::toYarp(comVelocityYarpVector, pImpl->comVelocityVec);
+
+        // Prepare com bia acceleration
+        yarp::sig::Vector& comBiasAccelerationYarpVector = pImpl->comVelocityDataPort.prepare();
+        YarpConversionsHelper::toYarp(comBiasAccelerationYarpVector, pImpl->comBiasAccelerationVec);
 
         // Rate of change of momentum in base frame
         yarp::sig::Vector& rateOfChangeOfMomentumInBaseFrameYarpVector = pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.prepare();
@@ -1006,6 +1025,7 @@ void HumanDataCollector::run()
         pImpl->jointVelocitiesDataPort.write(true);
         pImpl->comPositionDataPort.write(true);
         pImpl->comVelocityDataPort.write(true);
+        pImpl->comBiasAccelerationDataPort.write(true);
         pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.write(true);
         pImpl->rateOfChangeOfMomentumInWorldFrameDataPort.write(true);
         pImpl->rateOfChangeOfMomentumInCentroidalFrameDataPort.write(true);
@@ -1215,6 +1235,10 @@ bool HumanDataCollector::detach()
 
         if (!pImpl->comVelocityDataPort.isClosed()) {
             pImpl->comVelocityDataPort.close();
+        }
+
+        if (!pImpl->comBiasAccelerationDataPort.isClosed()) {
+            pImpl->comBiasAccelerationDataPort.close();
         }
 
         if (!pImpl->rateOfChangeOfMomentumInBaseFrameDataPort.isClosed()) {
