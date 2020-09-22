@@ -1831,7 +1831,10 @@ void HumanDynamicsEstimator::wrenchSmoothing(std::vector<double> &inputWrench) {
 
     if (pImpl->firstWrenchData) {
 
-        wrenchSmoothingFactor = 1;
+        // If smoothing factor is set to zero, use zero initial values
+        if (pImpl->wrenchSmoothingFactor != 0) {
+            wrenchSmoothingFactor = 1;
+        }
 
         pImpl->firstWrenchData = false;
     }

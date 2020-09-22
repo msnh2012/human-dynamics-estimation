@@ -1379,8 +1379,14 @@ void HumanStateProvider::measurementSmoothing()
 
     if (pImpl->firstMeasurementData)
     {
-        velSmootingFactor = 1;
-        accSmoothingFactor = 1;
+        // If smoothing factor is set to zero, use zero initial values
+        if (pImpl->velocitySmoothingFactor != 0) {
+            velSmootingFactor = 1;
+        }
+
+        if (pImpl->accelerationSmoothingFactor != 0) {
+            accSmoothingFactor = 1;
+        }
 
         // Initialize smoothed velocity and acceleration buffers to zero
         // TODO: Make it more concise
@@ -1440,7 +1446,6 @@ void HumanStateProvider::measurementSmoothing()
         // Update smoothed accelerations buffer
         pImpl->linkAccelerationsSmoothed[linkName] = linkSmoothedAcc;
 
-        //yInfo() << LogPrefix << linkName << " measured acceleration " << linkMeasuredAcc.toString().c_str() << " smoothed acceleration " << linkSmoothedAcc.toString().c_str();
     }
 
 }
@@ -1760,6 +1765,7 @@ void HumanStateProvider::run()
                                                     pImpl->computedRateOfChangeOfMomentumInBase[3] - pImpl->biasTermFromCentroidalMomentum.getVal(3) - pImpl->gravitationalWrenchInBase.getVal(3),
                                                     pImpl->computedRateOfChangeOfMomentumInBase[4] - pImpl->biasTermFromCentroidalMomentum.getVal(4) - pImpl->gravitationalWrenchInBase.getVal(4),
                                                     pImpl->computedRateOfChangeOfMomentumInBase[5] - pImpl->biasTermFromCentroidalMomentum.getVal(5) - pImpl->gravitationalWrenchInBase.getVal(5)};
+
     }
 
     // CoM position and velocity
