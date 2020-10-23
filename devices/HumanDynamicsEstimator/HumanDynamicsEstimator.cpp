@@ -2076,7 +2076,48 @@ void HumanDynamicsEstimator::run()
     }
 
     // Call wrench smoothing with vector of input wrench values from HumanWrenchProvider
-    wrenchSmoothing(correctedWrenchValues);
+    // wrenchSmoothing(correctedWrenchValues);
+
+    // New Wrench Correction
+    std::vector<double> newCorrectedWrenchValues(wrenchValues.size(), 0.0);
+    int e3[3] = {0, 0, 1};
+
+    for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++) {
+
+        std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
+
+        iDynTree::Rotation w_R_ffx(kinDynComputations.getWorldTransform(pImpl->humanModel.getLinkIndex(linkName)).getRotation());
+
+        auto cosBeta = w_R_ffx.getVal(2,2);
+        auto sinBeta = std::sqrt(1-(std::pow(cosBeta, 2)));
+
+        auto beta = std::atan2(sinBeta, cosBeta);
+        yInfo() << LogPrefix << linkName << " Beta is " << beta * (180/M_PI);
+
+        iDynTree::Rotation ffx_R_s = iDynTree::Rotation::RotY(beta);
+
+        iDynTree::Transform t = iDynTree::Transform::Identity();
+        t.setRotation(ffx_R_s);
+
+        iDynTree::Wrench inputWrench;
+
+        // TODO: Clean up this wrench handling
+        for (size_t e = 0; e < 6; e++) {
+            inputWrench.setVal(e, wrenchValues.at(6 * i + e));
+        }
+
+        Eigen::Matrix<double,6,1> newCorrectedWrenchEigen;
+        newCorrectedWrenchEigen = iDynTree::toEigen(t.inverse().asAdjointTransformWrench()) * iDynTree::toEigen(inputWrench);
+
+        // Set corrected wrench values buffer
+        for (size_t e = 0; e < 6; e++) {
+            newCorrectedWrenchValues.at(6 * i + e) = newCorrectedWrenchEigen[e];
+        }
+
+    }
+
+    // Call wrench smoothing with vector of new corrected wrench values
+    wrenchSmoothing(newCorrectedWrenchValues);
 
     // Express task 1 measured wrench in different frames
     expressWrenchInDifferentFrames(pImpl->smoothedWrenchValues,
