@@ -111,3 +111,38 @@ t.FontSize = fontSize;
 a.Visible = 'off' ;
 t.Visible = 'on' ;
 axis(a,'fill')
+
+
+%% Norm computation
+leftFootForcesNormInLinkFrame = [];
+rightFootForcesNormInLinkFrame = [];
+feetForcesNormInLinkFrame = [];
+feetForcesNormInLinkFrame_in_base = [];
+
+for i=1:size(RightFootMeasuredWrenchInLinkFrame, 1)
+    leftFootForcesNormInLinkFrame(i) = norm(LeftFootMeasuredWrenchInLinkFrame(i,1:3));
+    rightFootForcesNormInLinkFrame(i) = norm(RightFootMeasuredWrenchInLinkFrame(i,1:3));
+    feetForcesNormInLinkFrame(i) = norm(LeftFootMeasuredWrenchInLinkFrame(i,1:3) + RightFootMeasuredWrenchInLinkFrame(i,1:3));
+end
+
+for i=1:size(RightFootMeasuredWrenchInLinkFrame_in_base, 1)
+    feetForcesNormInLinkFrame_in_base(i) = norm(LeftFootMeasuredWrenchInLinkFrame_in_base(i,1:3) + RightFootMeasuredWrenchInLinkFrame_in_base(i,1:3));
+end
+
+fH = figure('units','normalized','outerposition',[0 0 1 1]);
+
+plot(leftFootForcesNormInLinkFrame, 'LineWidth', lineWidth);
+hold on;
+plot(rightFootForcesNormInLinkFrame, 'LineWidth', lineWidth);
+hold on;
+plot(feetForcesNormInLinkFrame, 'LineWidth', lineWidth);
+hold on;
+xlabel('Samples', 'FontSize', fontSize);
+ylabel('Force Norm [N]', 'Interpreter', 'latex', 'FontSize', fontSize);
+a = axes;
+t = title ("Foot measured forces norm");
+t.FontSize = fontSize;
+a.Visible = 'off' ;
+t.Visible = 'on' ;
+axis(a,'fill')
+
