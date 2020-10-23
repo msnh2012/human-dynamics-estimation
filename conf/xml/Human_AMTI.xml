@@ -239,6 +239,7 @@
         <param name="pHRIScenario">false</param>
         <param name="number_of_sources">4</param>
         <param name="sources">(FTShoeLeft FTShoeRight DummyLeftHand DummyRightHand)</param>
+        <param name="contactThresholdPercentage">0.15</param>
         <group name="FTShoeLeft">
             <param name="sensorName">FTShoeLeftFTSensors</param>
             <param name="outputFrame">LeftFoot</param>
@@ -247,6 +248,7 @@
                                     0.0 -1.0 0.0
                                     0.0 0.0 -1.0)</param>
             <param name="position">(-0.0026 0.0 -0.1208)</param>
+            <param name="contactDetection">true</param>
         </group>
         <group name="FTShoeRight">
             <param name="sensorName">FTShoeRightFTSensors</param>
@@ -256,6 +258,7 @@
                                     0.0 1.0 0.0
                                     0.0 0.0 -1.0)</param>
             <param name="position">(-0.0026 0.0 -0.1208)</param>
+            <param name="contactDetection">true</param>
         </group>
         <group name="DummyLeftHand">
             <param name="sensorName">DummyLeftHandFTSensors</param>
@@ -318,7 +321,7 @@
         <param name="period">0.02</param>
         <param name="urdf">humanSubject03_66dof.urdf</param>
         <param name="baseLink">Pelvis</param>
-        <param name="wrenchSmoothingFactor">1.0</param>
+        <param name="wrenchSmoothingFactor">0.85</param>
         <param name="number_of_wrench_sensors">4</param>
         <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHand RightHand)</param>
         <param name="comConstraintIncludeAllLinks">false</param>

@@ -54,6 +54,8 @@ struct WrenchSourceData
     std::string outputFrame;
     std::unique_ptr<IWrenchFrameTransformer> frameTransformer;
 
+    bool contactDetection;
+
     wearable::sensor::SensorName sensorName;
     wearable::SensorPtr<const wearable::sensor::IForceTorque6DSensor> ftWearableSensor;
 
@@ -74,8 +76,14 @@ public:
     //pHRI scenario flag
     bool pHRIScenario;
 
+    // Contact threshold percentage
+    double contactThresholdPercentage;
+
     //Gravity variable
     iDynTree::Vector3 world_gravity;
+
+    // Subject weight
+    double subjectWeight;
 
     //Attached interfaces
     wearable::IWear* iWear = nullptr;
@@ -168,6 +176,13 @@ bool HumanWrenchProvider::open(yarp::os::Searchable& config)
     const double period = config.check("period", yarp::os::Value(DefaultPeriod)).asFloat64();
     this->setPeriod(period);
 
+    if (!(config.check("contactThresholdPercentage") && config.find("contactThresholdPercentage").isDouble())) {
+        yInfo() << LogPrefix << "Option 'contactThresholdPercentage' not found or not a valid double";
+        yInfo() << LogPrefix << "Using default 'contactThresholdPercentage' value of 100%";
+    }
+
+    pImpl->contactThresholdPercentage = config.check("contactThresholdPercentage", yarp::os::Value(1)).asDouble();
+
     if (!(config.check("pHRIScenario") && config.find("pHRIScenario").isBool())) {
         yError() << LogPrefix << "Option 'pHRIScenario' not found or not a valid bool";
         return false;
@@ -200,6 +215,9 @@ bool HumanWrenchProvider::open(yarp::os::Searchable& config)
     }
 
     pImpl->humanModel = humanModelLoader.model();
+
+    // Compute subject weight
+    pImpl->subjectWeight = pImpl->humanModel.getTotalMass() * pImpl->world_gravity.getVal(2);
 
     // ==========================
     // INITIALIZE THE ROBOT MODEL
@@ -375,6 +393,8 @@ bool HumanWrenchProvider::open(yarp::os::Searchable& config)
                 auto ptr = static_cast<IWrenchFrameTransformer*>(transformer.release());
                 WrenchSourceData.frameTransformer.reset(ptr);
 
+                WrenchSourceData.contactDetection = sourceGroup.check("contactDetection", yarp::os::Value(false)).asBool();
+
                 yDebug() << LogPrefix << "=============:";
                 yDebug() << LogPrefix << "New source   :" << WrenchSourceData.name;
                 yDebug() << LogPrefix << "Sensor name  :" << WrenchSourceData.sensorName;
@@ -382,6 +402,7 @@ bool HumanWrenchProvider::open(yarp::os::Searchable& config)
                 yDebug() << LogPrefix << "Output frame :" << WrenchSourceData.outputFrame;
                 yDebug() << LogPrefix << "Rotation     :" << sourceGroup.find("rotation").asList()->toString();
                 yDebug() << LogPrefix << "Position     :" << sourceGroup.find("position").asList()->toString();
+                yDebug() << LogPrefix << "Contact Detection :" << WrenchSourceData.contactDetection;
                 yDebug() << LogPrefix << "=============:";
 
                 break;
@@ -391,6 +412,11 @@ bool HumanWrenchProvider::open(yarp::os::Searchable& config)
             // =========================
             case WrenchSourceType::Robot: {
                 auto transformer = std::make_unique<RobotFrameWrenchTransformer>();
+
+                if (!(config.check("contactDetection") && config.find("contactDetection").isBool())) {
+                    yWarning() << LogPrefix << "<contactDetection> parameter for Robot type wrench source is not implemented, ignoring it";
+                    WrenchSourceData.contactDetection = false;
+                }
 
                 if (!(sourceGroup.check("rotation") && sourceGroup.find("rotation").isList())) {
                     yError() << LogPrefix << "Option" << sourceName
@@ -649,6 +675,33 @@ void HumanWrenchProvider::run()
                          << forceSource.ftWearableSensor->getSensorName();
                 askToStop();
                 return;
+            }
+
+            // Compute forces norm
+            double squaredSum = 0.0;
+            for (auto f : forces)
+            {
+                squaredSum += f * f;
+            }
+
+            double forceNorm = std::sqrt(squaredSum);
+
+            //yInfo() << LogPrefix << pImpl->wrenchSources[i].name << " force norm is " << forceNorm;
+            //yInfo() << LogPrefix << pImpl->wrenchSources[i].name << " Contact threshold is " << std::abs(pImpl->subjectWeight * pImpl->contactThresholdPercentage);
+
+            // Check for contact detection
+            if (pImpl->wrenchSources[i].contactDetection && (forceNorm <= std::abs(pImpl->subjectWeight * pImpl->contactThresholdPercentage)))
+            {
+                // Zero the source wrench that is not in contact
+                forces[0] = 0.0;
+                forces[1] = 0.0;
+                forces[2] = 0.0;
+
+                torques[0] = 0.0;
+                torques[1] = 0.0;
+                torques[2] = 0.0;
+
+                yInfo() << LogPrefix << pImpl->wrenchSources[i].name << " Contact lost, zeroing the wrench";
             }
 
             // Tranform it to the correct frame

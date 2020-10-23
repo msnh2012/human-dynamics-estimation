@@ -2076,7 +2076,7 @@ void HumanDynamicsEstimator::run()
     }
 
     // Call wrench smoothing with vector of input wrench values from HumanWrenchProvider
-    // wrenchSmoothing(correctedWrenchValues);
+    wrenchSmoothing(correctedWrenchValues);
 
     // New Wrench Correction
     std::vector<double> newCorrectedWrenchValues(wrenchValues.size(), 0.0);
@@ -2092,7 +2092,7 @@ void HumanDynamicsEstimator::run()
         auto sinBeta = std::sqrt(1-(std::pow(cosBeta, 2)));
 
         auto beta = std::atan2(sinBeta, cosBeta);
-        yInfo() << LogPrefix << linkName << " Beta is " << beta * (180/M_PI);
+        //yInfo() << LogPrefix << linkName << " Beta is " << beta * (180/M_PI);
 
         iDynTree::Rotation ffx_R_s = iDynTree::Rotation::RotY(beta);
 
@@ -2117,7 +2117,7 @@ void HumanDynamicsEstimator::run()
     }
 
     // Call wrench smoothing with vector of new corrected wrench values
-    wrenchSmoothing(newCorrectedWrenchValues);
+    // wrenchSmoothing(newCorrectedWrenchValues);
 
     // Express task 1 measured wrench in different frames
     expressWrenchInDifferentFrames(pImpl->smoothedWrenchValues,

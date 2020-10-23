@@ -137,6 +137,8 @@ plot(rightFootForcesNormInLinkFrame, 'LineWidth', lineWidth);
 hold on;
 plot(feetForcesNormInLinkFrame, 'LineWidth', lineWidth);
 hold on;
+legend('Left', 'Right', 'Left + Right',...
+           'FontSize', fontSize, 'Location', 'Best');
 xlabel('Samples', 'FontSize', fontSize);
 ylabel('Force Norm [N]', 'Interpreter', 'latex', 'FontSize', fontSize);
 a = axes;
