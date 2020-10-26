@@ -49,6 +49,9 @@
 
 #include <iostream>
 #include <fstream>
+#include <queue>
+
+#include <gram_savitzky_golay/gram_savitzky_golay.h>
 
 const std::string DeviceName = "HumanDynamicsEstimator";
 const std::string LogPrefix = DeviceName + " :";
@@ -997,6 +1000,16 @@ public:
     double wrenchSmoothingFactor;
     std::vector<double> smoothedWrenchValues;
 
+    // Savitzky Golay filter parameters
+    size_t sg_window_size;
+    size_t sg_order;
+    size_t sg_initial_points;
+    int sg_derivative_order;
+    std::unique_ptr<gram_sg::SavitzkyGolayFilter> sgfilter;
+
+    // Task 1 Estimated wrench time buffer
+    std::unordered_map<std::string, std::vector<std::deque<double>>> task1_estimatedWrenchTimeBuffer;
+
     // Debug files
     std::ofstream task1MeasurementFile;
     std::ofstream task1DynamicVariablesFile;
@@ -1341,6 +1354,23 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
         pImpl->wrenchSmoothingFactor = config.find("wrenchSmoothingFactor").asDouble();
     }
 
+    // Savitzky Golay filter parameters initialization
+    // TODO: Move to configuration
+    pImpl->sg_window_size = 21;
+    pImpl->sg_order = 1;
+    pImpl->sg_initial_points = 0;
+    pImpl->sg_derivative_order = 0;
+
+    pImpl->sgfilter = std::unique_ptr<gram_sg::SavitzkyGolayFilter>(new gram_sg::SavitzkyGolayFilter(pImpl->sg_window_size,
+                                                                                                     pImpl->sg_initial_points,
+                                                                                                     pImpl->sg_order,
+                                                                                                     pImpl->sg_derivative_order));
+
+    // Initialize task1 estimated wrench time buffer
+    for (std::string name : pImpl->wrenchSensorsLinkNames)
+    {
+        pImpl->task1_estimatedWrenchTimeBuffer[name].resize(6, std::deque<double>{});
+    }
 
     // Initialize task 1 measured wrench buffers to map
     WrenchInDifferentFrames task1_allMeasuredWrench;
@@ -2235,12 +2265,36 @@ void HumanDynamicsEstimator::run()
         // Get task1 estimated wrench in link frame
         iDynTree::Wrench task1_estimatedLinkWrench = pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame(pImpl->humanModel.getLinkIndex(linkName));
 
-        task1_estimtedWrechesInLinkFrame.at(6 * i + 0) = task1_estimatedLinkWrench.getVal(0);
-        task1_estimtedWrechesInLinkFrame.at(6 * i + 1) = task1_estimatedLinkWrench.getVal(1);
-        task1_estimtedWrechesInLinkFrame.at(6 * i + 2) = task1_estimatedLinkWrench.getVal(2);
-        task1_estimtedWrechesInLinkFrame.at(6 * i + 3) = task1_estimatedLinkWrench.getVal(3);
-        task1_estimtedWrechesInLinkFrame.at(6 * i + 4) = task1_estimatedLinkWrench.getVal(4);
-        task1_estimtedWrechesInLinkFrame.at(6 * i + 5) = task1_estimatedLinkWrench.getVal(5);
+        // Update time buffer
+        pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(0).push_back(task1_estimatedLinkWrench.getVal(0));
+        pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(1).push_back(task1_estimatedLinkWrench.getVal(1));
+        pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(2).push_back(task1_estimatedLinkWrench.getVal(2));
+        pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(3).push_back(task1_estimatedLinkWrench.getVal(3));
+        pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(4).push_back(task1_estimatedLinkWrench.getVal(4));
+        pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(5).push_back(task1_estimatedLinkWrench.getVal(5));
+
+        // Update with filtered estimated wrench
+        for (size_t e = 0; e < 6; e++)
+        {
+            if (pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(e).size() > (2*pImpl->sg_window_size+1 ))
+            {
+                pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(e).pop_front(); // Remove the oldest sample
+            }
+
+            if (linkName == "LeftHand" || linkName == "RightHand")
+            {
+                task1_estimtedWrechesInLinkFrame.at(6 * i + e) = pImpl->sgfilter->filter(std::vector<double>(pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(e).begin(),
+                                                                                                             pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(e).end()));
+
+            }
+            else
+            {
+                task1_estimtedWrechesInLinkFrame.at(6 * i + e) = task1_estimatedLinkWrench.getVal(e);
+            }
+
+
+        }
+
     }
 
     // Express task 1 estimated wrenches in different frames

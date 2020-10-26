@@ -5,6 +5,9 @@
 find_package(iDynTree REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+#Reference : https://github.com/arntanguy/gram_savitzky_golay
+find_package(gram_savitzky_golay REQUIRED)
+
 yarp_prepare_plugin(human_dynamics_estimator
     TYPE hde::devices::HumanDynamicsEstimator
     INCLUDE HumanDynamicsEstimator.h
@@ -30,7 +33,8 @@ target_link_libraries(HumanDynamicsEstimator PUBLIC
     YARP::YARP_init
     iDynTree::idyntree-core
     iDynTree::idyntree-model
-    iDynTree::idyntree-estimation)
+    iDynTree::idyntree-estimation
+    gram_savitzky_golay::gram_savitzky_golay)
 
 yarp_install(
     TARGETS HumanDynamicsEstimator

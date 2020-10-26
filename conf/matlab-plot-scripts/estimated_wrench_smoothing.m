@@ -17,15 +17,11 @@ LeftHandEstimatedWrenchInBaseFrame  = data.task1_wrenchEstimatesInBaseFrame(13:1
 RightHandEstimatedWrenchInBaseFrame = data.task1_wrenchEstimatesInBaseFrame(19:24,:)';
 
 order = 1;
-framelen = 15;
+framelen = 21;
 
 sg_LeftHandEstimatedWrenchInBaseFrame = sgolayfilt(LeftHandEstimatedWrenchInBaseFrame, order, framelen);
 sg_RightHandEstimatedWrenchInBaseFrame = sgolayfilt(RightHandEstimatedWrenchInBaseFrame, order, framelen);
 
-medFilterSize = 20;
-
-med_sg_LeftHandEstimatedWrenchInBaseFrame  = medfilt1(sg_LeftHandEstimatedWrenchInBaseFrame, medFilterSize);
-med_sg_RightHandEstimatedWrenchInBaseFrame = medfilt1(sg_RightHandEstimatedWrenchInBaseFrame, medFilterSize);
 
 for s = 1:3
     
@@ -34,12 +30,10 @@ for s = 1:3
     hold on;
     plot(sg_LeftHandEstimatedWrenchInBaseFrame(:,s), 'LineWidth', lineWidth);
     hold on;
-    plot(med_sg_LeftHandEstimatedWrenchInBaseFrame(:,s), 'LineWidth', lineWidth);
-    hold on;
     %         ylim([-400 800])
     xlabel('Samples', 'FontSize', fontSize);
     ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
     set (gca, 'FontSize' , fontSize)
-    legend('Original Estimation', 'Savitzky-Golay Filtering', 'Median Filtering',...
+    legend('Original Estimation', 'Savitzky-Golay Filtering',...
            'FontSize', fontSize, 'Location', 'Best');
 end
