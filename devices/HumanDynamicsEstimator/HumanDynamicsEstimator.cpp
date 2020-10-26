@@ -1825,7 +1825,7 @@ bool HumanDynamicsEstimator::close()
     return true;
 }
 
-void HumanDynamicsEstimator::wrenchSmoothing(std::vector<double> &inputWrench) {
+void HumanDynamicsEstimator::wrenchSmoothing(std::vector<double> &inputWrench, std::vector<double>& outputWrench) {
 
     double wrenchSmoothingFactor = pImpl->wrenchSmoothingFactor;
 
@@ -1841,9 +1841,9 @@ void HumanDynamicsEstimator::wrenchSmoothing(std::vector<double> &inputWrench) {
 
     for (size_t i = 0; i < inputWrench.size(); i++) {
 
-        double smoothedValue = wrenchSmoothingFactor * inputWrench.at(i) + (1 - wrenchSmoothingFactor) * pImpl->smoothedWrenchValues.at(i);
+        double smoothedValue = wrenchSmoothingFactor * inputWrench.at(i) + (1 - wrenchSmoothingFactor) * outputWrench.at(i);
 
-        pImpl->smoothedWrenchValues.at(i) = smoothedValue;
+        outputWrench.at(i) = smoothedValue;
 
     }
 
@@ -2076,7 +2076,7 @@ void HumanDynamicsEstimator::run()
     }
 
     // Call wrench smoothing with vector of input wrench values from HumanWrenchProvider
-    wrenchSmoothing(correctedWrenchValues);
+    wrenchSmoothing(correctedWrenchValues, pImpl->smoothedWrenchValues);
 
     // New Wrench Correction
     std::vector<double> newCorrectedWrenchValues(wrenchValues.size(), 0.0);
