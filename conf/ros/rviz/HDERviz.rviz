@@ -26,7 +26,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: jLeftHipEffort
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -813,7 +813,7 @@ Visualization Manager:
       Arrow Width: 0.30000001192092896
       Class: rviz/WrenchStamped
       Enabled: true
-      Force Arrow Scale: 0.004999999888241291
+      Force Arrow Scale: 0.009999999776482582
       Force Color: 52; 101; 164
       Hide Small Values: true
       History Length: 1
@@ -828,7 +828,7 @@ Visualization Manager:
       Arrow Width: 0.30000001192092896
       Class: rviz/WrenchStamped
       Enabled: true
-      Force Arrow Scale: 0.004999999888241291
+      Force Arrow Scale: 0.009999999776482582
       Force Color: 52; 101; 164
       Hide Small Values: true
       History Length: 1
@@ -905,7 +905,7 @@ Visualization Manager:
       Marker Topic: /HDE/HumanDynamicsEstimator/EstimatedObjectMass
       Name: Marker
       Namespaces:
-        {}
+        /HDE/HumanDynamicsEstimator: true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -936,7 +936,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 5.1496686935424805
+      Distance: 3.509355068206787
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -954,7 +954,7 @@ Visualization Manager:
       Near Clip Distance: 0.009999999776482582
       Pitch: 0.13979631662368774
       Target Frame: Human/Head
-      Yaw: 6.173565864562988
+      Yaw: 5.698564529418945
     Saved: ~
 Window Geometry:
   Displays:

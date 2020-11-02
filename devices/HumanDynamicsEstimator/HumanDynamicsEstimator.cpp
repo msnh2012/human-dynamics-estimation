@@ -1228,9 +1228,9 @@ HumanDynamicsEstimator::HumanDynamicsEstimator()
     estimatedObjectMassMsg.id = 0;
     estimatedObjectMassMsg.type = yarp::rosmsg::visualization_msgs::Marker::TEXT_VIEW_FACING;
     estimatedObjectMassMsg.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
-    estimatedObjectMassMsg.pose.position.x = 0;
-    estimatedObjectMassMsg.pose.position.y = 1.5;
-    estimatedObjectMassMsg.pose.position.z = 2.25;
+    estimatedObjectMassMsg.pose.position.x = -3.0;
+    estimatedObjectMassMsg.pose.position.y = -3.0;
+    estimatedObjectMassMsg.pose.position.z = 0.5;
     estimatedObjectMassMsg.pose.orientation.x = 0;
     estimatedObjectMassMsg.pose.orientation.y = 0;
     estimatedObjectMassMsg.pose.orientation.z = 0;
@@ -2684,6 +2684,23 @@ void HumanDynamicsEstimator::run()
             pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements[6 * i + 3] = linkNetExternalWrench.getAngularVec3()(0);
             pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements[6 * i + 4] = linkNetExternalWrench.getAngularVec3()(1);
             pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements[6 * i + 5] = linkNetExternalWrench.getAngularVec3()(2);
+
+            if (linkName == "LeftHand" || linkName == "RightHand")
+            {
+
+                iDynTree::Wrench linkNetExternalWrenchInWorld = kinDynComputations.getWorldTransform(linkName).getRotation() * linkNetExternalWrench;
+                linkNetExternalWrenchInWorld.zero();
+
+                linkNetExternalWrenchInWorld.setVal(0, 0);
+                linkNetExternalWrenchInWorld.setVal(1, 0);
+                linkNetExternalWrenchInWorld.setVal(2, -std::abs(std::sqrt(std::pow(sumOfHandEstimatedTask1Forces.getVal(0), 2) +
+                                                                          std::pow(sumOfHandEstimatedTask1Forces.getVal(1), 2) +
+                                                                          std::pow(sumOfHandEstimatedTask1Forces.getVal(2), 2) ))/2);
+
+
+                linkNetExternalWrench = kinDynComputations.getWorldTransform(linkName).getRotation().inverse() * linkNetExternalWrenchInWorld;
+
+            }
 
             // Expose net link external wrench estimates from task 2 to analog sensor data variable
             pImpl->allWrenchAnalogSensorData.measurements[2 * 6 * i + 6] = linkNetExternalWrench.getLinearVec3()(0);
