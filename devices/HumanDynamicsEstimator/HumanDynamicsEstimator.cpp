@@ -1228,9 +1228,9 @@ HumanDynamicsEstimator::HumanDynamicsEstimator()
     estimatedObjectMassMsg.id = 0;
     estimatedObjectMassMsg.type = yarp::rosmsg::visualization_msgs::Marker::TEXT_VIEW_FACING;
     estimatedObjectMassMsg.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
-    estimatedObjectMassMsg.pose.position.x = -3.0;
-    estimatedObjectMassMsg.pose.position.y = -3.0;
-    estimatedObjectMassMsg.pose.position.z = 0.5;
+    estimatedObjectMassMsg.pose.position.x = 0;
+    estimatedObjectMassMsg.pose.position.y = 1.5;
+    estimatedObjectMassMsg.pose.position.z = 2.25;
     estimatedObjectMassMsg.pose.orientation.x = 0;
     estimatedObjectMassMsg.pose.orientation.y = 0;
     estimatedObjectMassMsg.pose.orientation.z = 0;
