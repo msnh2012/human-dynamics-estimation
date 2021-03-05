@@ -1546,18 +1546,40 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
         return false;
     }
 
+    // Look for berdy options from the configuration
+    const yarp::os::Bottle berdyOptionsGroup = config.findGroup("BERDY_OPTIONS");
+    if (berdyOptionsGroup.isNull())
+    {
+        yError() << LogPrefix << "Failed to find BERDY_OPTIONS configuration parameter";
+        return false;
+    }
+
+    //TODO: Check if the particular berdy options exists
+
+
     // Initialize the options
     iDynTree::BerdyOptions berdyOptions;
     berdyOptions.baseLink = baseLink;
-    berdyOptions.berdyVariant = iDynTree::BerdyVariants::BERDY_FLOATING_BASE;
+
+    std::string berdyVariant = berdyOptionsGroup.find("berdyVariant").asString();
+    if(berdyVariant == "FLOATING_BASE")
+    {
+        berdyOptions.berdyVariant = iDynTree::BerdyVariants::BERDY_FLOATING_BASE;
+    }
+    else
+    {
+        berdyOptions.berdyVariant = iDynTree::BerdyVariants::ORIGINAL_BERDY_FIXED_BASE; // default option
+    }
+
+
     berdyOptions.includeAllNetExternalWrenchesAsSensors = true;
     berdyOptions.includeAllNetExternalWrenchesAsDynamicVariables = true;
     berdyOptions.includeAllJointAccelerationsAsSensors = true;
     berdyOptions.includeAllJointTorquesAsSensors = false;
     berdyOptions.includeFixedBaseExternalWrench = false;
-    berdyOptions.includeCoMAccelerometerAsSensorInTask1 = true;
-    berdyOptions.includeCoMAccelerometerAsSensorInTask2 = false;
-    berdyOptions.stackOfTasksMAP = true;
+    berdyOptions.includeCoMAccelerometerAsSensorInTask1 = berdyOptionsGroup.find("includeCoMAccelerometerAsSensorInTask1").asBool();
+    berdyOptions.includeCoMAccelerometerAsSensorInTask2 = berdyOptionsGroup.find("includeCoMAccelerometerAsSensorInTask2").asBool();
+    berdyOptions.stackOfTasksMAP = berdyOptionsGroup.find("stackOfTasksMAP").asBool();
 
     pImpl->enableTask1ExternalWrenchEstimation = true;
 
