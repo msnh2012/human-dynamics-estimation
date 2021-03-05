@@ -344,6 +344,12 @@
            </group>
            <param name="cov_task1_measurements_NET_EXT_WRENCH_SENSOR">1e-6</param>
         </group>
+        <group name="BERDY_OPTIONS">
+            <param name="berdyVariant">FLOATING_BASE</param>
+            <param name="stackOfTasksMAP">true</param>
+            <param name="includeCoMAccelerometerAsSensorInTask1">true</param>
+            <param name="includeCoMAccelerometerAsSensorInTask2">false</param>
+        </group>
         <group name="SENSORS_REMOVAL">
             <param name="GYROSCOPE_SENSOR">*</param>
         </group>
