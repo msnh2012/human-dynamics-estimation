@@ -8,9 +8,9 @@ lineStyles = linspecer(N,'qualitative');
 
 
 %% Plot parameters
-fontSize  = 30;
-legendFontSize  = 20;
-lineWidth = 3.5;
+fontSize  = 35;
+legendFontSize  = 30;
+lineWidth = 4;
 
 gravity = 9.81;
 subjectMass = 79.5;
@@ -131,7 +131,7 @@ tl = tiledlayout(3,3);
 nexttile;
 plot(withoutSOT_leftHand_Measurements(:,1) + withoutSOT_rightHand_Measurements(:,1), 'LineWidth', lineWidth);
 hold on;
-plot(withoutSOT_leftHand_Estimates(:,1) + withoutSOT_rightHand_Estimates(:,1), 'Color', C(2,:), 'LineWidth', lineWidth, 'LineStyle', '--');
+plot(withoutSOT_leftHand_Estimates(:,1) + withoutSOT_rightHand_Estimates(:,1), 'Color', C(2,:), 'LineWidth', lineWidth);
 hold on;
 %         ylim([-400 800])
 xlabel('Samples', 'FontSize', fontSize);
@@ -145,7 +145,7 @@ axis tight
 nexttile;
 plot(withoutSOT_leftHand_Measurements(:,2) + withoutSOT_rightHand_Measurements(:,2), 'LineWidth', lineWidth);
 hold on;
-plot(withoutSOT_leftHand_Estimates(:,2) + withoutSOT_rightHand_Estimates(:,2), 'Color', C(2,:), 'LineWidth', lineWidth, 'LineStyle', '--');
+plot(withoutSOT_leftHand_Estimates(:,2) + withoutSOT_rightHand_Estimates(:,2), 'Color', C(2,:), 'LineWidth', lineWidth);
 hold on;
 %         ylim([-400 800])
 xlabel('Samples', 'FontSize', fontSize);
@@ -159,7 +159,7 @@ axis tight
 nexttile;
 plot(withoutSOT_leftHand_Measurements(:,3) + withoutSOT_rightHand_Measurements(:,3), 'LineWidth', lineWidth);
 hold on;
-plot(withoutSOT_leftHand_Estimates(:,3) + withoutSOT_rightHand_Estimates(:,3), 'Color', C(2,:), 'LineWidth', lineWidth, 'LineStyle', '--');
+plot(withoutSOT_leftHand_Estimates(:,3) + withoutSOT_rightHand_Estimates(:,3), 'Color', C(2,:), 'LineWidth', lineWidth);
 hold on;
 %         ylim([-400 800])
 xlabel('Samples', 'FontSize', fontSize);
@@ -173,7 +173,7 @@ axis tight
 nexttile;
 plot(withSOT_leftHand_Measurements(:,1) + withSOT_rightHand_Measurements(:,1), 'LineWidth', lineWidth);
 hold on;
-plot(withSOT_leftHand_Estimates(:,1) + withSOT_rightHand_Estimates(:,1), 'Color', C(3,:), 'LineWidth', lineWidth, 'LineStyle', '--');
+plot(withSOT_leftHand_Estimates(:,1) + withSOT_rightHand_Estimates(:,1), 'Color', C(3,:), 'LineWidth', lineWidth);
 hold on;
 %         ylim([-400 800])
 xlabel('Samples', 'FontSize', fontSize);
@@ -187,7 +187,7 @@ axis tight
 nexttile;
 plot(withSOT_leftHand_Measurements(:,2) + withSOT_rightHand_Measurements(:,2), 'LineWidth', lineWidth);
 hold on;
-plot(withSOT_leftHand_Estimates(:,2) + withSOT_rightHand_Estimates(:,2), 'Color', C(3,:), 'LineWidth', lineWidth, 'LineStyle', '--');
+plot(withSOT_leftHand_Estimates(:,2) + withSOT_rightHand_Estimates(:,2), 'Color', C(3,:), 'LineWidth', lineWidth);
 hold on;
 %         ylim([-400 800])
 xlabel('Samples', 'FontSize', fontSize);
@@ -201,7 +201,7 @@ axis tight
 nexttile;
 plot(withSOT_leftHand_Measurements(:,3) + withSOT_rightHand_Measurements(:,3), 'LineWidth', lineWidth);
 hold on;
-plot(withSOT_leftHand_Estimates(:,3) + withSOT_rightHand_Estimates(:,3), 'Color', C(3,:), 'LineWidth', lineWidth, 'LineStyle', '--');
+plot(withSOT_leftHand_Estimates(:,3) + withSOT_rightHand_Estimates(:,3), 'Color', C(3,:), 'LineWidth', lineWidth);
 hold on;
 %         ylim([-400 800])
 xlabel('Samples', 'FontSize', fontSize);
@@ -225,9 +225,9 @@ yline(objectMass, '--', '9.55 Kg', 'LineWidth', lineWidth, 'FontSize', fontSize)
 hold on;
 plot(withSOT_measured_object_mass, 'LineWidth', lineWidth);
 hold on;
-plot(withoutSOT_estimated_object_mass, 'LineWidth', lineWidth, 'LineStyle', '--');
+plot(withoutSOT_estimated_object_mass, 'LineWidth', lineWidth);
 hold on;
-plot(withSOT_estimated_object_mass, 'LineWidth', lineWidth, 'LineStyle', '--');
+plot(withSOT_estimated_object_mass, 'LineWidth', lineWidth);
 hold on;
 % % plot(abs(withSOT_measured_object_mass - withSOT_estimated_object_mass), 'LineWidth', lineWidth);
 % % hold on;
@@ -237,11 +237,11 @@ set (gca, 'FontSize' , fontSize)
 set (gca, 'ColorOrder' , C)
 axis tight
 legend('Ground Truth (9.55 Kg)', 'Measurement', 'Estimation without NCWE',...
-       'Estimation with NCWE', 'FontSize', legendFontSize, 'Location', 'NorthEast', 'NumColumns', 4);
+       'Estimation with NCWE', 'FontSize', legendFontSize, 'Location', 'SouthOutside', 'NumColumns', 4);
 legend boxoff     
 
 txt = title("Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
 
 %% Save figure
-save2pdf(strcat(dataset + "_object_mass.pdf"), fH,300);
+save2pdf(strcat(dataset + "_object_mass.pdf"), fH, 600);
