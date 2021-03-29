@@ -330,7 +330,6 @@
                <param name="RightHand">(1e8 1e8 1e8 1e-4 1e-4 1e-4)</param>
                <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
            </group>
-           <param name="cov_task1_measurements_NET_EXT_WRENCH_SENSOR">1e-6</param>
         </group>
         <group name="BERDY_OPTIONS">
             <param name="berdyVariant">FLOATING_BASE</param>
