@@ -359,7 +359,7 @@ public:
 
     // MATIO Logging
     bool matioLogger = false;
-    const std::experimental::filesystem::path originalWorkingDirectory = std::experimental::filesystem::current_path();
+    const std::experimental::filesystem::path originalWorkingDirectory;
     std::string matLogDirectory = "";
     std::string matLogFileName; //TODO: Improve file handling for multiple file logging
     MatVarPtr<mat_t> matFilePtr = nullptr;
@@ -403,15 +403,22 @@ bool HumanDataCollector::open(yarp::os::Searchable &config) {
     pImpl->matioLogger = config.check("matioLogger", yarp::os::Value(false)).asBool();
 
     if (pImpl->matioLogger) {
-        pImpl->matLogDirectory =  pImpl->originalWorkingDirectory.string() + "/" +
-                                  config.check("matLogDirectory", yarp::os::Value("matLogDirectory")).asString() + "/";
+
+        // Assuming absolute path from config param
+        pImpl->matLogDirectory = config.check("matLogDirectory", yarp::os::Value("matLogDirectory")).asString() + "/";
 
         struct stat info;
 
         // check if matLogDirectory exists
-        if (stat(pImpl->matLogDirectory.c_str(), &info) != 0 && mkdir(config.check("matLogDirectory", yarp::os::Value("matLogDirectory")).asString().c_str(), 0777) == -1) {
-            yError() << LogPrefix << "Failed to created the matLogDirectory " << config.check("matLogDirectory", yarp::os::Value("matLogDirectory")).asString();
-            return false;
+        if (!std::experimental::filesystem::exists(pImpl->matLogDirectory))
+        {
+            yInfo() << LogPrefix << pImpl->matLogDirectory << " does not exists";
+
+            if (stat(pImpl->matLogDirectory.c_str(), &info) != 0 && mkdir(pImpl->matLogDirectory.c_str(), 0777) == -1) {
+                yError() << LogPrefix << "Failed to created the matLogDirectory " << pImpl->matLogDirectory;
+                return false;
+            }
+
         }
 
         std::experimental::filesystem::current_path(pImpl->matLogDirectory);
@@ -1205,7 +1212,7 @@ bool HumanDataCollector::detach()
     }
 
     // Moving back a directory above the matLogDirectory
-    std::experimental::filesystem::current_path(pImpl->originalWorkingDirectory);
+    //std::experimental::filesystem::current_path(pImpl->originalWorkingDirectory);
 
     if (pImpl->isAttached.stateProvider) {
 
