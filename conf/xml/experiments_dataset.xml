@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE robot PUBLIC "-//YARP//DTD yarprobotinterface 3.0//EN" "http://www.yarp.it/DTD/yarprobotinterfaceV3.0.dtd">
-<robot name="Human-HDE-covariance_tuning_dataset" build=0 portprefix="">
+<robot name="Human-HDE-experiments_dataset" build=0 portprefix="">
 
     <device type="transformServer" name="TransformServer">
         <param name="transforms_lifetime">0.2</param>
@@ -19,7 +19,7 @@
 
     <device type="human_state_provider" name="HumanStateProvider">
         <param name="period">0.02</param>
-        <param name="urdf">humanSubject03_66dof.urdf</param>
+        <param name="urdf">humanSubject02_66dof.urdf</param>
         <param name="floatingBaseFrame">(Pelvis, XsensSuit::vLink::Pelvis)</param>
         <!--Use none for Zero values, gravity for compensating gravity acceleration, proper for proper sensor acceleration-->
         <param name="accelerometerSensorMeasurementsOption">proper</param>
@@ -211,7 +211,7 @@
 
     <device type="human_wrench_provider" name="HumanWrenchProvider">
         <param name="period">0.020</param>
-        <param name="human_urdf">humanSubject03_66dof.urdf</param>
+        <param name="human_urdf">humanSubject02_66dof.urdf</param>
         <param name="pHRIScenario">false</param>
         <param name="number_of_sources">4</param>
         <param name="sources">(FTShoeLeft FTShoeRight DummyLeftHand DummyRightHand)</param>
@@ -255,7 +255,7 @@
 
     <device type="human_dynamics_estimator" name="HumanDynamicsEstimator-without-sot-1e4">
         <param name="period">0.02</param>
-        <param name="urdf">humanSubject03_66dof.urdf</param>
+        <param name="urdf">humanSubject02_66dof.urdf</param>
         <param name="rpcPortPrefix">Human-without-sot-1e4</param>
         <param name="baseLink">Pelvis</param>
         <param name="wrenchSmoothingFactor">1.0</param>
@@ -276,10 +276,10 @@
            <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
                <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
-               <param name="LeftFoot">(1e4 1e4 1e4 1e4 1e4 1e4)</param>
-               <param name="RightFoot">(1e4 1e4 1e4 1e4 1e4 1e4)</param>
-               <param name="LeftHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="RightHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="LeftFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="RightFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="LeftHand">(1e4 1e4 1e4 1e-4 1e-4 1e-4)</param>
+               <param name="RightHand">(1e4 1e4 1e4 1e-4 1e-4 1e-4)</param>
                <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
            </group>
         </group>
@@ -303,7 +303,7 @@
 
     <device type="human_dynamics_estimator" name="HumanDynamicsEstimator-with-sot-1e4">
         <param name="period">0.02</param>
-        <param name="urdf">humanSubject03_66dof.urdf</param>
+        <param name="urdf">humanSubject02_66dof.urdf</param>
         <param name="rpcPortPrefix">Human-with-sot-1e4</param>
         <param name="baseLink">Pelvis</param>
         <param name="wrenchSmoothingFactor">1.0</param>
@@ -324,10 +324,10 @@
            <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
                <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
-               <param name="LeftFoot">(1e4 1e4 1e4 1e4 1e4 1e4)</param>
-               <param name="RightFoot">(1e4 1e4 1e4 1e4 1e4 1e4)</param>
-               <param name="LeftHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="RightHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="LeftFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="RightFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="LeftHand">(1e4 1e4 1e4 1e-4 1e-4 1e-4)</param>
+               <param name="RightHand">(1e4 1e4 1e4 1e-4 1e-4 1e-4)</param>
                <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
            </group>
            <param name="cov_task1_measurements_NET_EXT_WRENCH_SENSOR">1e-6</param>
@@ -354,7 +354,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-without-sot-1e4</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e4</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/experiments_dataset/FTShoes_Dataset/sub02/static/hde/1e4</param>
         <param name="matLogFileName">withoutSOT</param>
         <action phase="startup" level="5" type="attach">
         <paramlist name="networks">
@@ -370,7 +370,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-with-sot-1e4</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e4</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/experiments_dataset/FTShoes_Dataset/sub02/static/hde/1e4</param>
         <param name="matLogFileName">withSOT</param>
         <action phase="startup" level="5" type="attach">
             <paramlist name="networks">
@@ -387,7 +387,7 @@
 
     <device type="human_dynamics_estimator" name="HumanDynamicsEstimator-without-sot-1e0">
         <param name="period">0.02</param>
-        <param name="urdf">humanSubject03_66dof.urdf</param>
+        <param name="urdf">humanSubject02_66dof.urdf</param>
         <param name="rpcPortPrefix">Human-without-sot-1e0</param>
         <param name="baseLink">Pelvis</param>
         <param name="wrenchSmoothingFactor">1.0</param>
@@ -408,10 +408,10 @@
            <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
                <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
-               <param name="LeftFoot">(1e0 1e0 1e0 1e0 1e0 1e0)</param>
-               <param name="RightFoot">(1e0 1e0 1e0 1e0 1e0 1e0)</param>
-               <param name="LeftHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="RightHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="LeftFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="RightFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="LeftHand">(1e0 1e0 1e0 1e0 1e-4 1e-4)</param>
+               <param name="RightHand">(1e0 1e0 1e0 1e-4 1e-4 1e-4)</param>
                <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
            </group>
         </group>
@@ -435,7 +435,7 @@
 
     <device type="human_dynamics_estimator" name="HumanDynamicsEstimator-with-sot-1e0">
         <param name="period">0.02</param>
-        <param name="urdf">humanSubject03_66dof.urdf</param>
+        <param name="urdf">humanSubject02_66dof.urdf</param>
         <param name="rpcPortPrefix">Human-with-sot-1e0</param>
         <param name="baseLink">Pelvis</param>
         <param name="wrenchSmoothingFactor">1.0</param>
@@ -456,10 +456,10 @@
            <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
                <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
-               <param name="LeftFoot">(1e0 1e0 1e0 1e0 1e0 1e0)</param>
-               <param name="RightFoot">(1e0 1e0 1e0 1e0 1e0 1e0)</param>
-               <param name="LeftHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="RightHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="LeftFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="RightFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
+               <param name="LeftHand">(1e0 1e0 1e0 1e-4 1e-4 1e-4)</param>
+               <param name="RightHand">(1e0 1e0 1e0 1e-4 1e-4 1e-4)</param>
                <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
            </group>
            <param name="cov_task1_measurements_NET_EXT_WRENCH_SENSOR">1e-6</param>
@@ -486,7 +486,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-without-sot-1e0</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e0</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/experiments_dataset/FTShoes_Dataset/sub02/static/hde/1e0</param>
         <param name="matLogFileName">withoutSOT</param>
         <action phase="startup" level="5" type="attach">
         <paramlist name="networks">
@@ -502,7 +502,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-with-sot-1e0</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e0</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/experiments_dataset/FTShoes_Dataset/sub02/static/hde/1e0</param>
         <param name="matLogFileName">withSOT</param>
         <action phase="startup" level="5" type="attach">
             <paramlist name="networks">
@@ -527,7 +527,7 @@
 
     <device type="human_dynamics_estimator" name="HumanDynamicsEstimator-without-sot-1e-4">
         <param name="period">0.02</param>
-        <param name="urdf">humanSubject03_66dof.urdf</param>
+        <param name="urdf">humanSubject02_66dof.urdf</param>
         <param name="rpcPortPrefix">Human-without-sot-1e-4</param>
         <param name="baseLink">Pelvis</param>
         <param name="wrenchSmoothingFactor">1.0</param>
@@ -575,7 +575,7 @@
 
     <device type="human_dynamics_estimator" name="HumanDynamicsEstimator-with-sot-1e-4">
         <param name="period">0.02</param>
-        <param name="urdf">humanSubject03_66dof.urdf</param>
+        <param name="urdf">humanSubject02_66dof.urdf</param>
         <param name="rpcPortPrefix">Human-with-sot-1e-4</param>
         <param name="baseLink">Pelvis</param>
         <param name="wrenchSmoothingFactor">1.0</param>
@@ -626,7 +626,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-without-sot-1e-4</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e-4</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/experiments_dataset/FTShoes_Dataset/sub02/static/hde/1e-4</param>
         <param name="matLogFileName">withoutSOT</param>
         <action phase="startup" level="5" type="attach">
         <paramlist name="networks">
@@ -642,7 +642,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-with-sot-1e-4</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e-4</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/experiments_dataset/FTShoes_Dataset/sub02/static/hde/1e-4</param>
         <param name="matLogFileName">withSOT</param>
         <action phase="startup" level="5" type="attach">
             <paramlist name="networks">
