@@ -2,11 +2,15 @@ close all;
 clear all;
 clc;
 
+N=8;
+C = linspecer(N);
+lineStyles = linspecer(N,'qualitative');
+
 
 %% Plot parameters
-fontSize  = 25;
+fontSize  = 20;
 legendFontSize  = 20;
-lineWidth = 2.5;
+lineWidth = 3;
 
 gravity = 9.81;
 subjectMass = 75.4;
@@ -68,51 +72,46 @@ end
 
 
 %% Plot Sum of Feet Wrench Error
-fH = figure('units','normalized','outerposition',[0 0 1 1]);
-tl = tiledlayout(2,3);
-
-colorSize = 10; % size(dataset_dir_names, 2);
-% PlotsColorMap = [summer(colorSize);...
-%                  winter(colorSize);...
-%                  spring(colorSize);...
-%                  autumn(colorSize);...
-%                  parula(colorSize);...
-%                  copper(colorSize);...
-%                  bone(colorSize)];
-
-PlotsColorMap = [summer(colorSize); winter(colorSize); autumn(colorSize)];
-             
+% % fH = figure('units','normalized','outerposition',[0 0 1 1]);
+% % tl = tiledlayout(2,3);
+% % 
+colorSize = 10;
+% % PlotsColorMap = [summer(colorSize); winter(colorSize); autumn(colorSize)];
+% %              
 LineStyles = ["-.", "-", "--", "-.x", "-o", ":", "-h"];
-
-ax = [];
-
-
-for s = 1:6
-    
-    ax(s) = nexttile;
-    
-    for i = 1:size(dataset_dir_names, 2)
-        plot(feet_wrench_error(i).withoutSOT.sum_error(:, s), LineStyles(i),...
-             'LineWidth', lineWidth,...
-             'Color',  PlotsColorMap((i -1 ) * colorSize + 1,:));
-        hold on;
-    end
-    
-    xlabel('Samples', 'FontSize', fontSize);
-    ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
-    set (gca, 'FontSize' , fontSize)
-    axis tight
-    
-end
-
-
-lh = legend(ax(1), dataset_dir_names, 'FontSize', legendFontSize,...
-           'Location', 'NorthOutside', 'Orientation','Horizontal',...
-           'NumColumns', size(dataset_dir_names, 2));
-% lh.Layout.Tile = 'North';     
-
-txt = title(tl, "Sum of Feet Wrench Error", 'FontSize', fontSize, 'fontweight','bold');
-txt.Interpreter= 'none'; 
+% % 
+% % ax = [];
+% % 
+% % 
+% % for s = 1:6
+% %     
+% %     ax(s) = nexttile;
+% %     
+% %     for i = 1:size(dataset_dir_names, 2)
+% %         plot(feet_wrench_error(i).withoutSOT.sum_error(:, s), LineStyles(i),...
+% %              'LineWidth', lineWidth,...
+% %              'Color',  C(i,:));
+% %         hold on;
+% %     end
+% %     
+% %     
+% %     xlabel('Samples', 'FontSize', fontSize);
+% %     ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
+% %     set (gca, 'FontSize' , fontSize)
+% %     axis tight
+% %     ylim([-10 inf])
+% %     
+% % end
+% % 
+% % 
+% % lh = legend(ax(1), dataset_dir_names, 'FontSize', legendFontSize,...
+% %            'Location', 'NorthOutside', 'Orientation','Vertical',...
+% %            'NumColumns', size(dataset_dir_names, 2));
+% % lh.Layout.Tile = 'North';
+% % title(lh,'Measurement Covariance')
+% % 
+% % txt = title(tl, "Sum of Feet Wrench Error", 'FontSize', fontSize, 'fontweight','bold');
+% % txt.Interpreter= 'none'; 
 
 
 % % %% Plot norm of feet force measurements vs estimates
@@ -154,11 +153,13 @@ for s = 1:6
     
         plot(feet_wrench_error(i).withoutSOT.leftfoot_error(:, s), LineStyles(i),...
             'LineWidth', lineWidth,...
-            'Color',  PlotsColorMap((i -1 ) * colorSize + 1,:));
+            'Color',  C(i,:));
         hold on;
     
     end
     
+    axis tight
+    ylim([-10 inf])
     ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
     set (gca, 'FontSize' , fontSize)
     
@@ -177,11 +178,13 @@ for s = 1:6
     
         plot(feet_wrench_error(i).withoutSOT.rightfoot_error(:, s), LineStyles(i),...
             'LineWidth', lineWidth,...
-            'Color',  PlotsColorMap((i -1 ) * colorSize + 1,:));
+            'Color',  C(i,:));
         hold on;
     
     end
     
+    axis tight
+    ylim([-10 inf])
     set (gca, 'FontSize' , fontSize)
   
     if s == 6
@@ -200,11 +203,13 @@ for s = 1:6
     
         plot(feet_wrench_error(i).withoutSOT.sum_error(:, s), LineStyles(i),...
             'LineWidth', lineWidth,...
-            'Color',  PlotsColorMap((i -1 ) * colorSize + 1,:));
+            'Color',  C(i,:));
         hold on;
     
     end
     
+    axis tight
+    ylim([-10 inf])
     set (gca, 'FontSize' , fontSize)
     
     if s == 6
@@ -224,8 +229,107 @@ txt = title(tl, "Feet Wrench Error", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
 
 lh = legend(ax(1), dataset_dir_names, 'FontSize', legendFontSize,...
-           'Location', 'NorthOutside', 'Orientation','Horizontal',...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
            'NumColumns', size(dataset_dir_names, 2));
+lh.Layout.Tile = 'North';
+title(lh,'Measurement Covariance')
+
 
 %% Save figure
-save2pdf(strcat(dataset_path + "feet_wrench_error.pdf"), fH, 600);
+save2pdf(strcat(dataset_path + "feet_wrench_error.pdf"), fH, 300);
+
+
+%% Plot wrench force measurements vs estimates for 1e-4
+fH = figure('units','normalized','outerposition',[0 0 1 1]);
+tl = tiledlayout(6,3);
+
+
+PlotsColorMap = [autumn(colorSize); summer(colorSize)];
+
+measurementColorIndex = 5;
+estimationColorIndex = 15;
+
+covarianceDataIndex = 1;
+
+ax = [];
+
+for s = 1:6
+    
+    ax(s) = nexttile;
+    plot(feet_wrench_measurements(covarianceDataIndex).withoutSOT.leftfoot(:, s),'--',...
+            'LineWidth', lineWidth, 'Color', PlotsColorMap(measurementColorIndex,:));
+    hold on;
+    plot(feet_wrench_estimates(covarianceDataIndex).withoutSOT.leftfoot(:, s), '-.',...
+            'LineWidth', lineWidth, 'Color', PlotsColorMap(estimationColorIndex,:));
+    hold on;
+    
+    axis tight
+    ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
+    set (gca, 'FontSize' , fontSize)
+    
+    if s == 6
+        xlabel('Samples', 'FontSize', fontSize);
+    else
+        set(gca, 'XTickLabel', [])
+    end
+    
+    if s == 1
+        title("Left Foot", 'FontSize', fontSize, 'fontweight','bold');
+    end
+    
+    nexttile;
+    plot(feet_wrench_measurements(covarianceDataIndex).withoutSOT.rightfoot(:, s),'--',...
+            'LineWidth', lineWidth, 'Color', PlotsColorMap(measurementColorIndex,:));
+    hold on;
+    plot(feet_wrench_estimates(covarianceDataIndex).withoutSOT.rightfoot(:, s), '-.',...
+            'LineWidth', lineWidth, 'Color', PlotsColorMap(estimationColorIndex,:));
+    hold on;
+    
+    axis tight
+    set (gca, 'FontSize' , fontSize)
+  
+    if s == 6
+        xlabel('Samples', 'FontSize', fontSize);
+    else
+        set(gca, 'XTickLabel', [])
+    end
+    
+    
+    if s == 1
+        title("Right Foot", 'FontSize', fontSize, 'fontweight','bold');
+    end
+    
+    nexttile;
+    plot(feet_wrench_measurements(covarianceDataIndex).withoutSOT.sum(:, s),'--',...
+            'LineWidth', lineWidth, 'Color', PlotsColorMap(measurementColorIndex,:));
+    hold on;
+    plot(feet_wrench_estimates(covarianceDataIndex).withoutSOT.sum(:, s), '-.',...
+            'LineWidth', lineWidth, 'Color', PlotsColorMap(estimationColorIndex,:));
+    hold on;
+    
+    axis tight
+    set (gca, 'FontSize' , fontSize)
+    
+    if s == 6
+        xlabel('Samples', 'FontSize', fontSize);
+    else
+        set(gca, 'XTickLabel', [])
+    end
+    
+    
+    if s == 1
+        title("Feet", 'FontSize', fontSize, 'fontweight','bold');
+    end
+end
+
+txt = title(tl, strcat("Feet Wrench Measurements vs Estimates for Covariance ", dataset_dir_names(covarianceDataIndex)),...
+            'FontSize', fontSize, 'fontweight','bold');
+txt.Interpreter= 'none'; 
+
+lh = legend(ax(1), 'Measurements', 'Estimates', 'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', 2);
+lh.Layout.Tile = 'North';
+
+%% Save figure
+save2pdf(strcat(dataset_path + "feet_wrench_tracking.pdf"), fH, 300);
