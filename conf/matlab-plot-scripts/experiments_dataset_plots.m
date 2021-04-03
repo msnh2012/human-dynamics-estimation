@@ -21,8 +21,8 @@ wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y 
 dataset_dir = '/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/';
 dataset_type = 'experiments_dataset';
 dataset_source = 'FTShoes_Dataset';
-subject = 'sub02';
-dataset = 'static/hde';
+subject = 'sub03';
+dataset = '10kg/hde';
 
 dataset_path = strcat(dataset_dir,'/',dataset_type,'/',dataset_source,'/',subject,'/',dataset); 
 
@@ -31,6 +31,8 @@ dataset_dir_names = ["1e-4", "1e0", "1e4"];
 
 experiments_dataset = [];
 
+feet_wrench_measurements = [];
+
 hands_wrench_measurements = [];
 hands_wrench_estimates = [];
 
@@ -38,6 +40,16 @@ for i = 1:size(dataset_dir_names, 2)
     
     experiments_dataset(i).withoutSOT = load(strcat(dataset_path, '/',  dataset_dir_names(i),'/withoutSOT.mat'));
     experiments_dataset(i).withSOT = load(strcat(dataset_path, '/',  dataset_dir_names(i), '/withSOT.mat'));
+    
+    %% Get feet measurements in world
+    feet_wrench_measurements(i).withoutSOT.leftfoot = experiments_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(1:6, : )'; 
+    feet_wrench_measurements(i).withoutSOT.rightfoot = experiments_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(7:12, : )';
+    feet_wrench_measurements(i).withoutSOT.sum = feet_wrench_measurements(i).withoutSOT.leftfoot + feet_wrench_measurements(i).withoutSOT.rightfoot;
+    
+    for j = 1:size(feet_wrench_measurements(i).withoutSOT.sum, 1)
+        feet_wrench_measurements(i).withoutSOT.force_norm(j) = norm(feet_wrench_measurements(i).withoutSOT.sum(j,1:3));
+    end
+    
     
     %% Get hands measurements vs estimates in world
     hands_wrench_measurements(i).withoutSOT.lefthand = experiments_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(13:18, : )'; 
@@ -411,3 +423,43 @@ ylim([-5 inf])
 
 %% Save figure
 save2pdf(strcat(dataset_path + "hands_wrench_estimation_object_mass_estimation.pdf"), fH, 300);
+
+
+
+%% Plot estimated object mass vs measured object mass through feet measurements
+fH = figure('units','normalized','outerposition',[0 0 1 1]);
+tl = tiledlayout(1,1);
+
+ax = nexttile;
+
+yline(objectMass, '--', '9.55 Kg', 'LineWidth', lineWidth, 'FontSize', fontSize);
+hold on;
+plot(feet_wrench_measurements(2).withoutSOT.force_norm/abs(gravity) - subjectMass, 'LineWidth', lineWidth, 'Color', C(6,:));
+hold on;
+
+
+for i = 1:size(dataset_dir_names, 2)
+    
+    plot(hands_wrench_estimates(i).withSOT.force_norm/abs(gravity), '-.',...
+        'LineWidth', lineWidth,...
+        'Color', C(i,:));
+    hold on;
+    
+end
+
+xlabel('Samples', 'FontSize', fontSize);
+ylabel("Mass [$kg$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+set (gca, 'FontSize' , fontSize)
+set (gca, 'ColorOrder' , C)
+axis tight
+
+lh = legend(ax, ['Ground Truth (9.55 Kg)', 'Using Feet Measurements', dataset_dir_names], 'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', 5);
+lh.Layout.Tile = 'North';
+
+txt = title(tl,"Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
+txt.Interpreter= 'none'; 
+
+%% Save figure
+save2pdf(strcat(dataset_path + "_object_mass.pdf"), fH, 600);
