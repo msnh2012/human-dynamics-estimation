@@ -20,8 +20,8 @@ wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y 
 dataset_dir = '/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/';
 dataset_type = 'experiments_dataset';
 dataset_source = 'FTShoes_Dataset';
-subject = 'sub02';
-dataset = 'static/hde';
+subject = 'sub03';
+dataset = '10kg/hde';
 
 subjectMass = 0;
 
@@ -496,7 +496,7 @@ end
 
 
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
-tl = tiledlayout(3,2);
+tl = tiledlayout(4,2);
 
 joint_name = "C7Shoulder";
 joint_suffix = ["_rotx", "_roty", "_rotz"];
@@ -527,10 +527,6 @@ for l = 1:size(joint_suffix, 2)
     txt = title(strcat("jLeft",joint_name, joint_suffix(l)), 'FontSize', fontSize, 'fontweight','bold');
     txt.Interpreter= 'none'; 
     
-    if l == 3
-        xlabel('Samples', 'FontSize', fontSize);
-    end
-    
     ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
     set (gca, 'FontSize' , fontSize)
     set (gca, 'ColorOrder' , C)
@@ -554,9 +550,6 @@ for l = 1:size(joint_suffix, 2)
     txt = title(strcat("jRight",joint_name, joint_suffix(l)), 'FontSize', fontSize, 'fontweight','bold');
     txt.Interpreter= 'none'; 
     
-    if l == 3
-        xlabel('Samples', 'FontSize', fontSize);
-    end
     
     ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
     set (gca, 'FontSize' , fontSize)
@@ -565,6 +558,61 @@ for l = 1:size(joint_suffix, 2)
     
     
 end
+
+
+
+for i = 1:size(dataset_dir_names, 2)
+    
+    dataSize = size( joint_torque_estimates(i).withSOT.(strcat("jLeft",joint_name, joint_suffix(1))).joint_torques, 1);
+    
+    for e = 1:dataSize
+        
+        joint_torque_estimates(i).withSOT.(strcat("jLeft", joint_name)).effort(e) = norm([joint_torque_estimates(i).withSOT.(strcat("jLeft",joint_name, joint_suffix(1))).joint_torques(e),...
+                                                                                          joint_torque_estimates(i).withSOT.(strcat("jLeft",joint_name, joint_suffix(2))).joint_torques(e),...
+                                                                                          joint_torque_estimates(i).withSOT.(strcat("jLeft",joint_name, joint_suffix(3))).joint_torques(e)]);
+        
+        joint_torque_estimates(i).withSOT.(strcat("jRight", joint_name)).effort(e) = norm([joint_torque_estimates(i).withSOT.(strcat("jRight",joint_name, joint_suffix(1))).joint_torques(e),...
+                                                                                           joint_torque_estimates(i).withSOT.(strcat("jRight",joint_name, joint_suffix(2))).joint_torques(e),...
+                                                                                           joint_torque_estimates(i).withSOT.(strcat("jRight",joint_name, joint_suffix(3))).joint_torques(e)]);
+        
+    end
+    
+end
+
+
+nexttile
+for i = 1:size(dataset_dir_names, 2)
+    plot(joint_torque_estimates(i).withSOT.(strcat("jLeft", joint_name)).effort, '-.',...
+        'LineWidth', lineWidth,...
+        'Color', C(i,:));
+    hold on;
+end
+
+title(strcat("jLeft",joint_name, " Effort"), 'FontSize', fontSize, 'fontweight','bold');
+
+xlabel('Samples', 'FontSize', fontSize);
+ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+set (gca, 'FontSize' , fontSize)
+set (gca, 'ColorOrder' , C)
+axis tight
+
+
+nexttile
+for i = 1:size(dataset_dir_names, 2)
+    plot(joint_torque_estimates(i).withSOT.(strcat("jRight", joint_name)).effort, '-.',...
+        'LineWidth', lineWidth,...
+        'Color', C(i,:));
+    hold on;
+end
+
+title(strcat("jRight",joint_name, " Effort"), 'FontSize', fontSize, 'fontweight','bold');
+
+xlabel('Samples', 'FontSize', fontSize);
+ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+set (gca, 'FontSize' , fontSize)
+set (gca, 'ColorOrder' , C)
+axis tight
+
 
 lh = legend(ax2(1), dataset_dir_names, 'FontSize', legendFontSize,...
            'Location', 'NorthOutside', 'Orientation','Vertical',...
@@ -594,7 +642,7 @@ txt.Interpreter= 'none';
 
 %%% Plot joint torques for other than limbs
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
-tl = tiledlayout(3,6);
+tl = tiledlayout(4,6);
 
 joint_name_list = ["jC1Head", "jL4L3", "jL5S1", "jT9T8", "jL1T12","jT1C7"];
 joint_suffix = ["_rotx", "_roty", "_rotz"];
@@ -631,15 +679,45 @@ for l = 1:size(joint_suffix, 2)
         txt = title(strcat(joint_name_list(j), joint_suffix(l)), 'FontSize', fontSize, 'fontweight','bold');
         txt.Interpreter= 'none';
         
-        if l == 3
-            xlabel('Samples', 'FontSize', fontSize);
-        end
         
         ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
         set (gca, 'FontSize' , fontSize)
         set (gca, 'ColorOrder' , C)
         axis tight
         
+        
+    end
+    
+end
+
+
+for j = 1:size(joint_name_list,2)
+    
+    nexttile
+    for i = 1:size(dataset_dir_names, 2)
+        
+        dataSize = size( joint_torque_estimates(i).withSOT.(strcat(joint_name_list(j), joint_suffix(1))).joint_torques, 1);
+        
+        for e = 1:dataSize
+            
+            joint_torque_estimates(i).withSOT.joint_name_list(j).effort(e) = norm([joint_torque_estimates(i).withSOT.(strcat(joint_name_list(j), joint_suffix(1))).joint_torques(e),...
+                                                                                   joint_torque_estimates(i).withSOT.(strcat(joint_name_list(j), joint_suffix(2))).joint_torques(e),...
+                                                                                   joint_torque_estimates(i).withSOT.(strcat(joint_name_list(j), joint_suffix(3))).joint_torques(e)]);
+            
+        end
+        
+        plot(joint_torque_estimates(i).withSOT.joint_name_list(j).effort, '-.',...
+            'LineWidth', lineWidth,...
+            'Color', C(i,:));
+        hold on;
+        
+        xlabel('Samples', 'FontSize', fontSize);
+        ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+        set (gca, 'FontSize' , fontSize)
+        set (gca, 'ColorOrder' , C)
+        axis tight
+        
+        title(strcat(joint_name_list(j), " Effort"), 'FontSize', fontSize, 'fontweight','bold');
         
     end
     
