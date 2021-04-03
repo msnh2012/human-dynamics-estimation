@@ -642,9 +642,11 @@ txt.Interpreter= 'none';
 
 %%% Plot joint torques for other than limbs
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
-tl = tiledlayout(4,6);
 
 joint_name_list = ["jC1Head", "jL4L3", "jL5S1", "jT9T8", "jL1T12","jT1C7"];
+
+tl = tiledlayout(4,size(joint_name_list, 2));
+
 joint_suffix = ["_rotx", "_roty", "_rotz"];
 
 
@@ -655,10 +657,6 @@ ax = [];
 for l = 1:size(joint_suffix, 2)
     
     for j = 1:size(joint_name_list,2)
-        
-        if(find(ismember(joint_name_list, strcat(joint_name_list(j), joint_suffix(l)))) == [])
-            continue
-        end
         
         ax(j) = nexttile;
         
