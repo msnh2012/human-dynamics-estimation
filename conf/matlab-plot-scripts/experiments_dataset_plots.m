@@ -12,7 +12,6 @@ legendFontSize  = 20;
 lineWidth = 3;
 
 gravity = 9.81;
-subjectMass = 75.4;
 objectMass = 9.55;
 
 %% Legend or Title Index
@@ -21,10 +20,22 @@ wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y 
 dataset_dir = '/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/';
 dataset_type = 'experiments_dataset';
 dataset_source = 'FTShoes_Dataset';
-subject = 'sub03';
-dataset = '10kg/hde';
+subject = 'sub02';
+dataset = 'static/hde';
 
-dataset_path = strcat(dataset_dir,'/',dataset_type,'/',dataset_source,'/',subject,'/',dataset); 
+subjectMass = 0;
+
+if subject == 'sub02'
+
+    subjectMass = 79.4;
+
+elseif subject == 'sub03'
+    
+    subjectMass = 75.4;
+
+end
+
+dataset_path = strcat(dataset_dir,'/',dataset_type,'/',dataset_source,'/',subject,'/',dataset,'/'); 
 
 %% Load data for the hands force/torque measurement covariance from 1e-4 to 1e4
 dataset_dir_names = ["1e-4", "1e0", "1e4"];
@@ -38,8 +49,8 @@ hands_wrench_estimates = [];
 
 for i = 1:size(dataset_dir_names, 2)
     
-    experiments_dataset(i).withoutSOT = load(strcat(dataset_path, '/',  dataset_dir_names(i),'/withoutSOT.mat'));
-    experiments_dataset(i).withSOT = load(strcat(dataset_path, '/',  dataset_dir_names(i), '/withSOT.mat'));
+    experiments_dataset(i).withoutSOT = load(strcat(dataset_path,  dataset_dir_names(i),'/withoutSOT.mat'));
+    experiments_dataset(i).withSOT = load(strcat(dataset_path,  dataset_dir_names(i), '/withSOT.mat'));
     
     %% Get feet measurements in world
     feet_wrench_measurements(i).withoutSOT.leftfoot = experiments_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(1:6, : )'; 
@@ -462,4 +473,197 @@ txt = title(tl,"Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
 
 %% Save figure
-save2pdf(strcat(dataset_path + "_object_mass.pdf"), fH, 600);
+save2pdf(strcat(dataset_path + "object_mass.pdf"), fH, 600);
+
+
+
+
+%% Joint Torque Analysis
+
+joint_names = experiments_dataset(1).withoutSOT.dynamicsJointNames;
+
+joint_torque_estimates = [];
+
+for i = 1:size(dataset_dir_names, 2)
+    
+    
+    for j = 1:size(joint_names, 1)
+        joint_torque_estimates(i).withoutSOT.(cell2mat(joint_names(j))).joint_torques = experiments_dataset(i).withoutSOT.data.jointTorques(j, :)';
+        joint_torque_estimates(i).withSOT.(cell2mat(joint_names(j))).joint_torques = experiments_dataset(i).withSOT.data.jointTorques(j, :)';
+    end
+    
+end
+
+
+fH = figure('units','normalized','outerposition',[0 0 1 1]);
+tl = tiledlayout(3,2);
+
+joint_name = "C7Shoulder";
+joint_suffix = ["_rotx", "_roty", "_rotz"];
+
+
+LineStyles = ["-.", "-", "--", "-.x", "-o", ":", "-h"];
+
+ax1 = [];
+ax2 = [];
+
+for l = 1:size(joint_suffix, 2)
+    
+    ax1(l) = nexttile;
+    for i = 1:size(dataset_dir_names, 2)
+    
+% %         plot(joint_torque_estimates(i).withoutSOT.(strcat("jLeft",joint_name, joint_suffix(l))).joint_torques, '-',...
+% %              'LineWidth', lineWidth,...
+% %              'Color', C(i,:));
+% %         hold on;
+% %         
+        plot(joint_torque_estimates(i).withSOT.(strcat("jLeft",joint_name, joint_suffix(l))).joint_torques, '-.',...
+             'LineWidth', lineWidth,...
+             'Color', C(i,:));
+        hold on;
+    
+    end
+    
+    txt = title(strcat("jLeft",joint_name, joint_suffix(l)), 'FontSize', fontSize, 'fontweight','bold');
+    txt.Interpreter= 'none'; 
+    
+    if l == 3
+        xlabel('Samples', 'FontSize', fontSize);
+    end
+    
+    ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+    set (gca, 'FontSize' , fontSize)
+    set (gca, 'ColorOrder' , C)
+    axis tight
+    
+    ax2(l) = nexttile;
+    for i = 1:size(dataset_dir_names, 2)
+    
+% %         plot(joint_torque_estimates(i).withoutSOT.(strcat("jRight",joint_name, joint_suffix(l))).joint_torques, '-',...
+% %              'LineWidth', lineWidth,...
+% %              'Color', C(i,:));
+% %         hold on;
+        
+        plot(joint_torque_estimates(i).withSOT.(strcat("jRight",joint_name, joint_suffix(l))).joint_torques, '-.',...
+             'LineWidth', lineWidth,...
+             'Color', C(i,:));
+        hold on;
+    
+    end
+    
+    txt = title(strcat("jRight",joint_name, joint_suffix(l)), 'FontSize', fontSize, 'fontweight','bold');
+    txt.Interpreter= 'none'; 
+    
+    if l == 3
+        xlabel('Samples', 'FontSize', fontSize);
+    end
+    
+    ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+    set (gca, 'FontSize' , fontSize)
+    set (gca, 'ColorOrder' , C)
+    axis tight
+    
+    
+end
+
+lh = legend(ax2(1), dataset_dir_names, 'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', size(dataset_dir_names, 2));
+lh.Layout.Tile = 'North';
+title(lh,'Hands Measurement Covariance with NCWE')
+
+% % lh = legend(ax1(1), [dataset_dir_names(1), '', dataset_dir_names(2), '', dataset_dir_names(3), ''],...
+% %            'FontSize', legendFontSize,...
+% %            'Location', 'NorthOutside', 'Orientation','Vertical',...
+% %            'NumColumns', 5);
+% % lh.Layout.Tile = 'North';
+% % title(lh,'Hands Measurement Covariance without NCWE')
+
+% % lh = legend(ax2(1), ['', dataset_dir_names(1), '', dataset_dir_names(2), '', dataset_dir_names(3)], 'FontSize', legendFontSize,...
+% %            'Location', 'NorthOutside', 'Orientation','Vertical',...
+% %            'NumColumns', size(dataset_dir_names, 2));
+% % lh.Layout.Tile = 'North';
+% % title(lh,'Hands Measurement Covariance with NCWE')
+
+
+txt = title(tl, strcat(joint_name, " Joint Torque Estimates"), 'FontSize', fontSize, 'fontweight','bold');
+txt.Interpreter= 'none'; 
+
+
+
+
+%%% Plot joint torques for other than limbs
+fH = figure('units','normalized','outerposition',[0 0 1 1]);
+tl = tiledlayout(3,6);
+
+joint_name_list = ["jC1Head", "jL4L3", "jL5S1", "jT9T8", "jL1T12","jT1C7"];
+joint_suffix = ["_rotx", "_roty", "_rotz"];
+
+
+LineStyles = ["-.", "-", "--", "-.x", "-o", ":", "-h"];
+
+ax = [];
+
+for l = 1:size(joint_suffix, 2)
+    
+    for j = 1:size(joint_name_list,2)
+        
+        if(find(ismember(joint_name_list, strcat(joint_name_list(j), joint_suffix(l)))) == [])
+            continue
+        end
+        
+        ax(j) = nexttile;
+        
+        for i = 1:size(dataset_dir_names, 2)
+            
+% %             plot(joint_torque_estimates(i).withoutSOT.(strcat(joint_name_list(j), joint_suffix(l))).joint_torques, '-',...
+% %                 'LineWidth', lineWidth,...
+% %                 'Color', C(i,:));
+% %             hold on;
+            
+            plot(joint_torque_estimates(i).withSOT.(strcat(joint_name_list(j), joint_suffix(l))).joint_torques, '-.',...
+                'LineWidth', lineWidth,...
+                'Color', C(i,:));
+            hold on;
+            
+        end
+        
+        txt = title(strcat(joint_name_list(j), joint_suffix(l)), 'FontSize', fontSize, 'fontweight','bold');
+        txt.Interpreter= 'none';
+        
+        if l == 3
+            xlabel('Samples', 'FontSize', fontSize);
+        end
+        
+        ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+        set (gca, 'FontSize' , fontSize)
+        set (gca, 'ColorOrder' , C)
+        axis tight
+        
+        
+    end
+    
+end
+
+lh = legend(ax(1), dataset_dir_names, 'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', size(dataset_dir_names, 2));
+lh.Layout.Tile = 'North';
+title(lh,'Hands Measurement Covariance with NCWE')
+
+% % lh = legend(ax(1), [dataset_dir_names(1), '', dataset_dir_names(2), '', dataset_dir_names(3), ''],...
+% %            'FontSize', legendFontSize,...
+% %            'Location', 'NorthOutside', 'Orientation','Vertical',...
+% %            'NumColumns', 5);
+% % lh.Layout.Tile = 'North';
+% % title(lh,'Hands Measurement Covariance without NCWE')
+% % 
+% % lh = legend(ax(2), ['', dataset_dir_names(1), '', dataset_dir_names(2), '', dataset_dir_names(3)], 'FontSize', legendFontSize,...
+% %            'Location', 'NorthOutside', 'Orientation','Vertical',...
+% %            'NumColumns', size(dataset_dir_names, 2));
+% % lh.Layout.Tile = 'North';
+title(lh,'Hands Measurement Covariance with NCWE')
+
+
+txt = title(tl, "Joint Torque Estimates", 'FontSize', fontSize, 'fontweight','bold');
+txt.Interpreter= 'none'; 
