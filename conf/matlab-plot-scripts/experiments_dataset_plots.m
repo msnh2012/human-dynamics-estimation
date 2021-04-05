@@ -498,7 +498,7 @@ end
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
 tl = tiledlayout(4,2);
 
-joint_name = "C7Shoulder";
+joint_name = "Elbow";
 joint_suffix = ["_rotx", "_roty", "_rotz"];
 
 
@@ -510,13 +510,14 @@ ax2 = [];
 for l = 1:size(joint_suffix, 2)
     
     ax1(l) = nexttile;
+    
+    plot(joint_torque_estimates(1).withoutSOT.(strcat("jLeft",joint_name, joint_suffix(l))).joint_torques, '-',...
+             'LineWidth', lineWidth,...
+             'Color', C(1,:));
+    hold on;
+         
     for i = 1:size(dataset_dir_names, 2)
     
-% %         plot(joint_torque_estimates(i).withoutSOT.(strcat("jLeft",joint_name, joint_suffix(l))).joint_torques, '-',...
-% %              'LineWidth', lineWidth,...
-% %              'Color', C(i,:));
-% %         hold on;
-% %         
         plot(joint_torque_estimates(i).withSOT.(strcat("jLeft",joint_name, joint_suffix(l))).joint_torques, '-.',...
              'LineWidth', lineWidth,...
              'Color', C(i,:));
@@ -533,13 +534,15 @@ for l = 1:size(joint_suffix, 2)
     axis tight
     
     ax2(l) = nexttile;
+    
+    plot(joint_torque_estimates(1).withoutSOT.(strcat("jRight",joint_name, joint_suffix(l))).joint_torques, '-',...
+        'LineWidth', lineWidth,...
+        'Color', C(1,:));
+    hold on;
+    
+
     for i = 1:size(dataset_dir_names, 2)
     
-% %         plot(joint_torque_estimates(i).withoutSOT.(strcat("jRight",joint_name, joint_suffix(l))).joint_torques, '-',...
-% %              'LineWidth', lineWidth,...
-% %              'Color', C(i,:));
-% %         hold on;
-        
         plot(joint_torque_estimates(i).withSOT.(strcat("jRight",joint_name, joint_suffix(l))).joint_torques, '-.',...
              'LineWidth', lineWidth,...
              'Color', C(i,:));
@@ -577,10 +580,29 @@ for i = 1:size(dataset_dir_names, 2)
         
     end
     
+    dataSize = size( joint_torque_estimates(i).withoutSOT.(strcat("jLeft",joint_name, joint_suffix(1))).joint_torques, 1);
+    
+    for e = 1:dataSize
+        
+        joint_torque_estimates(i).withoutSOT.(strcat("jLeft", joint_name)).effort(e) = norm([joint_torque_estimates(i).withoutSOT.(strcat("jLeft",joint_name, joint_suffix(1))).joint_torques(e),...
+                                                                                             joint_torque_estimates(i).withoutSOT.(strcat("jLeft",joint_name, joint_suffix(2))).joint_torques(e),...
+                                                                                             joint_torque_estimates(i).withoutSOT.(strcat("jLeft",joint_name, joint_suffix(3))).joint_torques(e)]);
+        
+        joint_torque_estimates(i).withoutSOT.(strcat("jRight", joint_name)).effort(e) = norm([joint_torque_estimates(i).withoutSOT.(strcat("jRight",joint_name, joint_suffix(1))).joint_torques(e),...
+                                                                                              joint_torque_estimates(i).withoutSOT.(strcat("jRight",joint_name, joint_suffix(2))).joint_torques(e),...
+                                                                                              joint_torque_estimates(i).withoutSOT.(strcat("jRight",joint_name, joint_suffix(3))).joint_torques(e)]);
+        
+    end
 end
 
 
 nexttile
+
+plot(joint_torque_estimates(1).withoutSOT.(strcat("jLeft", joint_name)).effort, '-',...
+    'LineWidth', lineWidth,...
+    'Color', C(1,:));
+hold on;
+
 for i = 1:size(dataset_dir_names, 2)
     plot(joint_torque_estimates(i).withSOT.(strcat("jLeft", joint_name)).effort, '-.',...
         'LineWidth', lineWidth,...
@@ -598,6 +620,11 @@ axis tight
 
 
 nexttile
+plot(joint_torque_estimates(1).withoutSOT.(strcat("jRight", joint_name)).effort, '-',...
+    'LineWidth', lineWidth,...
+    'Color', C(1,:));
+hold on;
+
 for i = 1:size(dataset_dir_names, 2)
     plot(joint_torque_estimates(i).withSOT.(strcat("jRight", joint_name)).effort, '-.',...
         'LineWidth', lineWidth,...
@@ -614,24 +641,24 @@ set (gca, 'ColorOrder' , C)
 axis tight
 
 
-lh = legend(ax2(1), dataset_dir_names, 'FontSize', legendFontSize,...
-           'Location', 'NorthOutside', 'Orientation','Vertical',...
-           'NumColumns', size(dataset_dir_names, 2));
-lh.Layout.Tile = 'North';
-title(lh,'Hands Measurement Covariance with NCWE')
-
-% % lh = legend(ax1(1), [dataset_dir_names(1), '', dataset_dir_names(2), '', dataset_dir_names(3), ''],...
-% %            'FontSize', legendFontSize,...
-% %            'Location', 'NorthOutside', 'Orientation','Vertical',...
-% %            'NumColumns', 5);
-% % lh.Layout.Tile = 'North';
-% % title(lh,'Hands Measurement Covariance without NCWE')
-
-% % lh = legend(ax2(1), ['', dataset_dir_names(1), '', dataset_dir_names(2), '', dataset_dir_names(3)], 'FontSize', legendFontSize,...
+% % lh = legend(ax2(1), dataset_dir_names, 'FontSize', legendFontSize,...
 % %            'Location', 'NorthOutside', 'Orientation','Vertical',...
 % %            'NumColumns', size(dataset_dir_names, 2));
 % % lh.Layout.Tile = 'North';
 % % title(lh,'Hands Measurement Covariance with NCWE')
+
+lh = legend(ax1(1), dataset_dir_names(1),...
+           'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', 5);
+lh.Layout.Tile = 'North';
+title(lh,'Hands Measurement Covariance without NCWE')
+
+lh = legend(ax2(1), ['', dataset_dir_names(1), dataset_dir_names(2), dataset_dir_names(3)], 'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', size(dataset_dir_names, 2));
+lh.Layout.Tile = 'North';
+title(lh,'Hands Measurement Covariance with NCWE')
 
 
 txt = title(tl, strcat(joint_name, " Joint Torque Estimates"), 'FontSize', fontSize, 'fontweight','bold');
@@ -660,13 +687,13 @@ for l = 1:size(joint_suffix, 2)
         
         ax(j) = nexttile;
         
+        plot(joint_torque_estimates(1).withoutSOT.(strcat(joint_name_list(j), joint_suffix(l))).joint_torques, '-',...
+            'LineWidth', lineWidth,...
+            'Color', C(1,:));
+        hold on;
+        
         for i = 1:size(dataset_dir_names, 2)
-            
-% %             plot(joint_torque_estimates(i).withoutSOT.(strcat(joint_name_list(j), joint_suffix(l))).joint_torques, '-',...
-% %                 'LineWidth', lineWidth,...
-% %                 'Color', C(i,:));
-% %             hold on;
-            
+                        
             plot(joint_torque_estimates(i).withSOT.(strcat(joint_name_list(j), joint_suffix(l))).joint_torques, '-.',...
                 'LineWidth', lineWidth,...
                 'Color', C(i,:));
@@ -690,8 +717,7 @@ end
 
 
 for j = 1:size(joint_name_list,2)
-    
-    nexttile
+
     for i = 1:size(dataset_dir_names, 2)
         
         dataSize = size( joint_torque_estimates(i).withSOT.(strcat(joint_name_list(j), joint_suffix(1))).joint_torques, 1);
@@ -703,6 +729,33 @@ for j = 1:size(joint_name_list,2)
                                                                                    joint_torque_estimates(i).withSOT.(strcat(joint_name_list(j), joint_suffix(3))).joint_torques(e)]);
             
         end
+        
+        dataSize = size( joint_torque_estimates(i).withoutSOT.(strcat(joint_name_list(j), joint_suffix(1))).joint_torques, 1);
+        
+        for e = 1:dataSize
+            
+            joint_torque_estimates(i).withoutSOT.joint_name_list(j).effort(e) = norm([joint_torque_estimates(i).withoutSOT.(strcat(joint_name_list(j), joint_suffix(1))).joint_torques(e),...
+                                                                                      joint_torque_estimates(i).withoutSOT.(strcat(joint_name_list(j), joint_suffix(2))).joint_torques(e),...
+                                                                                      joint_torque_estimates(i).withoutSOT.(strcat(joint_name_list(j), joint_suffix(3))).joint_torques(e)]);
+            
+        end
+         
+    end
+    
+end
+
+
+for j = 1:size(joint_name_list,2)
+    
+    nexttile
+    
+    plot(joint_torque_estimates(1).withSOT.joint_name_list(j).effort, '-',...
+            'LineWidth', lineWidth,...
+            'Color', C(1,:));
+        hold on;
+        
+        
+    for i = 1:size(dataset_dir_names, 2)
         
         plot(joint_torque_estimates(i).withSOT.joint_name_list(j).effort, '-.',...
             'LineWidth', lineWidth,...
@@ -721,23 +774,23 @@ for j = 1:size(joint_name_list,2)
     
 end
 
-lh = legend(ax(1), dataset_dir_names, 'FontSize', legendFontSize,...
-           'Location', 'NorthOutside', 'Orientation','Vertical',...
-           'NumColumns', size(dataset_dir_names, 2));
-lh.Layout.Tile = 'North';
-title(lh,'Hands Measurement Covariance with NCWE')
-
-% % lh = legend(ax(1), [dataset_dir_names(1), '', dataset_dir_names(2), '', dataset_dir_names(3), ''],...
-% %            'FontSize', legendFontSize,...
-% %            'Location', 'NorthOutside', 'Orientation','Vertical',...
-% %            'NumColumns', 5);
-% % lh.Layout.Tile = 'North';
-% % title(lh,'Hands Measurement Covariance without NCWE')
-% % 
-% % lh = legend(ax(2), ['', dataset_dir_names(1), '', dataset_dir_names(2), '', dataset_dir_names(3)], 'FontSize', legendFontSize,...
+% % lh = legend(ax(1), dataset_dir_names, 'FontSize', legendFontSize,...
 % %            'Location', 'NorthOutside', 'Orientation','Vertical',...
 % %            'NumColumns', size(dataset_dir_names, 2));
 % % lh.Layout.Tile = 'North';
+% % title(lh,'Hands Measurement Covariance with NCWE')
+
+lh = legend(ax(1), dataset_dir_names(1),...
+           'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', 5);
+lh.Layout.Tile = 'North';
+title(lh,'Hands Measurement Covariance without NCWE')
+
+lh = legend(ax(2), ['', dataset_dir_names(1), dataset_dir_names(2), dataset_dir_names(3)], 'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', size(dataset_dir_names, 2));
+lh.Layout.Tile = 'North';
 title(lh,'Hands Measurement Covariance with NCWE')
 
 
