@@ -143,11 +143,12 @@ end
 
 joint_torques_table_header = {' 0 Kgs ' ;' 2 Kgs ';' 5 Kgs '};
 
+format bank;
 shoulder = joint_torques.shoulder';
 elbow = joint_torques.elbow';
 wrist = joint_torques.wrist';
 
-joint_torques_table = table(shoulder, elbow, wrist, 'RowNames', joint_torques_table_header);
+joint_torques_table = table(shoulder, elbow, wrist, 'VariableNames',{'Shoulder','Elbow', 'Wrist'}, 'RowNames', joint_torques_table_header);
 
 % Get the table in string form.
 TString = evalc('disp(joint_torques_table)');
@@ -157,6 +158,6 @@ TString = strrep(TString,'</strong>','');
 TString = strrep(TString,'_','');
 
 
-dim = [.575 .45 .1 .1];
+dim = [.55 .45 .1 .1];
 annotation(gcf,'Textbox', dim, 'String',TString, 'Interpreter','Tex', 'FontSize', 14,...
            'EdgeColor','none', 'FitBoxToText','on');
