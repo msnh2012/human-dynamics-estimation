@@ -1,10 +1,12 @@
-% % close all;
-% % clear all;
-% % clc;
+close all;
+clear all;
+clc;
+
+icubModelsInstallPrefix = getenv('ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX');
 
 gravity = [0,0,9.81];
 
-load = 2; %%Kgs
+load = [0, 2, 5]; %%Kgs
 
 %% Load urdf model
 subject = 'humanSubject03';
@@ -30,7 +32,20 @@ world_H_base=[1,0,0,0;0,1,0,0;0,0,1,0;0,0,0,1];
 iDynTreeWrappers.setRobotState(KinDynModel,world_H_base,joints_positions,zeros(6,1),zeros(size(joints_positions)),gravity);
 
 
-%% Compute Shoulder Torque
+meshFilePrefix="";
+[visualizer,objects]=iDynTreeWrappers.prepareVisualization(KinDynModel,meshFilePrefix,...
+    'color',[0.1,0.1,0.25],'material','metal','transparency',0.35,'debug',true,'view',[92.9356   10.4635]);
+     %%'style','wireframe','wireframe_rendering',1);
+     
+%% Visualize marker frames position
+%initialize sphere visualization
+[X_sphere,Y_sphere,Z_sphere] = sphere;
+radius = 0.025;
+
+currentAxisValues=axis;
+axisRange=currentAxisValues([2,4,6])-currentAxisValues([1,3,5]);
+frameAxisSize = min(axisRange)/4;
+linewidthSize=frameAxisSize*50;
 
 model = KinDynModel.kinDynComp.getRobotModel;
 
@@ -39,22 +54,80 @@ model_inertials = iDynTree.VectorDynSize;
 model.getInertialParameters(model_inertials);
 model_inertial_params = model_inertials.toMatlab;
 
-upperarm_inertial_params = abs(model_inertial_params(10 * model.getLinkIndex('LeftUpperArm') + 1:...
-                                                       10 * model.getLinkIndex('LeftUpperArm') + 10));
-                                                   
-                                                   
-upperarm_inertial_params(3) = upperarm_inertial_params(3)/upperarm_inertial_params(1);
-                                                   
-                                                   
-forearm_inertial_params = abs(model_inertial_params(10 * model.getLinkIndex('LeftForeArm') + 1:...
-                                                      10 * model.getLinkIndex('LeftForeArm') + 10));
-                                                  
-forearm_inertial_params(3) = forearm_inertial_params(3)/forearm_inertial_params(1);
-                                                  
+links = [{'LeftUpperArm'}, {'LeftForeArm'}, {'LeftHand'}];
 
-elbow_torque =  forearm_inertial_params(1) * gravity(3) * forearm_inertial_params(3) +...
-                     load * gravity(3) * (2 * forearm_inertial_params(3))
+link_inertial_params = [];
 
-shoulder_torque = upperarm_inertial_params(1) * gravity(3) * upperarm_inertial_params(3) +...
-                        forearm_inertial_params(1) * gravity(3) * (2  * forearm_inertial_params(3) ) +...
-                        load * gravity(3) * (2 * (forearm_inertial_params(3) + upperarm_inertial_params(3) ) )
+for l = 1: size(links, 2)
+    
+%     link_name = cell2mat(strcat('Right',links(l)));
+
+    link_name = cell2mat(links(l));
+    
+    
+    link_inertial_params(l,:) = model_inertial_params(10 * model.getLinkIndex(link_name) + 1:...
+                                                          10 * model.getLinkIndex(link_name) + 10)';
+    
+    %% Correct link COM value from iDyntree inertal value of mass * com
+    link_inertial_params(l,3) = link_inertial_params(l,3)/link_inertial_params(l,1);
+    
+    
+    link_transform_idyn = KinDynModel.kinDynComp.getWorldTransform(link_name);
+    link_transform_matlab = link_transform_idyn.asHomogeneousTransform.toMatlab;
+    
+    % visualize frame center as a sphere
+    framePosition = link_transform_matlab(1:3,4);
+    surf(X_sphere*radius + framePosition(1) + link_inertial_params(l,2), ...
+         Y_sphere*radius + framePosition(2) + link_inertial_params(l,3), ...
+         Z_sphere*radius + framePosition(3) + link_inertial_params(l,4), ...
+         'FaceColor','w', ...
+         'EdgeColor','k')
+
+
+    iDynTreeWrappers.plotFrame(link_transform_matlab, frameAxisSize, linewidthSize);
+                    
+    
+end
+
+joints = [{'Shoulder'}, {'Elbow'}, {'Wrist'}];
+
+joint_torques = [];
+
+abs(link_inertial_params);
+
+for i = 1:size(load,2)
+    
+    joint_torques.shoulder(i) = link_inertial_params(1, 1) * gravity(3) * link_inertial_params(1, 3)  +...
+                                link_inertial_params(2, 1) * gravity(3) * ( 2 * link_inertial_params(1, 3) + link_inertial_params(2, 3)  ) +...
+                                ( link_inertial_params(3, 1) + load(i) ) * gravity(3) * ( 2 * ( link_inertial_params(1, 3) + link_inertial_params(2, 3) ) +  link_inertial_params(3, 3) );
+                            
+    joint_torques.elbow(i) =    link_inertial_params(2, 1) * gravity(3) *  link_inertial_params(2, 3) +...
+                                ( link_inertial_params(3, 1) + load(i) ) * gravity(3) * ( 2 * link_inertial_params(2, 3)  +  link_inertial_params(3, 3) );
+                            
+    joint_torques.wrist(i) =    ( link_inertial_params(3, 1) + load(i) ) * gravity(3) *  link_inertial_params(3, 3);
+    
+end                    
+
+
+joint_torques_table_header = {' 0 Kgs ' ;' 2 Kgs ';' 5 Kgs '};
+
+shoulder = joint_torques.shoulder';
+elbow = joint_torques.elbow';
+wrist = joint_torques.wrist';
+
+joint_torques_table = table(shoulder, elbow, wrist, 'RowNames', joint_torques_table_header);
+
+% Get the table in string form.
+TString = evalc('disp(joint_torques_table)');
+
+% Use TeX Markup for bold formatting and underscores.
+TString = strrep(TString,'<strong>','\bf');
+TString = strrep(TString,'</strong>','\rm');
+TString = strrep(TString,'_','\_');
+
+% Get a fixed-width font.
+FixedWidth = get(0,'FixedWidthFontName');
+
+% Output the table using the annotation command.
+annotation(gcf,'Textbox','String',TString,'Interpreter','Tex',...
+           'FontName',FixedWidth,'Units','Normalized','Position',[0 0 1 1], 'FontSize', 16);
