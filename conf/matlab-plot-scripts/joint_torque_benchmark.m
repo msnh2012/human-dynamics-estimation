@@ -34,8 +34,15 @@ iDynTreeWrappers.setRobotState(KinDynModel,world_H_base,joints_positions,zeros(6
 
 meshFilePrefix="";
 [visualizer,objects]=iDynTreeWrappers.prepareVisualization(KinDynModel,meshFilePrefix,...
-    'color',[0.1,0.1,0.25],'material','metal','transparency',0.35,'debug',true,'view',[92.9356   10.4635]);
+    'color',[0.1,0.1,0.25],'material','metal','transparency',0.35,'debug',true,'view',[92.9356   5.4635]);
      %%'style','wireframe','wireframe_rendering',1);
+     
+set(gca,'xtick',[])
+set(gca,'ytick',[])
+set(gca,'ztick',[])
+axis off
+title('Human Model');
+
      
 %% Visualize marker frames position
 %initialize sphere visualization
@@ -66,34 +73,59 @@ for l = 1: size(links, 2)
     
     
     link_inertial_params(l,:) = model_inertial_params(10 * model.getLinkIndex(link_name) + 1:...
-                                                          10 * model.getLinkIndex(link_name) + 10)';
+                                                      10 * model.getLinkIndex(link_name) + 10)';
     
     %% Correct link COM value from iDyntree inertal value of mass * com
-    link_inertial_params(l,3) = link_inertial_params(l,3)/link_inertial_params(l,1);
+    link_inertial_params(l,2:4) = link_inertial_params(l,2:4)/link_inertial_params(l,1);
     
     
     link_transform_idyn = KinDynModel.kinDynComp.getWorldTransform(link_name);
     link_transform_matlab = link_transform_idyn.asHomogeneousTransform.toMatlab;
     
+    %% Plot link frame
+    iDynTreeWrappers.plotFrame(link_transform_matlab, frameAxisSize, linewidthSize);
+    
+    %% Get link COM frame position
+    link_transform_matlab(1:3,4) = link_transform_matlab(1:3, 4) + link_inertial_params(l,2:4)';
+    
     % visualize frame center as a sphere
     framePosition = link_transform_matlab(1:3,4);
-    surf(X_sphere*radius + framePosition(1) + link_inertial_params(l,2), ...
-         Y_sphere*radius + framePosition(2) + link_inertial_params(l,3), ...
-         Z_sphere*radius + framePosition(3) + link_inertial_params(l,4), ...
+    surf(X_sphere*radius + framePosition(1), ...
+         Y_sphere*radius + framePosition(2), ...
+         Z_sphere*radius + framePosition(3), ...
          'FaceColor','w', ...
          'EdgeColor','k')
 
-
-    iDynTreeWrappers.plotFrame(link_transform_matlab, frameAxisSize, linewidthSize);
-                    
+    
+    force_frame = iDynTreeWrappers.plotFrame(link_transform_matlab, frameAxisSize, linewidthSize);
+    
+    force_frame.x.Visible = 'off';
+    force_frame.y.Visible = 'off';
+    
+    force_frame.labels.x.Visible = 'off';
+    force_frame.labels.y.Visible = 'off';
+    force_frame.labels.z.Visible = 'off';
+    
+    
+    force_frame.z.Color = '#D95319';
+    force_frame.z.LineStyle = '-';
+    force_frame.z.MarkerSize = 8;
+    
+    force_frame.z.ZData(2) = force_frame.z.ZData(2) * 1.35;
+    force_frame.z.ZData = force_frame.z.ZData - 0.25;
     
 end
+
+pos = [.625 .825 .1 .1];
+legend({'','', '', '','', '', '','', '', 'Gravity Force','', ''},...
+        'Location','best','Orientation','horizontal', 'FontSize', 20,...
+        'Position', pos)
 
 joints = [{'Shoulder'}, {'Elbow'}, {'Wrist'}];
 
 joint_torques = [];
 
-abs(link_inertial_params);
+% % abs(link_inertial_params);
 
 for i = 1:size(load,2)
     
@@ -120,14 +152,11 @@ joint_torques_table = table(shoulder, elbow, wrist, 'RowNames', joint_torques_ta
 % Get the table in string form.
 TString = evalc('disp(joint_torques_table)');
 
-% Use TeX Markup for bold formatting and underscores.
 TString = strrep(TString,'<strong>','\bf');
-TString = strrep(TString,'</strong>','\rm');
-TString = strrep(TString,'_','\_');
+TString = strrep(TString,'</strong>','');
+TString = strrep(TString,'_','');
 
-% Get a fixed-width font.
-FixedWidth = get(0,'FixedWidthFontName');
 
-% Output the table using the annotation command.
-annotation(gcf,'Textbox','String',TString,'Interpreter','Tex',...
-           'FontName',FixedWidth,'Units','Normalized','Position',[0 0 1 1], 'FontSize', 16);
+dim = [.575 .45 .1 .1];
+annotation(gcf,'Textbox', dim, 'String',TString, 'Interpreter','Tex', 'FontSize', 14,...
+           'EdgeColor','none', 'FitBoxToText','on');
