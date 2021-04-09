@@ -6,7 +6,7 @@ icubModelsInstallPrefix = getenv('ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX');
 
 gravity = [0,0,9.81];
 
-load = [0, 2, 5]; %%Kgs
+load = [0, 5]; %%Kgs
 
 %% Load urdf model
 subject = 'humanSubject03';
@@ -41,7 +41,7 @@ set(gca,'xtick',[])
 set(gca,'ytick',[])
 set(gca,'ztick',[])
 axis off
-title('Human Model');
+title('Human Model', 'FontSize', 24);
 
      
 %% Visualize marker frames position
@@ -90,11 +90,11 @@ for l = 1: size(links, 2)
     
     % visualize frame center as a sphere
     framePosition = link_transform_matlab(1:3,4);
-    surf(X_sphere*radius + framePosition(1), ...
+    h = surf(X_sphere*radius + framePosition(1), ...
          Y_sphere*radius + framePosition(2), ...
          Z_sphere*radius + framePosition(3), ...
-         'FaceColor','w', ...
-         'EdgeColor','k')
+         'FaceColor','#EDB120', ...
+         'EdgeColor','none');
 
     
     force_frame = iDynTreeWrappers.plotFrame(link_transform_matlab, frameAxisSize, linewidthSize);
@@ -116,10 +116,11 @@ for l = 1: size(links, 2)
     
 end
 
-pos = [.625 .825 .1 .1];
-legend({'','', '', '','', '', '','', '', 'Gravity Force','', ''},...
+pos = [.595 .825 .1 .1];
+lgd = legend([force_frame.z, h], {'  Gravity Force', '  Center of Mass'},...
         'Location','best','Orientation','horizontal', 'FontSize', 20,...
-        'Position', pos)
+        'Position', pos, 'Box', 'Off', 'NumColumns', 1, 'Interpreter','tex');
+
 
 joints = [{'Shoulder'}, {'Elbow'}, {'Wrist'}];
 
@@ -141,7 +142,7 @@ for i = 1:size(load,2)
 end                    
 
 
-joint_torques_table_header = {' 0 Kgs ' ;' 2 Kgs ';' 5 Kgs '};
+joint_torques_table_header = {' 0 Kgs ' ;' 5 Kgs '};
 
 format bank;
 shoulder = joint_torques.shoulder';
@@ -157,7 +158,19 @@ TString = strrep(TString,'<strong>','\bf');
 TString = strrep(TString,'</strong>','');
 TString = strrep(TString,'_','');
 
+tableTitle = '                     \bfJoint Torques [Nm]              \newline  ';
+
+separator = '                 \bf-----------------------------              \newline  ';
+
+TString = strcat(tableTitle, separator, '\newline', TString);
 
 dim = [.55 .45 .1 .1];
-annotation(gcf,'Textbox', dim, 'String',TString, 'Interpreter','Tex', 'FontSize', 14,...
+annotation(gcf,'Textbox', dim, 'String',TString, 'Interpreter','Tex', 'FontSize', 20,...
            'EdgeColor','none', 'FitBoxToText','on');
+       
+
+visualizer.mainHandler.Units = 'normalized';
+visualizer.mainHandler.OuterPosition =  [0 0 1 1];
+
+%% Save figure
+save2pdf("joint_torque_benchmark_visualization.pdf", visualizer.mainHandler, 300);
