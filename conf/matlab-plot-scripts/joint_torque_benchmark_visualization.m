@@ -158,9 +158,9 @@ TString = strrep(TString,'<strong>','\bf');
 TString = strrep(TString,'</strong>','');
 TString = strrep(TString,'_','');
 
-tableTitle = '                     \bfJoint Torques [Nm]              \newline  ';
+tableTitle = '                     \bfJoint Effort [Nm]              \newline  ';
 
-separator = '                 \bf-----------------------------              \newline  ';
+separator = '                 \bf--------------------------              \newline  ';
 
 TString = strcat(tableTitle, separator, '\newline', TString);
 
