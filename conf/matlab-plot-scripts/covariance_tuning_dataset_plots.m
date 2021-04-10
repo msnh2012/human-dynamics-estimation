@@ -3,13 +3,14 @@ clear all;
 clc;
 
 N=8;
-C = linspecer(N);
+% C = linspecer(N);
+C = lines(N);
 lineStyles = linspecer(N,'qualitative');
 
 
 %% Plot parameters
-fontSize  = 20;
-legendFontSize  = 20;
+fontSize  = 30;
+legendFontSize  = 30;
 lineWidth = 3;
 
 gravity = 9.81;
@@ -20,11 +21,11 @@ wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y 
 
 dataset_dir = '/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/';
 dataset_type = 'covariance_tuning_dataset';
-dataset_source = 'FTShoes_Dataset';
+dataset_source = 'AMTI_Dataset';
 subject = 'sub03';
-dataset = 'npose/hde';
+dataset = 'tpose/hde/feet';
 
-dataset_path = strcat(dataset_dir,'/',dataset_type,'/',dataset_source,'/',subject,'/',dataset); 
+dataset_path = strcat(dataset_dir,'/',dataset_type,'/',dataset_source,'/',subject,'/',dataset, '/'); 
 
 %% Load data for the feet force/torque measurement covariance from 1e-6 to 1e6
 
@@ -38,6 +39,8 @@ feet_wrench_estimates = [];
 
 feet_wrench_error = [];
 
+startIndex = 50;
+
 for i = 1:size(dataset_dir_names, 2)
     
     covariance_tuning_dataset(i).withoutSOT = load(strcat(dataset_path, '/',  dataset_dir_names(i),'/withoutSOT.mat'));
@@ -45,16 +48,16 @@ for i = 1:size(dataset_dir_names, 2)
     
     
     %% Get feet measurements vs estimates in world
-    feet_wrench_measurements(i).withoutSOT.leftfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(1:6, : )'; 
-    feet_wrench_measurements(i).withoutSOT.rightfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(7:12, : )';
+    feet_wrench_measurements(i).withoutSOT.leftfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(1:6, startIndex: end)'; 
+    feet_wrench_measurements(i).withoutSOT.rightfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(7:12, startIndex: end)';
     feet_wrench_measurements(i).withoutSOT.sum = feet_wrench_measurements(i).withoutSOT.leftfoot + feet_wrench_measurements(i).withoutSOT.rightfoot;
     
     for j = 1:size(feet_wrench_measurements(i).withoutSOT.sum, 1)
         feet_wrench_measurements(i).withoutSOT.force_norm(j) = norm(feet_wrench_measurements(i).withoutSOT.sum(j,1:3));
     end
     
-    feet_wrench_estimates(i).withoutSOT.leftfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchEstimatesInWorldFrame(1:6, : )'; 
-    feet_wrench_estimates(i).withoutSOT.rightfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchEstimatesInWorldFrame(7:12, : )'; 
+    feet_wrench_estimates(i).withoutSOT.leftfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchEstimatesInWorldFrame(1:6, startIndex: end)'; 
+    feet_wrench_estimates(i).withoutSOT.rightfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchEstimatesInWorldFrame(7:12, startIndex: end)'; 
     feet_wrench_estimates(i).withoutSOT.sum = feet_wrench_estimates(i).withoutSOT.leftfoot + feet_wrench_estimates(i).withoutSOT.rightfoot;
     
         
@@ -78,7 +81,7 @@ end
 colorSize = 10;
 % % PlotsColorMap = [summer(colorSize); winter(colorSize); autumn(colorSize)];
 % %              
-LineStyles = ["-.", "-", "--", "-.x", "-o", ":", "-h"];
+LineStyles = ["-", "-", "-", "-.x", "-o", ":", "-h"];
 % % 
 % % ax = [];
 % % 
@@ -256,10 +259,10 @@ ax = [];
 for s = 1:6
     
     ax(s) = nexttile;
-    plot(feet_wrench_measurements(covarianceDataIndex).withoutSOT.leftfoot(:, s),'--',...
+    plot(feet_wrench_measurements(covarianceDataIndex).withoutSOT.leftfoot(:, s),'-',...
             'LineWidth', lineWidth, 'Color', PlotsColorMap(measurementColorIndex,:));
     hold on;
-    plot(feet_wrench_estimates(covarianceDataIndex).withoutSOT.leftfoot(:, s), '-.',...
+    plot(feet_wrench_estimates(covarianceDataIndex).withoutSOT.leftfoot(:, s), '-',...
             'LineWidth', lineWidth, 'Color', PlotsColorMap(estimationColorIndex,:));
     hold on;
     
@@ -278,10 +281,10 @@ for s = 1:6
     end
     
     nexttile;
-    plot(feet_wrench_measurements(covarianceDataIndex).withoutSOT.rightfoot(:, s),'--',...
+    plot(feet_wrench_measurements(covarianceDataIndex).withoutSOT.rightfoot(:, s),'-',...
             'LineWidth', lineWidth, 'Color', PlotsColorMap(measurementColorIndex,:));
     hold on;
-    plot(feet_wrench_estimates(covarianceDataIndex).withoutSOT.rightfoot(:, s), '-.',...
+    plot(feet_wrench_estimates(covarianceDataIndex).withoutSOT.rightfoot(:, s), '-',...
             'LineWidth', lineWidth, 'Color', PlotsColorMap(estimationColorIndex,:));
     hold on;
     

@@ -14,7 +14,7 @@
         <param name="wearableDataPorts">(/XSensSuit/WearableData/data:o)</param>
         <param name="useRPC">false</param>
         <param name="wearableRPCPorts">(/XSensSuit/WearableData/metadataRpc:o)</param>
-        <param name="outputPortName">/HDE/XsensIWearRemapper/data:o</param>
+        <param name="outputPortName">/hde/feet/XsensIWearRemapper/data:o</param>
     </device>
 
     <device type="human_state_provider" name="HumanStateProvider">
@@ -206,7 +206,7 @@
         <param name="wearableDataPorts">(/FTShoeLeft/WearableData/data:o /FTShoeRight/WearableData/data:o)</param>
         <param name="useRPC">false</param>
         <param name="wearableRPCPorts">(/FTShoeLeft/WearableData/metadataRpc:o /FTShoeRight/WearableData/metadataRpc:o)</param>
-        <param name="outputPortName">/HDE/FTSourcesIWearRemapper/data:o</param>
+        <param name="outputPortName">/hde/feet/FTSourcesIWearRemapper/data:o</param>
     </device>
 
     <device type="human_wrench_provider" name="HumanWrenchProvider">
@@ -354,7 +354,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-without-sot-1e4</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e4</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/AMTI_Dataset/sub03/tpose/hde/feet/1e4</param>
         <param name="matLogFileName">withoutSOT</param>
         <action phase="startup" level="5" type="attach">
         <paramlist name="networks">
@@ -370,7 +370,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-with-sot-1e4</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e4</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/AMTI_Dataset/sub03/tpose/hde/feet/1e4</param>
         <param name="matLogFileName">withSOT</param>
         <action phase="startup" level="5" type="attach">
             <paramlist name="networks">
@@ -486,7 +486,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-without-sot-1e0</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e0</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/AMTI_Dataset/sub03/tpose/hde/feet/1e0</param>
         <param name="matLogFileName">withoutSOT</param>
         <action phase="startup" level="5" type="attach">
         <paramlist name="networks">
@@ -502,7 +502,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-with-sot-1e0</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e0</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/AMTI_Dataset/sub03/tpose/hde/feet/1e0</param>
         <param name="matLogFileName">withSOT</param>
         <action phase="startup" level="5" type="attach">
             <paramlist name="networks">
@@ -626,7 +626,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-without-sot-1e-4</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e-4</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/AMTI_Dataset/sub03/tpose/hde/feet/1e-4</param>
         <param name="matLogFileName">withoutSOT</param>
         <action phase="startup" level="5" type="attach">
         <paramlist name="networks">
@@ -642,7 +642,7 @@
         <param name="period">0.02</param>
         <param name="portPrefix">Human-with-sot-1e-4</param>
         <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/FTShoes_Dataset/sub03/front_squat/hde/1e-4</param>
+        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/AMTI_Dataset/sub03/tpose/hde/feet/1e-4</param>
         <param name="matLogFileName">withSOT</param>
         <action phase="startup" level="5" type="attach">
             <paramlist name="networks">
