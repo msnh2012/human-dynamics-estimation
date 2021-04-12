@@ -22,8 +22,8 @@ wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y 
 dataset = 'static';
 
 %% Load data
-withoutSOT = load(strcat('/home/yeshi/software/robotology-superbuild/src/human-dynamics-estimation/conf/xml/testData/NCWE_MatData/',dataset ,'/withoutSOT.mat'));
-withSOT = load(strcat('/home/yeshi/software/robotology-superbuild/src/human-dynamics-estimation/conf/xml/testData/NCWE_MatData/', dataset, '/withSOT.mat'));
+withoutSOT = load(strcat('/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/experiments_dataset/FTShoes_Dataset/sub02/',dataset ,'/hde/1e4/withoutSOT.mat'));
+withSOT = load(strcat('/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/experiments_dataset/FTShoes_Dataset/sub02/', dataset, '/hde/1e4/withSOT.mat'));
 
 withoutSOT_time = withoutSOT.data.time/1e9;
 withSOT_time = withSOT.data.time/1e9;

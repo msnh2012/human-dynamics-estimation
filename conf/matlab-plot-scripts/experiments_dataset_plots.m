@@ -10,7 +10,7 @@ lineStyles = linspecer(N,'qualitative');
 %% Plot parameters
 fontSize  = 22;
 legendFontSize  = 20;
-lineWidth = 3;
+lineWidth = 4;
 
 gravity = 9.81;
 objectMass = 5;
@@ -137,7 +137,7 @@ for s = 1:3
     end
     
     if s == 1
-        title("Left Hand", 'FontSize', fontSize, 'fontweight','bold');
+        title("Left Hand with Covariance 1e-4", 'FontSize', fontSize, 'fontweight','bold');
     end
     
     nexttile;
@@ -164,7 +164,7 @@ for s = 1:3
         title("Right Hand", 'FontSize', fontSize, 'fontweight','bold');
     end
     
-    nexttile;
+    ax1 = nexttile;
     for i = 1:size(dataset_dir_names, 2)
     
         plot(hands_wrench_estimates(i).withoutSOT.sum(:, s), LineStyles(i),...
@@ -190,32 +190,72 @@ for s = 1:3
 end
 
 %% Plot force norm
-nexttile([1 3])
+% % nexttile([1 3])
+% % for i = 1:size(dataset_dir_names, 2)
+% %     
+% %     plot(hands_wrench_estimates(i).withoutSOT.force_norm, LineStyles(i),...
+% %         'LineWidth', lineWidth,...
+% %         'Color', L(i,:));
+% %     hold on;
+% %     
+% % end
+% % 
+% % title("Hands Estimated Force Norm without NCWE", 'FontSize', fontSize, 'fontweight','bold');
+% % 
+% % xlabel('Samples', 'FontSize', fontSize);
+% % ylabel('Force Norm $ [N]$', 'Interpreter', 'latex', 'FontSize', fontSize);
+% % set (gca, 'FontSize' , fontSize)
+% % axis tight
+% % 
+% % 
+% % 
+% % lh = legend(ax(1), dataset_dir_names, 'FontSize', legendFontSize,...
+% %            'Location', 'NorthOutside', 'Orientation','Vertical',...
+% %            'NumColumns', size(dataset_dir_names, 2));
+% % lh.Layout.Tile = 'North';
+% % title(lh,'Right Hand Measurement Covariance')
+
+
+ax2 = nexttile([1 3]);
+
+yline(objectMass, '--', '5 Kg', 'LineWidth', lineWidth, 'FontSize', fontSize);
+hold on;
+% % plot(feet_wrench_measurements(1).withoutSOT.force_norm/abs(gravity) - subjectMass, 'LineWidth', lineWidth, 'Color', C(6,:));
+hold on;
+
+
 for i = 1:size(dataset_dir_names, 2)
     
-    plot(hands_wrench_estimates(i).withoutSOT.force_norm, LineStyles(i),...
+    plot(hands_wrench_estimates(i).withoutSOT.force_norm/abs(gravity), '-.',...
         'LineWidth', lineWidth,...
         'Color', L(i,:));
     hold on;
     
 end
 
-title("Hands Estimated Force Norm without NCWE", 'FontSize', fontSize, 'fontweight','bold');
-
 xlabel('Samples', 'FontSize', fontSize);
-ylabel('Force Norm $ [N]$', 'Interpreter', 'latex', 'FontSize', fontSize);
+ylabel("Mass [$kg$]", 'Interpreter', 'latex', 'FontSize', fontSize);
 set (gca, 'FontSize' , fontSize)
 axis tight
 
+lh = legend(ax1, dataset_dir_names, 'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', 5);
+lh.Layout.Tile = 'North';
+title(lh,'Right Hand Measurement Covariance')
+
+
+lh = legend(ax2, 'Ground Truth (5 Kg)', 'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', 5);
+lh.Layout.Tile = 'North';
+
+txt = title("Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
+txt.Interpreter= 'none'; 
 
 txt = title(tl, "Hands Force Estimation without NCWE", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
 
-lh = legend(ax(1), dataset_dir_names, 'FontSize', legendFontSize,...
-           'Location', 'NorthOutside', 'Orientation','Vertical',...
-           'NumColumns', size(dataset_dir_names, 2));
-lh.Layout.Tile = 'North';
-title(lh,'Measurement Covariance')
 
 %% Save figure
 save2pdf(strcat(dataset_path + "hands_force_estimation_without_ncwe.pdf"), fH, 600);
@@ -257,7 +297,7 @@ for s = 1:3
     end
     
     if s == 1
-        title("Left Hand", 'FontSize', fontSize, 'fontweight','bold');
+        title("Left Hand with Covariance 1e-4", 'FontSize', fontSize, 'fontweight','bold');
     end
     
     nexttile;
@@ -284,7 +324,7 @@ for s = 1:3
         title("Right Hand", 'FontSize', fontSize, 'fontweight','bold');
     end
     
-    nexttile;
+    ax1 = nexttile;
     for i = 1:size(dataset_dir_names, 2)
     
         plot(hands_wrench_estimates(i).withSOT.sum(:, s), LineStyles(i),...
@@ -310,32 +350,71 @@ for s = 1:3
 end
 
 %% Plot force norm
-nexttile([1 3])
+% % nexttile([1 3])
+% % for i = 1:size(dataset_dir_names, 2)
+% %     
+% %     plot(hands_wrench_estimates(i).withSOT.force_norm, LineStyles(i),...
+% %         'LineWidth', lineWidth,...
+% %         'Color', C(i,:));
+% %     hold on;
+% %     
+% % end
+% % 
+% % title("Hands Estimated Force Norm with NCWE", 'FontSize', fontSize, 'fontweight','bold');
+
+% % xlabel('Samples', 'FontSize', fontSize);
+% % ylabel('Force Norm $ [N]$', 'Interpreter', 'latex', 'FontSize', fontSize);
+% % set (gca, 'FontSize' , fontSize)
+% % axis tight
+
+
+% % lh = legend(ax(1), dataset_dir_names, 'FontSize', legendFontSize,...
+% %            'Location', 'NorthOutside', 'Orientation','Vertical',...
+% %            'NumColumns', size(dataset_dir_names, 2));
+% % lh.Layout.Tile = 'North';
+% % title(lh,'Right Hand Measurement Covariance')
+
+ax2 = nexttile([1 3]);
+
+yline(objectMass, '--', '5 Kg', 'LineWidth', lineWidth, 'FontSize', fontSize);
+hold on;
+% % plot(feet_wrench_measurements(1).withoutSOT.force_norm/abs(gravity) - subjectMass, 'LineWidth', lineWidth, 'Color', C(6,:));
+hold on;
+
+
 for i = 1:size(dataset_dir_names, 2)
     
-    plot(hands_wrench_estimates(i).withSOT.force_norm, LineStyles(i),...
+    plot(hands_wrench_estimates(i).withSOT.force_norm/abs(gravity), '-.',...
         'LineWidth', lineWidth,...
         'Color', C(i,:));
     hold on;
     
 end
 
-title("Hands Estimated Force Norm with NCWE", 'FontSize', fontSize, 'fontweight','bold');
-
 xlabel('Samples', 'FontSize', fontSize);
-ylabel('Force Norm $ [N]$', 'Interpreter', 'latex', 'FontSize', fontSize);
+ylabel("Mass [$kg$]", 'Interpreter', 'latex', 'FontSize', fontSize);
 set (gca, 'FontSize' , fontSize)
+set (gca, 'ColorOrder' , C)
 axis tight
 
+lh = legend(ax1, dataset_dir_names, 'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', 5);
+lh.Layout.Tile = 'North';
+title(lh,'Right Hand Measurement Covariance')
+
+
+lh = legend(ax2, 'Ground Truth (5 Kg)', 'FontSize', legendFontSize,...
+           'Location', 'NorthOutside', 'Orientation','Vertical',...
+           'NumColumns', 5);
+lh.Layout.Tile = 'North';
+
+txt = title("Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
+txt.Interpreter= 'none'; 
 
 txt = title(tl, "Hands Force Estimation with NCWE", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
 
-lh = legend(ax(1), dataset_dir_names, 'FontSize', legendFontSize,...
-           'Location', 'NorthOutside', 'Orientation','Vertical',...
-           'NumColumns', size(dataset_dir_names, 2));
-lh.Layout.Tile = 'North';
-title(lh,'Measurement Covariance')
 
 %% Save figure
 save2pdf(strcat(dataset_path + "hands_force_estimation_with_ncwe.pdf"), fH, 600);
@@ -445,9 +524,9 @@ tl = tiledlayout(1,1);
 
 ax = nexttile;
 
-yline(objectMass, '--', '5 Kgs', 'LineWidth', lineWidth, 'FontSize', fontSize);
+yline(objectMass, '--', '5 Kg', 'LineWidth', lineWidth, 'FontSize', fontSize);
 hold on;
-plot(feet_wrench_measurements(1).withoutSOT.force_norm/abs(gravity) - subjectMass, 'LineWidth', lineWidth, 'Color', C(6,:));
+% % plot(feet_wrench_measurements(1).withoutSOT.force_norm/abs(gravity) - subjectMass, 'LineWidth', lineWidth, 'Color', C(6,:));
 hold on;
 
 
@@ -466,7 +545,7 @@ set (gca, 'FontSize' , fontSize)
 set (gca, 'ColorOrder' , C)
 axis tight
 
-lh = legend(ax, ['Ground Truth (5 Kgs)', 'Using Feet Measurements', dataset_dir_names], 'FontSize', legendFontSize,...
+lh = legend(ax, ['Ground Truth (5 Kg)', dataset_dir_names], 'FontSize', legendFontSize,...
            'Location', 'NorthOutside', 'Orientation','Vertical',...
            'NumColumns', 5);
 lh.Layout.Tile = 'North';
@@ -649,13 +728,13 @@ lh = legend(ax1(1), dataset_dir_names(1),...
            'Location', 'NorthOutside', 'Orientation','Vertical',...
            'NumColumns', 5);
 lh.Layout.Tile = 'North';
-title(lh,'Hands Measurement Covariance without NCWE')
+title(lh,'Right Hand Measurement Covariance without NCWE')
 
 lh = legend(ax2(1), ['', dataset_dir_names(1), dataset_dir_names(2), dataset_dir_names(3)], 'FontSize', legendFontSize,...
            'Location', 'NorthOutside', 'Orientation','Vertical',...
            'NumColumns', size(dataset_dir_names, 2));
 lh.Layout.Tile = 'North';
-title(lh,'Hands Measurement Covariance with NCWE')
+title(lh,'Right Hand Measurement Covariance with NCWE')
 
 
 txt = title(tl, strcat(joint_name, " Joint Torque Estimates"), 'FontSize', fontSize, 'fontweight','bold');
@@ -794,13 +873,13 @@ lh = legend(ax(1), dataset_dir_names(1),...
            'Location', 'NorthOutside', 'Orientation','Vertical',...
            'NumColumns', 5);
 lh.Layout.Tile = 'North';
-title(lh,'Hands Measurement Covariance without NCWE', 'FontSize', fontSize)
+title(lh,'Right Hand Measurement Covariance without NCWE', 'FontSize', fontSize)
 
 lh = legend(ax(2), ['', dataset_dir_names(1), dataset_dir_names(2), dataset_dir_names(3)], 'FontSize', legendFontSize,...
            'Location', 'NorthOutside', 'Orientation','Vertical',...
            'NumColumns', size(dataset_dir_names, 2));
 lh.Layout.Tile = 'North';
-title(lh,'Hands Measurement Covariance with NCWE', 'FontSize', fontSize)
+title(lh,'Right Hand Measurement Covariance with NCWE', 'FontSize', fontSize)
 
 lh = legend(axyline, 'Benchmark Joint Effort', 'FontSize', legendFontSize,...
            'Location', 'NorthOutside', 'Orientation','Vertical');

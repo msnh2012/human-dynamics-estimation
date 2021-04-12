@@ -9,7 +9,7 @@ lineStyles = linspecer(N,'qualitative');
 %% Plot parameters
 fontSize  = 25;
 legendFontSize  = 30;
-lineWidth = 3;
+lineWidth = 4;
 
 gravity = 9.81;
 objectMass = 9.55;
