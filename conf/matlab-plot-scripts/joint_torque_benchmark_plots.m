@@ -156,4 +156,4 @@ txt.Interpreter= 'none';
 
 
 %% Save figure
-save2pdf(strcat(dataset_path + "joint_torque_estimates.pdf"), fH, 300);
+save2pdf(strcat(dataset_path + "joint_torque_estimates.pdf"), fH, 600);

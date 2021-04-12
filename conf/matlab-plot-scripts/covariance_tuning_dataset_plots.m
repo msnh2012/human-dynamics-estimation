@@ -239,7 +239,7 @@ title(lh,'Measurement Covariance')
 
 
 %% Save figure
-save2pdf(strcat(dataset_path + "feet_wrench_error.pdf"), fH, 300);
+save2pdf(strcat(dataset_path + "feet_wrench_error.pdf"), fH, 600);
 
 
 %% Plot wrench force measurements vs estimates for 1e-4
@@ -335,4 +335,4 @@ lh = legend(ax(1), 'Measurements', 'Estimates', 'FontSize', legendFontSize,...
 lh.Layout.Tile = 'North';
 
 %% Save figure
-save2pdf(strcat(dataset_path + "feet_wrench_tracking.pdf"), fH, 300);
+save2pdf(strcat(dataset_path + "feet_wrench_tracking.pdf"), fH, 600);

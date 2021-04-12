@@ -173,4 +173,4 @@ visualizer.mainHandler.Units = 'normalized';
 visualizer.mainHandler.OuterPosition =  [0 0 1 1];
 
 %% Save figure
-save2pdf("joint_torque_benchmark_visualization.pdf", visualizer.mainHandler, 300);
+save2pdf("joint_torque_benchmark_visualization.pdf", visualizer.mainHandler, 600);
