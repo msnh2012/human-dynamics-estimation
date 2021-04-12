@@ -2325,32 +2325,6 @@ void HumanDynamicsEstimator::run()
                                    hde::interfaces::IHumanWrench::WrenchType::Estimated,
                                    kinDynComputations);
 
-    // Compute estimated object mass at the hands
-    iDynTree::Vector3 sumOfHandEstimatedTask1Forces;
-    sumOfHandEstimatedTask1Forces.zero();
-
-    for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++)
-    {
-        std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
-        if (linkName == "LeftHand" || linkName == "RightHand")
-        {
-            sumOfHandEstimatedTask1Forces.setVal(0, sumOfHandEstimatedTask1Forces.getVal(0) + pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Estimated].wrenchesInWorldFrame.at(6 * i + 0));
-            sumOfHandEstimatedTask1Forces.setVal(1, sumOfHandEstimatedTask1Forces.getVal(1) + pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Estimated].wrenchesInWorldFrame.at(6 * i + 1));
-            sumOfHandEstimatedTask1Forces.setVal(2, sumOfHandEstimatedTask1Forces.getVal(2) + pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task1][hde::interfaces::IHumanWrench::WrenchType::Estimated].wrenchesInWorldFrame.at(6 * i + 2));
-        }
-    }
-
-
-    pImpl->estimatedObjectMass = std::abs(std::sqrt(std::pow(sumOfHandEstimatedTask1Forces.getVal(0), 2) +
-                                                    std::pow(sumOfHandEstimatedTask1Forces.getVal(1), 2) +
-                                                    std::pow(sumOfHandEstimatedTask1Forces.getVal(2), 2) ) / pImpl->gravity.getVal(2));
-
-    // Round to 2 decimals
-    pImpl->estimatedObjectMass = std::ceil(pImpl->estimatedObjectMass * 100.0) / 100.0;
-
-    // Publish estimated object mass to ros topic
-    publishRosMarkerMsg(pImpl->estimatedObjectMass);
-
     // NOTE: Task 1 estimate wrenches are Task 2 measurement wrenches
     // Express task 2 measurement wrenches in different frames
     expressWrenchInDifferentFrames(task1_estimtedWrechesInLinkFrame,
@@ -2666,6 +2640,33 @@ void HumanDynamicsEstimator::run()
                                    kinDynComputations);
 
 
+    // Compute estimated object mass at the hands
+    iDynTree::Vector3 sumOfHandEstimatedTask2Forces;
+    sumOfHandEstimatedTask2Forces.zero();
+
+    for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++)
+    {
+        std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
+        if (linkName == "LeftHand" || linkName == "RightHand")
+        {
+            sumOfHandEstimatedTask2Forces.setVal(0, sumOfHandEstimatedTask2Forces.getVal(0) + pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Estimated].wrenchesInWorldFrame.at(6 * i + 0));
+            sumOfHandEstimatedTask2Forces.setVal(1, sumOfHandEstimatedTask2Forces.getVal(1) + pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Estimated].wrenchesInWorldFrame.at(6 * i + 1));
+            sumOfHandEstimatedTask2Forces.setVal(2, sumOfHandEstimatedTask2Forces.getVal(2) + pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Estimated].wrenchesInWorldFrame.at(6 * i + 2));
+        }
+    }
+
+
+    pImpl->estimatedObjectMass = std::abs(std::sqrt(std::pow(sumOfHandEstimatedTask2Forces.getVal(0), 2) +
+                                                    std::pow(sumOfHandEstimatedTask2Forces.getVal(1), 2) +
+                                                    std::pow(sumOfHandEstimatedTask2Forces.getVal(2), 2) ) / pImpl->gravity.getVal(2));
+
+    // Round to 2 decimals
+    pImpl->estimatedObjectMass = std::ceil(pImpl->estimatedObjectMass * 100.0) / 100.0;
+
+    // Publish estimated object mass to ros topic
+    publishRosMarkerMsg(pImpl->estimatedObjectMass);
+
+
     // ===========================
     // EXPOSE DATA FOR IHUMANSTATE
     // ===========================
@@ -2715,9 +2716,9 @@ void HumanDynamicsEstimator::run()
 
                 linkNetExternalWrenchInWorld.setVal(0, 0);
                 linkNetExternalWrenchInWorld.setVal(1, 0);
-                linkNetExternalWrenchInWorld.setVal(2, -std::abs(std::sqrt(std::pow(sumOfHandEstimatedTask1Forces.getVal(0), 2) +
-                                                                          std::pow(sumOfHandEstimatedTask1Forces.getVal(1), 2) +
-                                                                          std::pow(sumOfHandEstimatedTask1Forces.getVal(2), 2) ))/2);
+                linkNetExternalWrenchInWorld.setVal(2, -std::abs(std::sqrt(std::pow(sumOfHandEstimatedTask2Forces.getVal(0), 2) +
+                                                                          std::pow(sumOfHandEstimatedTask2Forces.getVal(1), 2) +
+                                                                          std::pow(sumOfHandEstimatedTask2Forces.getVal(2), 2) ))/2);
 
 
                 linkNetExternalWrench = kinDynComputations.getWorldTransform(linkName).getRotation().inverse() * linkNetExternalWrenchInWorld;
