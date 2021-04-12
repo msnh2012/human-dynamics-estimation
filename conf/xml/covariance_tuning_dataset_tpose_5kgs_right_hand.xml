@@ -279,7 +279,7 @@
                <param name="LeftFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="RightFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e4 1e4 1e4 1e-6 1e-6 1e-6)</param>
+               <param name="RightHand">(1e4 1e4 1e4 1e-4 1e-4 1e-4)</param>
                <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
            </group>
         </group>
@@ -327,7 +327,7 @@
                <param name="LeftFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="RightFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e4 1e4 1e4 1e-6 1e-6 1e-6)</param>
+               <param name="RightHand">(1e4 1e4 1e4 1e-4 1e-4 1e-4)</param>
                <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
            </group>
            <param name="cov_task1_measurements_NET_EXT_WRENCH_SENSOR">1e-6</param>
@@ -411,7 +411,7 @@
                <param name="LeftFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="RightFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e0 1e0 1e0 1e-6 1e-6 1e-6)</param>
+               <param name="RightHand">(1e0 1e0 1e0 1e-4 1e-4 1e-4)</param>
                <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
            </group>
         </group>
@@ -459,7 +459,7 @@
                <param name="LeftFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="RightFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e0 1e0 1e0 1e-6 1e-6 1e-6)</param>
+               <param name="RightHand">(1e0 1e0 1e0 1e-4 1e-4 1e-4)</param>
                <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
            </group>
            <param name="cov_task1_measurements_NET_EXT_WRENCH_SENSOR">1e-6</param>
@@ -551,7 +551,7 @@
                <param name="LeftFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="RightFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e-4 1e-4 1e-4 1e-6 1e-6 1e-6)</param>
+               <param name="RightHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
            </group>
         </group>
