@@ -70,17 +70,19 @@ hands_norm = [];
 for i = 1:size(RightFootMeasuredWrenchInWorldFrame, 1)
     
     
+    comPosition = Data.data.comPosition(:, i);
+    
     leftFootPosition = Data.linkData(leftFootIndex).data.pose(1:3, i);
     rightFootPosition = Data.linkData(rightFootIndex).data.pose(1:3, i);
     
     leftHandPosition = Data.linkData(leftHandIndex).data.pose(1:3, i);
     rightHandPosition = Data.linkData(rightHandIndex).data.pose(1:3, i);
     
-    sk_leftFootPosition = skw(leftFootPosition);
-    sk_rightFootPosition = skw(rightFootPosition);
+    sk_leftFootPosition = skw(leftFootPosition - comPosition);
+    sk_rightFootPosition = skw(rightFootPosition - comPosition);
     
-    sk_leftHandPosition = skw(leftHandPosition);
-    sk_rightHandPosition = skw(rightHandPosition);
+    sk_leftHandPosition = skw(leftHandPosition - comPosition);
+    sk_rightHandPosition = skw(rightHandPosition - comPosition);
     
     %% Computing hand force estimates
     y1(:,i) = [0 0 mg]' - LeftFootMeasuredWrenchInWorldFrame(i, 1:3)' - RightFootMeasuredWrenchInWorldFrame(i, 1:3)';
