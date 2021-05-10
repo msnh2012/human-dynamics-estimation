@@ -24,7 +24,7 @@ dataset_dir = '/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/';
 dataset_type = 'experiments_dataset';
 dataset_source = 'FTShoes_Dataset';
 subject = 'sub02';
-dataset = 'walking';
+dataset = 'static';
 
 dataset_path = strcat(dataset_dir,'/',dataset_type,'/',dataset_source,'/',subject,'/',dataset,'/hde/1e4'); 
 
@@ -196,7 +196,7 @@ lh = legend('Ground Truth (9.55 Kg)', 'Measurement', 'Estimation with NCWE',...
        'FontSize', legendFontSize, 'Location', 'SouthOutside', 'NumColumns', 4);
 lh.Layout.Tile = 'North';
 
-txt = title("Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
+txt = title("Estimated Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
 
 txt = title(tl, "Hands Force Estimation with NCWE using Covariance of 1e4", 'FontSize', fontSize, 'fontweight','bold');

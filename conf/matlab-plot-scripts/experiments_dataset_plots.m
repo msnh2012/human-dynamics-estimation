@@ -22,7 +22,15 @@ dataset_dir = '/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/';
 dataset_type = 'covariance_tuning_dataset';
 dataset_source = 'AMTI_Dataset';
 subject = 'sub03';
-dataset = 'tpose_right_5kgs/hde';
+dataset = 'tpose_right_5kgs/hde_10s_bkp';
+
+
+% dataset_dir = '/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/';
+% dataset_type = 'experiments_dataset';
+% dataset_source = 'FTShoes_Dataset';
+% subject = 'sub02';
+% dataset = 'static/hde';
+
 
 subjectMass = 0;
 
@@ -250,7 +258,7 @@ lh = legend(ax2, 'Ground Truth (5 Kg)', 'FontSize', legendFontSize,...
            'NumColumns', 5);
 lh.Layout.Tile = 'North';
 
-txt = title("Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
+txt = title("Estimated Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
 
 txt = title(tl, "Hands Force Estimation without NCWE", 'FontSize', fontSize, 'fontweight','bold');
@@ -274,7 +282,7 @@ PlotsColorMap = [summer(colorSize); winter(colorSize); autumn(colorSize)];
 ax = [];
 
 
-for s = 1:3
+for s = 4:6
     
     ax(s) = nexttile;
     for i = 1:size(dataset_dir_names, 2)
@@ -409,7 +417,7 @@ lh = legend(ax2, 'Ground Truth (5 Kg)', 'FontSize', legendFontSize,...
            'NumColumns', 5);
 lh.Layout.Tile = 'North';
 
-txt = title("Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
+txt = title("Estimated Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
 
 txt = title(tl, "Hands Force Estimation with NCWE", 'FontSize', fontSize, 'fontweight','bold');
@@ -550,7 +558,7 @@ lh = legend(ax, ['Ground Truth (5 Kg)', dataset_dir_names], 'FontSize', legendFo
            'NumColumns', 5);
 lh.Layout.Tile = 'North';
 
-txt = title(tl,"Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
+txt = title(tl,"Estimated Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
 
 %% Save figure
