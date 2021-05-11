@@ -8,9 +8,9 @@ L = lines(N);
 lineStyles = linspecer(N,'qualitative');
 
 %% Plot parameters
-fontSize  = 22;
-legendFontSize  = 20;
-lineWidth = 4;
+fontSize  = 30;
+legendFontSize  = 30;
+lineWidth = 6;
 
 
 gravity = 9.81;
@@ -105,7 +105,7 @@ withSOT_estimated_object_mass = withSOT_estimated_object_mass/gravity;
 
 
 
-fH = figure('units','normalized','outerposition',[0 0 1 1]);
+fH = figure('units','normalized','outerposition',[0 0 0.5 1]);
 tl = tiledlayout(4,3);
 
 
@@ -177,12 +177,16 @@ for s = 1:3
     end
 end
 
+lh = legend('Measurement', 'Estimation with NCWE',...
+       'FontSize', legendFontSize, 'Location', 'SouthOutside', 'NumColumns', 4);
+lh.Layout.Tile = 'North';
+
 %% Plot force norm
-nexttile([1 3])
+ax = nexttile([1 3]);
 
 yline(objectMass, '-.', '9.55 Kg', 'LineWidth', lineWidth, 'FontSize', fontSize);
 hold on;
-plot(withSOT_measured_object_mass, 'LineWidth', lineWidth, 'Color', C(1, :), 'LineStyle', '-');
+plot(withSOT_measured_object_mass, 'LineWidth', lineWidth, 'Color', C(4, :), 'LineStyle', '-');
 hold on;
 plot(withSOT_estimated_object_mass, 'LineWidth', lineWidth, 'Color', C(3, :));
 hold on;
@@ -192,9 +196,13 @@ ylabel("Mass [$kg$]", 'Interpreter', 'latex', 'FontSize', fontSize);
 set (gca, 'FontSize' , fontSize)
 set (gca, 'ColorOrder' , C)
 axis tight
-lh = legend('Ground Truth (9.55 Kg)', 'Measurement', 'Estimation with NCWE',...
-       'FontSize', legendFontSize, 'Location', 'SouthOutside', 'NumColumns', 4);
-lh.Layout.Tile = 'North';
+
+
+
+lh1 = legend(ax, 'Ground Truth (9.55 Kg)', 'Using Increase in Feet FT Measurements', 'Estimation with NCWE',...
+       'FontSize', legendFontSize, 'Location', 'NorthOutside', 'NumColumns', 4);
+% lh1.Layout.Tile = 'North';
+
 
 txt = title("Estimated Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
