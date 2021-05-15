@@ -276,6 +276,15 @@
            <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
                <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
+               <param name="LeftFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
+           </group>
+           <group name="cov_task2_measurements_NET_EXT_WRENCH_SENSOR">
+               <param name="value">1e-6</param>
+               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
                <param name="LeftFoot">(1e4 1e4 1e4 1e4 1e4 1e4)</param>
                <param name="RightFoot">(1e4 1e4 1e4 1e4 1e4 1e4)</param>
                <param name="LeftHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
@@ -301,54 +310,7 @@
         <action phase="shutdown" level="3" type="detach"/>
     </device>
 
-    <device type="human_dynamics_estimator" name="HumanDynamicsEstimator-with-sot-1e4">
-        <param name="period">0.02</param>
-        <param name="urdf">humanSubject03_66dof.urdf</param>
-        <param name="rpcPortPrefix">Human-with-sot-1e4</param>
-        <param name="baseLink">Pelvis</param>
-        <param name="wrenchSmoothingFactor">1.0</param>
-        <param name="number_of_wrench_sensors">4</param>
-        <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHand RightHand)</param>
-        <param name="comConstraintIncludeAllLinks">false</param>
-        <param name="removeOffsetOption">source</param>
-        <param name="dynamicWrenchOffsetSD">30.0</param>
-        <param name="wrenchEstimationForceLowerThreshold">10</param>
-        <group name="PRIORS">
-           <param name="mu_dyn_variables">1e-6</param>
-           <param name="cov_dyn_variables">1e6</param>
-           <param name="cov_dyn_constraints">0.0001</param>
-           <param name="cov_measurements_ACCELEROMETER_SENSOR">(0.0011 0.0011 0.0011)</param>
-           <param name="cov_measurements_THREE_AXIS_ANGULAR_ACCELEROMETER_SENSOR">(1e-3 1e-3 1e-3)</param>
-           <param name="cov_measurements_DOF_ACCELERATION_SENSOR">0.666e-5</param>
-           <param name="cov_measurements_COM_ACCELEROMETER_SENSOR">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-           <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
-               <param name="value">1e-6</param>
-               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
-               <param name="LeftFoot">(1e4 1e4 1e4 1e4 1e4 1e4)</param>
-               <param name="RightFoot">(1e4 1e4 1e4 1e4 1e4 1e4)</param>
-               <param name="LeftHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="RightHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
-           </group>
-           <param name="cov_task1_measurements_NET_EXT_WRENCH_SENSOR">1e-6</param>
-        </group>
-        <group name="BERDY_OPTIONS">
-            <param name="berdyVariant">FLOATING_BASE</param>
-            <param name="stackOfTasksMAP">true</param>
-            <param name="includeCoMAccelerometerAsSensorInTask1">true</param>
-            <param name="includeCoMAccelerometerAsSensorInTask2">false</param>
-        </group>
-        <group name="SENSORS_REMOVAL">
-            <param name="GYROSCOPE_SENSOR">*</param>
-        </group>
-        <action phase="startup" level="5" type="attach">
-            <paramlist name="networks">
-                <elem name="HumanDynamicsEstimatorLabel1">HumanStateProvider</elem>
-                <elem name="HumanDynamicsEstimatorLabel2">HumanWrenchProvider</elem>
-            </paramlist>
-        </action>
-        <action phase="shutdown" level="3" type="detach"/>
-    </device>
+
 
     <device type="human_data_collector" name="HumanDataCollector-without-sot-1e4">
         <param name="period">0.02</param>
@@ -366,21 +328,7 @@
         <action phase="shutdown" level="1" type="detach"/>
     </device>
 
-    <device type="human_data_collector" name="HumanDataCollector-with-sot-1e4">
-        <param name="period">0.02</param>
-        <param name="portPrefix">Human-with-sot-1e4</param>
-        <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/AMTI_Dataset/sub03/tpose/hde/feet/1e4</param>
-        <param name="matLogFileName">withSOT</param>
-        <action phase="startup" level="5" type="attach">
-            <paramlist name="networks">
-                <elem name="HumanStateProvideLabel">HumanStateProvider</elem>
-                <elem name="HumanWrenchProvideLabel">HumanWrenchProvider</elem>
-                <elem name="HumanDynamicsEstimatorLabel">HumanDynamicsEstimator-with-sot-1e4</elem>
-            </paramlist>
-        </action>
-        <action phase="shutdown" level="1" type="detach"/>
-    </device>
+
 
 
 
@@ -408,6 +356,15 @@
            <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
                <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
+               <param name="LeftFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
+           </group>
+           <group name="cov_task2_measurements_NET_EXT_WRENCH_SENSOR">
+               <param name="value">1e-6</param>
+               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
                <param name="LeftFoot">(1e0 1e0 1e0 1e0 1e0 1e0)</param>
                <param name="RightFoot">(1e0 1e0 1e0 1e0 1e0 1e0)</param>
                <param name="LeftHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
@@ -433,54 +390,7 @@
         <action phase="shutdown" level="3" type="detach"/>
     </device>
 
-    <device type="human_dynamics_estimator" name="HumanDynamicsEstimator-with-sot-1e0">
-        <param name="period">0.02</param>
-        <param name="urdf">humanSubject03_66dof.urdf</param>
-        <param name="rpcPortPrefix">Human-with-sot-1e0</param>
-        <param name="baseLink">Pelvis</param>
-        <param name="wrenchSmoothingFactor">1.0</param>
-        <param name="number_of_wrench_sensors">4</param>
-        <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHand RightHand)</param>
-        <param name="comConstraintIncludeAllLinks">false</param>
-        <param name="removeOffsetOption">source</param>
-        <param name="dynamicWrenchOffsetSD">30.0</param>
-        <param name="wrenchEstimationForceLowerThreshold">10</param>
-        <group name="PRIORS">
-           <param name="mu_dyn_variables">1e-6</param>
-           <param name="cov_dyn_variables">1e6</param>
-           <param name="cov_dyn_constraints">0.0001</param>
-           <param name="cov_measurements_ACCELEROMETER_SENSOR">(0.0011 0.0011 0.0011)</param>
-           <param name="cov_measurements_THREE_AXIS_ANGULAR_ACCELEROMETER_SENSOR">(1e-3 1e-3 1e-3)</param>
-           <param name="cov_measurements_DOF_ACCELERATION_SENSOR">0.666e-5</param>
-           <param name="cov_measurements_COM_ACCELEROMETER_SENSOR">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-           <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
-               <param name="value">1e-6</param>
-               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
-               <param name="LeftFoot">(1e0 1e0 1e0 1e0 1e0 1e0)</param>
-               <param name="RightFoot">(1e0 1e0 1e0 1e0 1e0 1e0)</param>
-               <param name="LeftHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="RightHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
-           </group>
-           <param name="cov_task1_measurements_NET_EXT_WRENCH_SENSOR">1e-6</param>
-        </group>
-        <group name="BERDY_OPTIONS">
-            <param name="berdyVariant">FLOATING_BASE</param>
-            <param name="stackOfTasksMAP">true</param>
-            <param name="includeCoMAccelerometerAsSensorInTask1">true</param>
-            <param name="includeCoMAccelerometerAsSensorInTask2">false</param>
-        </group>
-        <group name="SENSORS_REMOVAL">
-            <param name="GYROSCOPE_SENSOR">*</param>
-        </group>
-        <action phase="startup" level="5" type="attach">
-            <paramlist name="networks">
-                <elem name="HumanDynamicsEstimatorLabel1">HumanStateProvider</elem>
-                <elem name="HumanDynamicsEstimatorLabel2">HumanWrenchProvider</elem>
-            </paramlist>
-        </action>
-        <action phase="shutdown" level="3" type="detach"/>
-    </device>
+
 
     <device type="human_data_collector" name="HumanDataCollector-without-sot-1e0">
         <param name="period">0.02</param>
@@ -497,23 +407,6 @@
         </action>
         <action phase="shutdown" level="1" type="detach"/>
     </device>
-
-    <device type="human_data_collector" name="HumanDataCollector-with-sot-1e0">
-        <param name="period">0.02</param>
-        <param name="portPrefix">Human-with-sot-1e0</param>
-        <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/AMTI_Dataset/sub03/tpose/hde/feet/1e0</param>
-        <param name="matLogFileName">withSOT</param>
-        <action phase="startup" level="5" type="attach">
-            <paramlist name="networks">
-                <elem name="HumanStateProvideLabel">HumanStateProvider</elem>
-                <elem name="HumanWrenchProvideLabel">HumanWrenchProvider</elem>
-                <elem name="HumanDynamicsEstimatorLabel">HumanDynamicsEstimator-with-sot-1e0</elem>
-            </paramlist>
-        </action>
-        <action phase="shutdown" level="1" type="detach"/>
-    </device>
-
 
 
 
@@ -548,6 +441,15 @@
            <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
                <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
+               <param name="LeftFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
+           </group>
+           <group name="cov_task2_measurements_NET_EXT_WRENCH_SENSOR">
+               <param name="value">1e-6</param>
+               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
                <param name="LeftFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="RightFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
                <param name="LeftHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
@@ -573,54 +475,7 @@
         <action phase="shutdown" level="3" type="detach"/>
     </device>
 
-    <device type="human_dynamics_estimator" name="HumanDynamicsEstimator-with-sot-1e-4">
-        <param name="period">0.02</param>
-        <param name="urdf">humanSubject03_66dof.urdf</param>
-        <param name="rpcPortPrefix">Human-with-sot-1e-4</param>
-        <param name="baseLink">Pelvis</param>
-        <param name="wrenchSmoothingFactor">1.0</param>
-        <param name="number_of_wrench_sensors">4</param>
-        <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHand RightHand)</param>
-        <param name="comConstraintIncludeAllLinks">false</param>
-        <param name="removeOffsetOption">source</param>
-        <param name="dynamicWrenchOffsetSD">30.0</param>
-        <param name="wrenchEstimationForceLowerThreshold">10</param>
-        <group name="PRIORS">
-           <param name="mu_dyn_variables">1e-6</param>
-           <param name="cov_dyn_variables">1e6</param>
-           <param name="cov_dyn_constraints">0.0001</param>
-           <param name="cov_measurements_ACCELEROMETER_SENSOR">(0.0011 0.0011 0.0011)</param>
-           <param name="cov_measurements_THREE_AXIS_ANGULAR_ACCELEROMETER_SENSOR">(1e-3 1e-3 1e-3)</param>
-           <param name="cov_measurements_DOF_ACCELERATION_SENSOR">0.666e-5</param>
-           <param name="cov_measurements_COM_ACCELEROMETER_SENSOR">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-           <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
-               <param name="value">1e-6</param>
-               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
-               <param name="LeftFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="RightFoot">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="LeftHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="RightHand">(1e-4 1e-4 1e-4 1e-4 1e-4 1e-4)</param>
-               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
-           </group>
-           <param name="cov_task1_measurements_NET_EXT_WRENCH_SENSOR">1e-6</param>
-        </group>
-        <group name="BERDY_OPTIONS">
-            <param name="berdyVariant">FLOATING_BASE</param>
-            <param name="stackOfTasksMAP">true</param>
-            <param name="includeCoMAccelerometerAsSensorInTask1">true</param>
-            <param name="includeCoMAccelerometerAsSensorInTask2">false</param>
-        </group>
-        <group name="SENSORS_REMOVAL">
-            <param name="GYROSCOPE_SENSOR">*</param>
-        </group>
-        <action phase="startup" level="5" type="attach">
-            <paramlist name="networks">
-                <elem name="HumanDynamicsEstimatorLabel1">HumanStateProvider</elem>
-                <elem name="HumanDynamicsEstimatorLabel2">HumanWrenchProvider</elem>
-            </paramlist>
-        </action>
-        <action phase="shutdown" level="3" type="detach"/>
-    </device>
+
 
     <device type="human_data_collector" name="HumanDataCollector-without-sot-1e-4">
         <param name="period">0.02</param>
@@ -638,20 +493,5 @@
         <action phase="shutdown" level="1" type="detach"/>
     </device>
 
-    <device type="human_data_collector" name="HumanDataCollector-with-sot-1e-4">
-        <param name="period">0.02</param>
-        <param name="portPrefix">Human-with-sot-1e-4</param>
-        <param name="matioLogger">true</param>
-        <param name="matLogDirectory">/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/covariance_tuning_dataset/AMTI_Dataset/sub03/tpose/hde/feet/1e-4</param>
-        <param name="matLogFileName">withSOT</param>
-        <action phase="startup" level="5" type="attach">
-            <paramlist name="networks">
-                <elem name="HumanStateProvideLabel">HumanStateProvider</elem>
-                <elem name="HumanWrenchProvideLabel">HumanWrenchProvider</elem>
-                <elem name="HumanDynamicsEstimatorLabel">HumanDynamicsEstimator-with-sot-1e-4</elem>
-            </paramlist>
-        </action>
-        <action phase="shutdown" level="1" type="detach"/>
-    </device>
 
 </robot>
