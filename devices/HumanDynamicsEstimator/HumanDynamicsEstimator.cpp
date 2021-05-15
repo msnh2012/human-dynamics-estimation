@@ -738,7 +738,7 @@ static bool parsePriorsGroup(const yarp::os::Bottle& priorsGroup,
     iDynTree::Triplets allSensorsTriplets;
     iDynTree::Triplets task1SensorsTriplets;
     std::string covMeasurementOptionPrefix = "cov_measurements_";
-    std::string covTask1MeasurementOptionPrefix = "cov_task1_measurements_";
+    std::string covTask2MeasurementOptionPrefix = "cov_task2_measurements_";
 
     // Construct the task1 measurement covariance matrix
     for (const iDynTree::BerdySensor& task1BerdySensor : berdyData.helper.getSensorsOrdering(true)) {
@@ -808,11 +808,11 @@ static bool parsePriorsGroup(const yarp::os::Bottle& priorsGroup,
         // Get the string from the enum
         std::string berdySensorTypeString = mapBerdySensorType.at(berdySensor.type);
 
-        if (!priorsGroup.find(covMeasurementOptionPrefix + berdySensorTypeString).isNull() || !priorsGroup.find(covTask1MeasurementOptionPrefix + berdySensorTypeString).isNull()) {
+        if (!priorsGroup.find(covMeasurementOptionPrefix + berdySensorTypeString).isNull() || !priorsGroup.find(covTask2MeasurementOptionPrefix + berdySensorTypeString).isNull()) {
 
             iDynTree::Triplets triplets{};
 
-            if (priorsGroup.find(covTask1MeasurementOptionPrefix + berdySensorTypeString).isNull())
+            if (priorsGroup.find(covTask2MeasurementOptionPrefix + berdySensorTypeString).isNull())
             {
                 if (!getTripletsFromPriorGroup(
                         priorsGroup, covMeasurementOptionPrefix, berdySensorTypeString, triplets, berdySensor)) {
@@ -824,11 +824,12 @@ static bool parsePriorsGroup(const yarp::os::Bottle& priorsGroup,
             else
             {
                 if (!getTripletsFromPriorGroup(
-                        priorsGroup, covTask1MeasurementOptionPrefix, berdySensorTypeString, triplets, berdySensor)) {
+                        priorsGroup, covTask2MeasurementOptionPrefix, berdySensorTypeString, triplets, berdySensor)) {
                     yError() << LogPrefix << "Failed to get triplets for sensor"
                              << berdySensorTypeString;
                     return false;
                 }
+                yInfo() << "USING TASK2 Measurement Covariances";
             }
 
 
@@ -1056,6 +1057,8 @@ public:
 
     // Model variables
     iDynTree::Model humanModel;
+
+    bool stackOfTasksMAP;
 
     // Wrench sensor link names variable
     std::vector<std::string> wrenchSensorsLinkNames;
@@ -1580,6 +1583,7 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
     berdyOptions.includeCoMAccelerometerAsSensorInTask1 = berdyOptionsGroup.find("includeCoMAccelerometerAsSensorInTask1").asBool();
     berdyOptions.includeCoMAccelerometerAsSensorInTask2 = berdyOptionsGroup.find("includeCoMAccelerometerAsSensorInTask2").asBool();
     berdyOptions.stackOfTasksMAP = berdyOptionsGroup.find("stackOfTasksMAP").asBool();
+    pImpl->stackOfTasksMAP = berdyOptions.stackOfTasksMAP;
 
     pImpl->enableTask1ExternalWrenchEstimation = true;
 
@@ -2325,6 +2329,7 @@ void HumanDynamicsEstimator::run()
                                    hde::interfaces::IHumanWrench::WrenchType::Estimated,
                                    kinDynComputations);
 
+
     // NOTE: Task 1 estimate wrenches are Task 2 measurement wrenches
     // Express task 2 measurement wrenches in different frames
     expressWrenchInDifferentFrames(task1_estimtedWrechesInLinkFrame,
@@ -2543,11 +2548,24 @@ void HumanDynamicsEstimator::run()
                 for (int idx = 0; idx < pImpl->wrenchSensorsLinkNames.size(); idx++) {
                     std::string wrenchSensorLinkName = pImpl->wrenchSensorsLinkNames.at(idx);
                     if (wrenchSensorLinkName.compare(sensor.id) == 0) {
-                        for (int i = 0; i < 6; i++)
-                        {
-                            pImpl->berdyData.buffers.measurements(found->second.offset + i) = task1_estimtedWrechesInLinkFrame.at(idx*6 + i);
+                        std::vector<std::string>::iterator it = std::find(pImpl->wrenchSensorsLinkNames.begin(),  pImpl->wrenchSensorsLinkNames.end(), wrenchSensorLinkName);
+                        if (it != pImpl->wrenchSensorsLinkNames.end()) {
+                            int index = std::distance(pImpl->wrenchSensorsLinkNames.begin(), it);
+                            for (int i = 0; i < 6; i++)
+                            {
+                                if(pImpl->stackOfTasksMAP)
+                                {
+                                    pImpl->berdyData.buffers.measurements(found->second.offset + i) = task1_estimtedWrechesInLinkFrame.at(idx*6 + i);
+                                    //yInfo() << "Using task1 estimates as measurements for task2";
+                                }
+                                else
+                                {
+                                    pImpl->berdyData.buffers.measurements(found->second.offset + i) = pImpl->smoothedWrenchValues.at(index*6 + i);
+                                    //yInfo() << "Using old measurements for task2";
+                                }
+                            }
+                            break;
                         }
-                        break;
                     }
                     else {
                         for (int i = 0; i < 6; i++)
