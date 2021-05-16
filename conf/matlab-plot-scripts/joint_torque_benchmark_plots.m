@@ -23,15 +23,19 @@ dataset_source = 'AMTI_Dataset';
 subject = 'sub03';
 dataset = 'tpose/hde/feet';
 
+
 dataset_path = strcat(dataset_dir,'/',dataset_type,'/',dataset_source,'/',subject,'/',dataset, '/');
 
-Data =  load(strcat(dataset_path,'1e-4/withoutSOT.mat'));
+Data =  load(strcat(dataset_path,'1e-6/withoutSOT.mat'));
 
 joint_names = Data.dynamicsJointNames;
 
+startIndex = 50;
+
+plot_time = Data.data.time(startIndex:end)'/1e9;
+
 joint_torque_estimates = [];
 
-startIndex = 50;
 
 for j = 1:size(joint_names, 1)
     joint_torque_estimates.(cell2mat(joint_names(j))).joint_torques = Data.data.jointTorques(j, startIndex:end)';
@@ -53,7 +57,7 @@ for l = 1:size(joint_suffix, 2)
         
         nexttile;
         
-        plot(joint_torque_estimates.(strcat("jLeft",joint_names_list(j), joint_suffix(l))).joint_torques, '-',...
+        plot(plot_time, joint_torque_estimates.(strcat("jLeft",joint_names_list(j), joint_suffix(l))).joint_torques, '-',...
             'LineWidth', lineWidth,...
             'Color', C(l,:));
         hold on;
@@ -70,7 +74,7 @@ for l = 1:size(joint_suffix, 2)
         
         nexttile;
         
-        plot(joint_torque_estimates.(strcat("jRight",joint_names_list(j), joint_suffix(l))).joint_torques, '-',...
+        plot(plot_time, joint_torque_estimates.(strcat("jRight",joint_names_list(j), joint_suffix(l))).joint_torques, '-',...
             'LineWidth', lineWidth,...
             'Color', C(l,:));
         hold on;
@@ -112,7 +116,7 @@ for j = 1:size(joint_names_list, 2)
     ax = yline(joint_torques_benchmark(j), '-', num2str(joint_torques_benchmark(j)), 'LineWidth',...
           lineWidth, 'FontSize', fontSize, 'Color', 'k', 'LabelVerticalAlignment', 'bottom', 'FontSize', fontSize);
     hold on;
-    plot(joint_torque_estimates.(strcat("jLeft", joint_names_list(j))).effort, '-',...
+    plot(plot_time, joint_torque_estimates.(strcat("jLeft", joint_names_list(j))).effort, '-',...
         'LineWidth', lineWidth,...
         'Color', C(6,:));
     hold on;
@@ -120,7 +124,7 @@ for j = 1:size(joint_names_list, 2)
     
     title(strcat("jLeft",joint_names_list(j), " Effort"), 'FontSize', fontSize, 'fontweight','bold');
     
-    xlabel('Samples', 'FontSize', fontSize);
+    xlabel('Time [S]', 'FontSize', fontSize, 'Interpreter', 'latex');
     if j == 1
         ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
     end
@@ -133,14 +137,14 @@ for j = 1:size(joint_names_list, 2)
     yline(joint_torques_benchmark(j), '-', num2str(joint_torques_benchmark(j)), 'LineWidth',...
           lineWidth, 'FontSize', fontSize, 'Color', 'k', 'LabelVerticalAlignment', 'bottom', 'FontSize', fontSize);
     hold on;
-    plot(joint_torque_estimates.(strcat("jRight", joint_names_list(j))).effort, '-',...
+    plot(plot_time, joint_torque_estimates.(strcat("jRight", joint_names_list(j))).effort, '-',...
         'LineWidth', lineWidth,...
         'Color', C(6,:));
     hold on;
     
     title(strcat("jRight",joint_names_list(j), " Effort"), 'FontSize', fontSize, 'fontweight','bold');
     
-    xlabel('Samples', 'FontSize', fontSize);
+    xlabel('Time [S]', 'FontSize', fontSize, 'Interpreter', 'latex');
     set (gca, 'FontSize' , fontSize)
     set (gca, 'ColorOrder' , C)
     axis tight
