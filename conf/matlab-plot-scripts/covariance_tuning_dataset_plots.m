@@ -30,7 +30,7 @@ dataset_path = strcat(dataset_dir,'/',dataset_type,'/',dataset_source,'/',subjec
 %% Load data for the feet force/torque measurement covariance from 1e-6 to 1e6
 
 % % dataset_dir_names = ["1e-6", "1e-4", "1e-2", "1e0", "1e+2", "1e4", "1e6"];
-dataset_dir_names = ["1e-4", "1e0", "1e4"];
+dataset_dir_names = ["1e-6", "1e-3", "1e-2"];
 
 covariance_tuning_dataset = [];
 
@@ -39,25 +39,42 @@ feet_wrench_estimates = [];
 
 feet_wrench_error = [];
 
-startIndex = 50;
+time_data = [];
+plot_time = [];
 
 for i = 1:size(dataset_dir_names, 2)
     
     covariance_tuning_dataset(i).withoutSOT = load(strcat(dataset_path, '/',  dataset_dir_names(i),'/withoutSOT.mat'));
-    covariance_tuning_dataset(i).withSOT = load(strcat(dataset_path, '/',  dataset_dir_names(i), '/withSOT.mat'));
+    
+     %% Get time
+    time_data(i).time = covariance_tuning_dataset(i).withoutSOT.data.time'/1e9;
+    
+end
+
+
+startIndex = 50;
+
+%% Get the shortest sample dataset time
+plot_time = time_data(3).time(startIndex:end) - time_data(3).time(startIndex);
+
+endIndex = startIndex + numel(plot_time) - 1;
+
+
+for i = 1:size(dataset_dir_names, 2)
+    
     
     
     %% Get feet measurements vs estimates in world
-    feet_wrench_measurements(i).withoutSOT.leftfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(1:6, startIndex: end)'; 
-    feet_wrench_measurements(i).withoutSOT.rightfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(7:12, startIndex: end)';
+    feet_wrench_measurements(i).withoutSOT.leftfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(1:6, startIndex: endIndex)'; 
+    feet_wrench_measurements(i).withoutSOT.rightfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(7:12, startIndex: endIndex)';
     feet_wrench_measurements(i).withoutSOT.sum = feet_wrench_measurements(i).withoutSOT.leftfoot + feet_wrench_measurements(i).withoutSOT.rightfoot;
     
     for j = 1:size(feet_wrench_measurements(i).withoutSOT.sum, 1)
         feet_wrench_measurements(i).withoutSOT.force_norm(j) = norm(feet_wrench_measurements(i).withoutSOT.sum(j,1:3));
     end
     
-    feet_wrench_estimates(i).withoutSOT.leftfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchEstimatesInWorldFrame(1:6, startIndex: end)'; 
-    feet_wrench_estimates(i).withoutSOT.rightfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchEstimatesInWorldFrame(7:12, startIndex: end)'; 
+    feet_wrench_estimates(i).withoutSOT.leftfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchEstimatesInWorldFrame(1:6, startIndex: endIndex)'; 
+    feet_wrench_estimates(i).withoutSOT.rightfoot = covariance_tuning_dataset(i).withoutSOT.data.task2_wrenchEstimatesInWorldFrame(7:12, startIndex: endIndex)'; 
     feet_wrench_estimates(i).withoutSOT.sum = feet_wrench_estimates(i).withoutSOT.leftfoot + feet_wrench_estimates(i).withoutSOT.rightfoot;
     
         
@@ -102,7 +119,7 @@ LineStyles = ["-", "-", "-", "-.x", "-o", ":", "-h"];
 % %     ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
 % %     set (gca, 'FontSize' , fontSize)
 % %     axis tight
-% %     ylim([-10 inf])
+% %     ylim([-3 inf])
 % %     
 % % end
 % % 
@@ -154,7 +171,7 @@ for s = 1:6
     ax(s) = nexttile;
     for i = 1:size(dataset_dir_names, 2)
     
-        plot(feet_wrench_error(i).withoutSOT.leftfoot_error(:, s), LineStyles(i),...
+        plot(plot_time, feet_wrench_error(i).withoutSOT.leftfoot_error(:, s), LineStyles(i),...
             'LineWidth', lineWidth,...
             'Color',  C(i,:));
         hold on;
@@ -162,12 +179,12 @@ for s = 1:6
     end
     
     axis tight
-    ylim([-10 inf])
+    ylim([-3 inf])
     ylabel(wrenchLegendString(s), 'Interpreter', 'latex', 'FontSize', fontSize);
     set (gca, 'FontSize' , fontSize)
     
     if s == 6
-        xlabel('Samples', 'FontSize', fontSize);
+        xlabel('Time [S]', 'FontSize', fontSize, 'Interpreter', 'latex');
     else
         set(gca, 'XTickLabel', [])
     end
@@ -179,7 +196,7 @@ for s = 1:6
     nexttile;
     for i = 1:size(dataset_dir_names, 2)
     
-        plot(feet_wrench_error(i).withoutSOT.rightfoot_error(:, s), LineStyles(i),...
+        plot(plot_time, feet_wrench_error(i).withoutSOT.rightfoot_error(:, s), LineStyles(i),...
             'LineWidth', lineWidth,...
             'Color',  C(i,:));
         hold on;
@@ -187,11 +204,11 @@ for s = 1:6
     end
     
     axis tight
-    ylim([-10 inf])
+    ylim([-3 inf])
     set (gca, 'FontSize' , fontSize)
   
     if s == 6
-        xlabel('Samples', 'FontSize', fontSize);
+        xlabel('Time [S]', 'FontSize', fontSize, 'Interpreter', 'latex');
     else
         set(gca, 'XTickLabel', [])
     end
@@ -204,7 +221,7 @@ for s = 1:6
     nexttile;
     for i = 1:size(dataset_dir_names, 2)
     
-        plot(feet_wrench_error(i).withoutSOT.sum_error(:, s), LineStyles(i),...
+        plot(plot_time, feet_wrench_error(i).withoutSOT.sum_error(:, s), LineStyles(i),...
             'LineWidth', lineWidth,...
             'Color',  C(i,:));
         hold on;
@@ -212,11 +229,11 @@ for s = 1:6
     end
     
     axis tight
-    ylim([-10 inf])
+    ylim([-3 inf])
     set (gca, 'FontSize' , fontSize)
     
     if s == 6
-        xlabel('Samples', 'FontSize', fontSize);
+        xlabel('Time [S]', 'FontSize', fontSize, 'Interpreter', 'latex');
     else
         set(gca, 'XTickLabel', [])
     end
@@ -259,10 +276,10 @@ ax = [];
 for s = 1:6
     
     ax(s) = nexttile;
-    plot(feet_wrench_measurements(covarianceDataIndex).withoutSOT.leftfoot(:, s),'-',...
+    plot(plot_time, feet_wrench_measurements(covarianceDataIndex).withoutSOT.leftfoot(:, s),'-',...
             'LineWidth', lineWidth, 'Color', PlotsColorMap(measurementColorIndex,:));
     hold on;
-    plot(feet_wrench_estimates(covarianceDataIndex).withoutSOT.leftfoot(:, s), '-',...
+    plot(plot_time, feet_wrench_estimates(covarianceDataIndex).withoutSOT.leftfoot(:, s), '-',...
             'LineWidth', lineWidth, 'Color', PlotsColorMap(estimationColorIndex,:));
     hold on;
     
@@ -271,7 +288,7 @@ for s = 1:6
     set (gca, 'FontSize' , fontSize)
     
     if s == 6
-        xlabel('Samples', 'FontSize', fontSize);
+        xlabel('Time [S]', 'FontSize', fontSize, 'Interpreter', 'latex');
     else
         set(gca, 'XTickLabel', [])
     end
@@ -281,10 +298,10 @@ for s = 1:6
     end
     
     nexttile;
-    plot(feet_wrench_measurements(covarianceDataIndex).withoutSOT.rightfoot(:, s),'-',...
+    plot(plot_time, feet_wrench_measurements(covarianceDataIndex).withoutSOT.rightfoot(:, s),'-',...
             'LineWidth', lineWidth, 'Color', PlotsColorMap(measurementColorIndex,:));
     hold on;
-    plot(feet_wrench_estimates(covarianceDataIndex).withoutSOT.rightfoot(:, s), '-',...
+    plot(plot_time, feet_wrench_estimates(covarianceDataIndex).withoutSOT.rightfoot(:, s), '-',...
             'LineWidth', lineWidth, 'Color', PlotsColorMap(estimationColorIndex,:));
     hold on;
     
@@ -292,7 +309,7 @@ for s = 1:6
     set (gca, 'FontSize' , fontSize)
   
     if s == 6
-        xlabel('Samples', 'FontSize', fontSize);
+        xlabel('Time [S]', 'FontSize', fontSize, 'Interpreter', 'latex');
     else
         set(gca, 'XTickLabel', [])
     end
@@ -303,10 +320,10 @@ for s = 1:6
     end
     
     nexttile;
-    plot(feet_wrench_measurements(covarianceDataIndex).withoutSOT.sum(:, s),'--',...
+    plot(plot_time, feet_wrench_measurements(covarianceDataIndex).withoutSOT.sum(:, s),'--',...
             'LineWidth', lineWidth, 'Color', PlotsColorMap(measurementColorIndex,:));
     hold on;
-    plot(feet_wrench_estimates(covarianceDataIndex).withoutSOT.sum(:, s), '-.',...
+    plot(plot_time, feet_wrench_estimates(covarianceDataIndex).withoutSOT.sum(:, s), '-.',...
             'LineWidth', lineWidth, 'Color', PlotsColorMap(estimationColorIndex,:));
     hold on;
     
@@ -314,7 +331,7 @@ for s = 1:6
     set (gca, 'FontSize' , fontSize)
     
     if s == 6
-        xlabel('Samples', 'FontSize', fontSize);
+        xlabel('Time [S]', 'FontSize', fontSize, 'Interpreter', 'latex');
     else
         set(gca, 'XTickLabel', [])
     end
