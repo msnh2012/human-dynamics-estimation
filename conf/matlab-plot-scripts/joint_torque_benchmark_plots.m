@@ -6,6 +6,8 @@ N=8;
 C = linspecer(N);
 lineStyles = linspecer(N,'qualitative');
 
+tposeColor = [0.3333    0.4196    0.1843];
+
 %% Plot parameters
 fontSize  = 25;
 legendFontSize  = 30;
@@ -30,11 +32,17 @@ Data =  load(strcat(dataset_path,'1e-6/withoutSOT.mat'));
 
 joint_names = Data.dynamicsJointNames;
 
-startIndex = 50;
+startIndex = 100;
 
 plot_time = Data.data.time(startIndex:end)'/1e9;
 
 joint_torque_estimates = [];
+
+jointPosition  = Data.data.jointPositions(42, startIndex : end);
+tposeRange = jointPosition < 0.15 & jointPosition > 0.12;
+tposeStartIndex = find(tposeRange, 1, 'first');
+tposeEndIndex   = find(tposeRange, 1, 'last');
+
 
 
 for j = 1:size(joint_names, 1)
@@ -62,6 +70,12 @@ for l = 1:size(joint_suffix, 2)
             'Color', C(l,:));
         hold on;
         
+        xline(plot_time(tposeStartIndex), '-.','Tpose Start', 'LineWidth', 3, 'FontSize', 14,...
+            'LabelVerticalAlignment', 'middle', 'Color', tposeColor);
+        
+        xline(plot_time(tposeEndIndex), '-.','Tpose End', 'LineWidth', 3, 'FontSize', 14,...
+            'LabelVerticalAlignment', 'middle',  'Color', tposeColor);
+        
         txt = title(strcat("jLeft",joint_names_list(j), joint_suffix(l)), 'FontSize', fontSize, 'fontweight','bold');
         txt.Interpreter= 'none';
         
@@ -79,6 +93,11 @@ for l = 1:size(joint_suffix, 2)
             'Color', C(l,:));
         hold on;
         
+        xline(plot_time(tposeStartIndex), '-.','Tpose Start', 'LineWidth', 3, 'FontSize', 14,...
+            'LabelVerticalAlignment', 'bottom', 'Color', tposeColor);
+        
+        xline(plot_time(tposeEndIndex), '-.','Tpose End', 'LineWidth', 3, 'FontSize', 14,...
+            'LabelVerticalAlignment', 'bottom',  'Color', tposeColor);
         
         txt = title(strcat("jRight",joint_names_list(j), joint_suffix(l)), 'FontSize', fontSize, 'fontweight','bold');
         txt.Interpreter= 'none';
@@ -114,12 +133,18 @@ for j = 1:size(joint_names_list, 2)
     nexttile
     
     ax = yline(joint_torques_benchmark(j), '-', num2str(joint_torques_benchmark(j)), 'LineWidth',...
-          lineWidth, 'FontSize', fontSize, 'Color', 'k', 'LabelVerticalAlignment', 'bottom', 'FontSize', fontSize);
+        lineWidth, 'FontSize', fontSize, 'Color', 'k', 'LabelVerticalAlignment', 'bottom', 'FontSize', fontSize);
     hold on;
     plot(plot_time, joint_torque_estimates.(strcat("jLeft", joint_names_list(j))).effort, '-',...
         'LineWidth', lineWidth,...
         'Color', C(6,:));
     hold on;
+    
+    xline(plot_time(tposeStartIndex), '-.','Tpose Start', 'LineWidth', 3, 'FontSize', 14,...
+        'LabelVerticalAlignment', 'bottom', 'Color', tposeColor);
+    
+    xline(plot_time(tposeEndIndex), '-.','Tpose End', 'LineWidth', 3, 'FontSize', 14,...
+        'LabelVerticalAlignment', 'bottom',  'Color', tposeColor);
     
     
     title(strcat("jLeft",joint_names_list(j), " Effort"), 'FontSize', fontSize, 'fontweight','bold');
@@ -131,28 +156,36 @@ for j = 1:size(joint_names_list, 2)
     set (gca, 'FontSize' , fontSize)
     set (gca, 'ColorOrder' , C)
     axis tight
-    
+    ylim([0 inf]);
     
     nexttile
     yline(joint_torques_benchmark(j), '-', num2str(joint_torques_benchmark(j)), 'LineWidth',...
-          lineWidth, 'FontSize', fontSize, 'Color', 'k', 'LabelVerticalAlignment', 'bottom', 'FontSize', fontSize);
+        lineWidth, 'FontSize', fontSize, 'Color', 'k', 'LabelVerticalAlignment', 'bottom', 'FontSize', fontSize);
     hold on;
     plot(plot_time, joint_torque_estimates.(strcat("jRight", joint_names_list(j))).effort, '-',...
         'LineWidth', lineWidth,...
         'Color', C(6,:));
     hold on;
     
+    xline(plot_time(tposeStartIndex), '-.','Tpose Start', 'LineWidth', 3, 'FontSize', 14,...
+        'LabelVerticalAlignment', 'bottom', 'Color', tposeColor);
+    
+    xline(plot_time(tposeEndIndex), '-.','Tpose End', 'LineWidth', 3, 'FontSize', 14,...
+        'LabelVerticalAlignment', 'bottom',  'Color', tposeColor);
+    
     title(strcat("jRight",joint_names_list(j), " Effort"), 'FontSize', fontSize, 'fontweight','bold');
     
     xlabel('Time [S]', 'FontSize', fontSize, 'Interpreter', 'latex');
+    
+    hold on;
     set (gca, 'FontSize' , fontSize)
     set (gca, 'ColorOrder' , C)
     axis tight
-    
+    ylim([0 inf]);
 end
 
 lh = legend(ax, 'Benchmark Joint Effort', 'FontSize', legendFontSize,...
-           'Location', 'NorthOutside', 'Orientation','Vertical');
+    'Location', 'NorthOutside', 'Orientation','Vertical');
 lh.Layout.Tile = 'North';
 
 txt = title(tl, strcat("Joint Torque Estimates"), 'FontSize', fontSize, 'fontweight','bold');

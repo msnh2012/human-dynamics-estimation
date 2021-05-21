@@ -24,15 +24,22 @@ dataset_dir = '/home/yeshi/Desktop/non_collocated_wrench_estimation_dataset/';
 dataset_type = 'experiments_dataset';
 dataset_source = 'FTShoes_Dataset';
 subject = 'sub02';
-dataset = 'static';
+dataset = 'walking';
 
-dataset_path = strcat(dataset_dir,'/',dataset_type,'/',dataset_source,'/',subject,'/',dataset,'/hde/1e4'); 
+dataset_path = strcat(dataset_dir,'/',dataset_type,'/',dataset_source,'/',subject,'/',dataset,'/hde_with_sot/1e0'); 
 
 %% Load data
-withoutSOT = load(strcat(dataset_path,'/withoutSOT.mat'));
 withSOT = load(strcat(dataset_path,'/withSOT.mat'));
 
-withoutSOT_time = withoutSOT.data.time/1e9;
+startIndex = 500;
+
+%% Get the shortest sample dataset time
+plot_time = withSOT.data.time(startIndex:end) - withSOT.data.time(startIndex);
+plot_time = plot_time/1e9;
+
+endIndex = startIndex + numel(plot_time) - 1;
+
+
 withSOT_time = withSOT.data.time/1e9;
 
 %% Indexes
@@ -41,23 +48,14 @@ startIndex = 500;
 dataSize = ceil(totalDataSize * 0.8) - 1; 
 
 %% Wrench Measurements Increase Under Load
-withoutSOT_leftFeet_Measurements = withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(1:6, startIndex: startIndex + dataSize)';
-withoutSOT_rightFeet_Measurements = withoutSOT.data.task2_wrenchMeasurementsInWorldFrame(7:12, startIndex: startIndex + dataSize)';
 
-withoutSOT_Feet_Measurements = withoutSOT_leftFeet_Measurements + withoutSOT_rightFeet_Measurements;
-
-withSOT_leftFeet_Measurements = withSOT.data.task2_wrenchMeasurementsInWorldFrame(1:6, startIndex: startIndex + dataSize)';
-withSOT_rightFeet_Measurements = withSOT.data.task2_wrenchMeasurementsInWorldFrame(7:12, startIndex: startIndex + dataSize)';
+withSOT_leftFeet_Measurements = withSOT.data.task2_wrenchMeasurementsInWorldFrame(1:6, startIndex: endIndex)';
+withSOT_rightFeet_Measurements = withSOT.data.task2_wrenchMeasurementsInWorldFrame(7:12, startIndex: endIndex)';
 
 withSOT_Feet_Measurements = withSOT_leftFeet_Measurements + withSOT_rightFeet_Measurements;
 
-withoutSOT_leftHand_Measurements = withoutSOT.data.task1_wrenchMeasurementsInWorldFrame(13:18, startIndex: startIndex + dataSize)';
-withoutSOT_rightHand_Measurements = withoutSOT.data.task1_wrenchMeasurementsInWorldFrame(19:24, startIndex: startIndex + dataSize)';
-
-withoutSOT_Hands_Measurements = withoutSOT_leftHand_Measurements + withoutSOT_rightHand_Measurements;
-
-withSOT_leftHand_Measurements = withSOT.data.task1_wrenchMeasurementsInWorldFrame(13:18, startIndex: startIndex + dataSize)';
-withSOT_rightHand_Measurements = withSOT.data.task1_wrenchMeasurementsInWorldFrame(19:24, startIndex: startIndex + dataSize)';
+withSOT_leftHand_Measurements = withSOT.data.task1_wrenchMeasurementsInWorldFrame(13:18, startIndex: endIndex)';
+withSOT_rightHand_Measurements = withSOT.data.task1_wrenchMeasurementsInWorldFrame(19:24, startIndex: endIndex)';
 
 withSOT_Hands_Measurements = withSOT_leftHand_Measurements + withSOT_rightHand_Measurements;
 
@@ -65,10 +63,6 @@ withSOT_Hands_Measurements = withSOT_leftHand_Measurements + withSOT_rightHand_M
 %% Measured Object Mass
 withoutSOT_measured_object_mass = [];
 withSOT_measured_object_mass = [];
-
-for i = 1:size(withoutSOT_Feet_Measurements, 1)
-    withoutSOT_measured_object_mass(i) = norm(withoutSOT_Feet_Measurements(i,1:3));
-end
 
 for i = 1:size(withSOT_Feet_Measurements, 1)
     withSOT_measured_object_mass(i) = norm(withSOT_Feet_Measurements(i,1:3));
@@ -78,13 +72,9 @@ withoutSOT_measured_object_mass = withoutSOT_measured_object_mass/gravity - subj
 withSOT_measured_object_mass = withSOT_measured_object_mass/gravity - subjectMass;
 
 %% Wrench Estimates
-withoutSOT_leftHand_Estimates = withoutSOT.data.task2_wrenchEstimatesInWorldFrame(13:18, startIndex: startIndex + dataSize)';
-withoutSOT_rightHand_Estimates = withoutSOT.data.task2_wrenchEstimatesInWorldFrame(19:24, startIndex: startIndex + dataSize)';
 
-withoutSOT_Hand_Estimates = withoutSOT_leftHand_Estimates + withoutSOT_rightHand_Estimates;
-
-withSOT_leftHand_Estimates = withSOT.data.task2_wrenchEstimatesInWorldFrame(13:18, startIndex: startIndex + dataSize)';
-withSOT_rightHand_Estimates = withSOT.data.task2_wrenchEstimatesInWorldFrame(19:24, startIndex: startIndex + dataSize)';
+withSOT_leftHand_Estimates = withSOT.data.task2_wrenchEstimatesInWorldFrame(13:18, startIndex: endIndex)';
+withSOT_rightHand_Estimates = withSOT.data.task2_wrenchEstimatesInWorldFrame(19:24, startIndex: endIndex)';
 
 withSOT_Hand_Estimates = withSOT_leftHand_Estimates + withSOT_rightHand_Estimates;
 
@@ -92,9 +82,6 @@ withSOT_Hand_Estimates = withSOT_leftHand_Estimates + withSOT_rightHand_Estimate
 withoutSOT_estimated_object_mass = [];
 withSOT_estimated_object_mass = [];
 
-for i = 1:size(withoutSOT_Hand_Estimates, 1)
-    withoutSOT_estimated_object_mass(i) = norm(withoutSOT_Hand_Estimates(i,1:3));
-end
 
 for i = 1:size(withSOT_Hand_Estimates, 1)
     withSOT_estimated_object_mass(i) = norm(withSOT_Hand_Estimates(i,1:3));
@@ -105,7 +92,7 @@ withSOT_estimated_object_mass = withSOT_estimated_object_mass/gravity;
 
 
 
-fH = figure('units','normalized','outerposition',[0 0 0.5 1]);
+fH = figure('units','normalized','outerposition',[0 0 1 1]);
 tl = tiledlayout(4,3);
 
 
@@ -117,9 +104,9 @@ for s = 1:3
     
     ax(s) = nexttile;
 
-    plot(withSOT_leftHand_Measurements(:, s) , 'LineWidth', lineWidth, 'Color', C(1, :), 'LineStyle', '-');
+    plot(plot_time, withSOT_leftHand_Measurements(:, s) , 'LineWidth', lineWidth, 'Color', C(1, :), 'LineStyle', '-');
     hold on;
-    plot(withSOT_leftHand_Estimates(:, s), 'Color', C(3,:), 'LineWidth', lineWidth);
+    plot(plot_time, withSOT_leftHand_Estimates(:, s), 'Color', C(3,:), 'LineWidth', lineWidth);
     hold on;
     
     axis tight
@@ -137,9 +124,9 @@ for s = 1:3
     end
     
     nexttile;
-    plot(withSOT_rightHand_Measurements(:, s) , 'LineWidth', lineWidth,  'Color', C(1, :), 'LineStyle', '-');
+    plot(plot_time, withSOT_rightHand_Measurements(:, s) , 'LineWidth', lineWidth,  'Color', C(1, :), 'LineStyle', '-');
     hold on;
-    plot(withSOT_rightHand_Estimates(:, s), 'Color', C(3,:), 'LineWidth', lineWidth);
+    plot(plot_time, withSOT_rightHand_Estimates(:, s), 'Color', C(3,:), 'LineWidth', lineWidth);
     hold on;
     
     axis tight
@@ -157,9 +144,9 @@ for s = 1:3
     end
     
     nexttile;
-    plot(withSOT_leftHand_Measurements(:, s) + withSOT_rightHand_Measurements(:, s) , 'LineWidth', lineWidth,  'Color', C(1, :), 'LineStyle', '-');
+    plot(plot_time, withSOT_leftHand_Measurements(:, s) + withSOT_rightHand_Measurements(:, s) , 'LineWidth', lineWidth,  'Color', C(1, :), 'LineStyle', '-');
     hold on;
-    plot(withSOT_leftHand_Estimates(:, s) + withSOT_rightHand_Estimates(:, s), 'Color', C(3, :), 'LineWidth', lineWidth);
+    plot(plot_time, withSOT_leftHand_Estimates(:, s) + withSOT_rightHand_Estimates(:, s), 'Color', C(3, :), 'LineWidth', lineWidth);
     hold on;
     
     axis tight
@@ -186,12 +173,12 @@ ax = nexttile([1 3]);
 
 yline(objectMass, '-.', '9.55 Kg', 'LineWidth', lineWidth, 'FontSize', fontSize);
 hold on;
-plot(withSOT_measured_object_mass, 'LineWidth', lineWidth, 'Color', C(4, :), 'LineStyle', '-');
+plot(plot_time, withSOT_measured_object_mass, 'LineWidth', lineWidth, 'Color', C(4, :), 'LineStyle', '-');
 hold on;
-plot(withSOT_estimated_object_mass, 'LineWidth', lineWidth, 'Color', C(3, :));
+plot(plot_time, withSOT_estimated_object_mass, 'LineWidth', lineWidth, 'Color', C(3, :));
 hold on;
 
-xlabel('Samples', 'FontSize', fontSize);
+xlabel('Time [S]', 'FontSize', fontSize, 'Interpreter', 'latex');
 ylabel("Mass [$kg$]", 'Interpreter', 'latex', 'FontSize', fontSize);
 set (gca, 'FontSize' , fontSize)
 set (gca, 'ColorOrder' , C)
@@ -207,7 +194,7 @@ lh1 = legend(ax, 'Ground Truth (9.55 Kg)', 'Using Increase in Feet FT Measuremen
 txt = title("Estimated Object Mass Value", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
 
-txt = title(tl, "Hands Force Estimation with NCWE using Covariance of 1e4", 'FontSize', fontSize, 'fontweight','bold');
+txt = title(tl, "Hands Force Estimation with NCWE using Covariance of 1e0", 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none'; 
 
 %% Save figure
