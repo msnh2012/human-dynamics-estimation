@@ -273,6 +273,7 @@ struct BerdyData
         iDynTree::LinkNetExternalWrenches task1_linkNetExternalWrenchEstimatesInLinkFrame;
         iDynTree::LinkNetExternalWrenches linkNetExternalWrenchEstimates;
         iDynTree::LinkAccArray linkClassicalProperAccelerationEstimates; // This is also called sensor proper acceleration in Traversaro's PhD Thesis
+        iDynTree::VectorDynSize jointAccelerations;
     } estimates;
 };
 
@@ -1672,6 +1673,9 @@ bool HumanDynamicsEstimator::open(yarp::os::Searchable& config)
     pImpl->berdyData.estimates.jointTorqueEstimates = iDynTree::JointDOFsDoubleArray(pImpl->berdyData.helper.model());
     pImpl->berdyData.estimates.jointTorqueEstimates.zero();
 
+    pImpl->berdyData.estimates.jointAccelerations = iDynTree::VectorDynSize(pImpl->berdyData.helper.model().getNrOfDOFs());
+    pImpl->berdyData.estimates.jointAccelerations.zero();
+
     // Set the links net external wrench estimates size and initialize to zero
     pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame = iDynTree::LinkWrenches(pImpl->berdyData.helper.model().getNrOfLinks());
     pImpl->berdyData.estimates.task1_linkNetExternalWrenchEstimatesInLinkFrame.zero();
@@ -2625,6 +2629,10 @@ void HumanDynamicsEstimator::run()
     pImpl->berdyData.helper.extractLinkNetExternalWrenchesFromDynamicVariables(estimatedDynamicVariables,
                                                                                pImpl->berdyData.estimates.linkNetExternalWrenchEstimates);
 
+
+    pImpl->berdyData.helper.extractJointAccelerationFromDynamicVariables(estimatedDynamicVariables,
+                                                                         pImpl->berdyData.estimates.jointAccelerations);
+
     // Check to ensure all the task 1 links net external wrenches are extracted correctly
     if (!pImpl->berdyData.estimates.linkNetExternalWrenchEstimates.isConsistent(pImpl->humanModel))
     {
@@ -2937,6 +2945,18 @@ bool HumanDynamicsEstimator::detachAll()
 // =============
 // IHumanDynamics
 // =============
+
+std::vector<double> HumanDynamicsEstimator::getJointAccelerations()
+{
+    std::vector<double> jointAccs;
+    std::lock_guard<std::mutex> lock(pImpl->mutex);
+    size_t vecSize = pImpl->berdyData.estimates.jointAccelerations.size();
+    jointAccs.resize(vecSize);
+    for (size_t index = 0; index < vecSize; index++) {
+        jointAccs.at(index) = pImpl->berdyData.estimates.jointAccelerations.getVal(index);
+    }
+    return jointAccs;
+}
 
 std::vector<std::string> HumanDynamicsEstimator::getJointNames() const
 {

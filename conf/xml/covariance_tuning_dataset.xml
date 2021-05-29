@@ -268,7 +268,7 @@
         <group name="PRIORS">
            <param name="mu_dyn_variables">1e-6</param>
            <param name="cov_dyn_variables">1e6</param>
-           <param name="cov_dyn_constraints">0.0001</param>
+           <param name="cov_dyn_constraints">1e-6</param>
            <param name="cov_measurements_ACCELEROMETER_SENSOR">(0.0011 0.0011 0.0011)</param>
            <param name="cov_measurements_THREE_AXIS_ANGULAR_ACCELEROMETER_SENSOR">(1e-3 1e-3 1e-3)</param>
            <param name="cov_measurements_DOF_ACCELERATION_SENSOR">0.666e-5</param>
@@ -348,7 +348,7 @@
         <group name="PRIORS">
            <param name="mu_dyn_variables">1e-6</param>
            <param name="cov_dyn_variables">1e6</param>
-           <param name="cov_dyn_constraints">0.0001</param>
+           <param name="cov_dyn_constraints">1e-6</param>
            <param name="cov_measurements_ACCELEROMETER_SENSOR">(0.0011 0.0011 0.0011)</param>
            <param name="cov_measurements_THREE_AXIS_ANGULAR_ACCELEROMETER_SENSOR">(1e-3 1e-3 1e-3)</param>
            <param name="cov_measurements_DOF_ACCELERATION_SENSOR">0.666e-5</param>
@@ -433,7 +433,7 @@
         <group name="PRIORS">
            <param name="mu_dyn_variables">1e-6</param>
            <param name="cov_dyn_variables">1e6</param>
-           <param name="cov_dyn_constraints">0.0001</param>
+           <param name="cov_dyn_constraints">1e-6</param>
            <param name="cov_measurements_ACCELEROMETER_SENSOR">(0.0011 0.0011 0.0011)</param>
            <param name="cov_measurements_THREE_AXIS_ANGULAR_ACCELEROMETER_SENSOR">(1e-3 1e-3 1e-3)</param>
            <param name="cov_measurements_DOF_ACCELERATION_SENSOR">0.666e-5</param>

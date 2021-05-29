@@ -1,6 +1,6 @@
-close all;
-clear all;
-clc;
+% % close all;
+% % clear all;
+% % clc;
 
 N=8;
 C = linspecer(N);
@@ -16,6 +16,13 @@ lineWidth = 4;
 gravity = 9.81;
 objectMass = 9.55;
 
+
+%% Load urdf model
+subjectModel = 'humanSubject03';
+modelPath = strcat('/home/yeshi/software/robotology-superbuild/src/human-gazebo/', subjectModel, '/');
+modelFileName  = strcat(subjectModel, '_66dof.urdf');
+
+
 %% Legend or Title Index
 wrenchLegendString = ["$f_x [N]$", "$f_y [N]$", "$f_z [N]$","$m_x [Nm]$", "$m_y [Nm]$", "$m_z [Nm]$"];
 
@@ -26,11 +33,17 @@ subject = 'sub03';
 dataset = 'tpose/hde/feet';
 
 
+
 dataset_path = strcat(dataset_dir,'/',dataset_type,'/',dataset_source,'/',subject,'/',dataset, '/');
 
 Data =  load(strcat(dataset_path,'1e-6/withoutSOT.mat'));
 
 joint_names = Data.dynamicsJointNames;
+
+
+%% Get computed torques from iDynTree Inverse Dynamics
+inverseDynamicsJointTorques = computeIDJointTorques(Data, modelPath, modelFileName, joint_names);
+
 
 startIndex = 100;
 
@@ -47,9 +60,12 @@ tposeEndIndex   = find(tposeRange, 1, 'last');
 
 for j = 1:size(joint_names, 1)
     joint_torque_estimates.(cell2mat(joint_names(j))).joint_torques = Data.data.jointTorques(j, startIndex:end)';
+    joint_torque_estimates.(cell2mat(joint_names(j))).ID_joint_torques = inverseDynamicsJointTorques(j,  startIndex:end)';
 end
 
 
+
+%% Plot
 fH = figure('units','normalized','outerposition',[0 0 1 1]);
 
 joint_names_list = ["Shoulder", "Elbow", "Wrist"];
@@ -57,6 +73,8 @@ joint_suffix = ["_rotx", "_roty", "_rotz"];
 
 tl = tiledlayout(4, 2 * size(joint_names_list, 2));
 
+cmap = colormap(parula);
+ID_joint_toruqe_color = cmap(180, :);
 
 for l = 1:size(joint_suffix, 2)
     
@@ -68,6 +86,11 @@ for l = 1:size(joint_suffix, 2)
         plot(plot_time, joint_torque_estimates.(strcat("jLeft",joint_names_list(j), joint_suffix(l))).joint_torques, '-',...
             'LineWidth', lineWidth,...
             'Color', C(l,:));
+        hold on;
+        
+        plot(plot_time, joint_torque_estimates.(strcat("jLeft",joint_names_list(j), joint_suffix(l))).ID_joint_torques, '--',...
+            'LineWidth', lineWidth,...
+            'Color', ID_joint_toruqe_color);
         hold on;
         
         xline(plot_time(tposeStartIndex), '-.','Tpose Start', 'LineWidth', 3, 'FontSize', 14,...
@@ -91,6 +114,11 @@ for l = 1:size(joint_suffix, 2)
         plot(plot_time, joint_torque_estimates.(strcat("jRight",joint_names_list(j), joint_suffix(l))).joint_torques, '-',...
             'LineWidth', lineWidth,...
             'Color', C(l,:));
+        hold on;
+        
+        plot(plot_time, joint_torque_estimates.(strcat("jRight",joint_names_list(j), joint_suffix(l))).ID_joint_torques, '--',...
+            'LineWidth', lineWidth,...
+            'Color', ID_joint_toruqe_color);
         hold on;
         
         xline(plot_time(tposeStartIndex), '-.','Tpose Start', 'LineWidth', 3, 'FontSize', 14,...
@@ -128,6 +156,14 @@ for j = 1:size(joint_names_list, 2)
             joint_torque_estimates.(strcat("jRight",joint_names_list(j), joint_suffix(2))).joint_torques(e),...
             joint_torque_estimates.(strcat("jRight",joint_names_list(j), joint_suffix(3))).joint_torques(e)]);
         
+        joint_torque_estimates.(strcat("jLeft", joint_names_list(j))).ID_effort(e) = norm([joint_torque_estimates.(strcat("jLeft",joint_names_list(j), joint_suffix(1))).ID_joint_torques(e),...
+            joint_torque_estimates.(strcat("jLeft",joint_names_list(j), joint_suffix(2))).ID_joint_torques(e),...
+            joint_torque_estimates.(strcat("jLeft",joint_names_list(j), joint_suffix(3))).ID_joint_torques(e)]);
+        
+        joint_torque_estimates.(strcat("jRight", joint_names_list(j))).ID_effort(e) = norm([joint_torque_estimates.(strcat("jRight",joint_names_list(j), joint_suffix(1))).ID_joint_torques(e),...
+            joint_torque_estimates.(strcat("jRight",joint_names_list(j), joint_suffix(2))).ID_joint_torques(e),...
+            joint_torque_estimates.(strcat("jRight",joint_names_list(j), joint_suffix(3))).ID_joint_torques(e)]);
+        
     end
     
     nexttile
@@ -139,6 +175,12 @@ for j = 1:size(joint_names_list, 2)
         'LineWidth', lineWidth,...
         'Color', C(6,:));
     hold on;
+    
+    plot(plot_time, joint_torque_estimates.(strcat("jLeft", joint_names_list(j))).ID_effort, '--',...
+        'LineWidth', lineWidth,...
+        'Color', ID_joint_toruqe_color);
+    hold on;
+    
     
     xline(plot_time(tposeStartIndex), '-.','Tpose Start', 'LineWidth', 3, 'FontSize', 14,...
         'LabelVerticalAlignment', 'bottom', 'Color', tposeColor);
@@ -167,6 +209,12 @@ for j = 1:size(joint_names_list, 2)
         'Color', C(6,:));
     hold on;
     
+    ax1 = plot(plot_time, joint_torque_estimates.(strcat("jRight", joint_names_list(j))).ID_effort, '-',...
+        'LineWidth', lineWidth,...
+        'Color', ID_joint_toruqe_color);
+    hold on;
+    
+    
     xline(plot_time(tposeStartIndex), '-.','Tpose Start', 'LineWidth', 3, 'FontSize', 14,...
         'LabelVerticalAlignment', 'bottom', 'Color', tposeColor);
     
@@ -184,11 +232,17 @@ for j = 1:size(joint_names_list, 2)
     ylim([0 inf]);
 end
 
-lh = legend(ax, 'Benchmark Joint Effort', 'FontSize', legendFontSize,...
+
+lh = legend(ax1, 'Computed Torques', 'FontSize', legendFontSize,...
     'Location', 'NorthOutside', 'Orientation','Vertical');
 lh.Layout.Tile = 'North';
 
-txt = title(tl, strcat("Joint Torque Estimates"), 'FontSize', fontSize, 'fontweight','bold');
+
+lh = legend(ax, 'Baseline Joint Effort', 'FontSize', legendFontSize,...
+    'Location', 'NorthOutside', 'Orientation','Vertical');
+lh.Layout.Tile = 'North';
+
+txt = title(tl, strcat("Joint Torque Estimation"), 'FontSize', fontSize, 'fontweight','bold');
 txt.Interpreter= 'none';
 
 

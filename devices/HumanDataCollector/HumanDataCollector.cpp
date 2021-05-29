@@ -330,6 +330,7 @@ public:
     size_t dynamicsNumberOfJoints;
     std::vector<std::string> dynamicsJointNames;
     std::vector<double> jointTorquesVec;
+    std::vector<double> jointAccsVec;
 
     // Yarp ports for streaming data from IHumanState interface of HumanStateProvider
     yarp::os::BufferedPort<yarp::sig::Vector> basePoseDataPort;
@@ -787,6 +788,7 @@ void HumanDataCollector::run()
         pImpl->dynamicsNumberOfJoints = pImpl->iHumanDynamics->getNumberOfJoints();
         pImpl->dynamicsJointNames = pImpl->iHumanDynamics->getJointNames();
         pImpl->jointTorquesVec = pImpl->iHumanDynamics->getJointTorques();
+        pImpl->jointAccsVec = pImpl->iHumanDynamics->getJointAccelerations();
 
         pImpl->task1_wrenchEstimatesInLinkFrameVec       = pImpl->iHumanWrenchEstimates->getWrenchesInFrame(hde::interfaces::IHumanWrench::TaskType::Task1,
                                                                                                             hde::interfaces::IHumanWrench::WrenchType::Estimated,
@@ -970,6 +972,7 @@ void HumanDataCollector::run()
             }
 
             pImpl->humanDataStruct.data["jointTorques"].push_back(pImpl->jointTorquesVec);
+            pImpl->humanDataStruct.data["jointAccs"].push_back(pImpl->jointAccsVec);
         }
 
     }
