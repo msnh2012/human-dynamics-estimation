@@ -30,7 +30,8 @@ target_link_libraries(HumanDynamicsEstimator PUBLIC
     YARP::YARP_init
     iDynTree::idyntree-core
     iDynTree::idyntree-model
-    iDynTree::idyntree-estimation)
+    iDynTree::idyntree-modelio-urdf
+    HumanDynamicsEstimation::algorithms)
 
 if(MSVC)
   target_compile_options(HumanDynamicsEstimator PRIVATE /bigobj)

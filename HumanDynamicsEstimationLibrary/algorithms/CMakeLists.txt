@@ -8,10 +8,17 @@ find_package(iDynTree REQUIRED)
 
 add_component(NAME algorithms
               SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/InverseVelocityKinematics.cpp
+                      ${CMAKE_CURRENT_SOURCE_DIR}/src/BerdyHelper.cpp
+                      ${CMAKE_CURRENT_SOURCE_DIR}/src/BerdySparseMAPSolver.cpp
               PUBLIC_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/hde/algorithms/InverseVelocityKinematics.hpp
+                             ${CMAKE_CURRENT_SOURCE_DIR}/include/hde/algorithms/BerdyHelper.hpp
+                             ${CMAKE_CURRENT_SOURCE_DIR}/include/hde/algorithms/BerdySparseMAPSolver.hpp
               PUBLIC_LINK_LIBRARIES iDynTree::idyntree-model                           
               PRIVATE_LINK_LIBRARIES YARP::YARP_OS
                                      iDynTree::idyntree-high-level
+                                     iDynTree::idyntree-sensors
+                                     iDynTree::idyntree-core
+                                     iDynTree::idyntree-estimation
                                      OsqpEigen::OsqpEigen
                                      osqp::osqp
              )
