@@ -397,10 +397,10 @@ iDynTree::IndexRange
 BerdyHelper::getRangeLinkVariable(BerdyDynamicVariablesTypes dynamicVariableType,
                                   iDynTree::LinkIndex idx) const
 {
-    // if( !isLinkBerdyDynamicVariable(dynamicVariableType) )
-    // {
-    //     return iDynTree::IndexRange::InvalidRange();
-    // }
+    if( !isLinkBerdyDynamicVariable(dynamicVariableType) )
+    {
+        return iDynTree::IndexRange::InvalidRange();
+    }
 
     if (m_options.berdyVariant == ORIGINAL_BERDY_FIXED_BASE) {
         return getRangeOriginalBerdyFixedBase(
@@ -445,11 +445,11 @@ iDynTree::IndexRange
 BerdyHelper::getRangeJointVariable(BerdyDynamicVariablesTypes dynamicVariableType,
                                    iDynTree::JointIndex idx) const
 {
-    // if( !isJointBerdyDynamicVariable(dynamicVariableType) )
-    // {
-    //     assert(false);
-    //     return iDynTree::IndexRange::InvalidRange();
-    // }
+    if( !isJointBerdyDynamicVariable(dynamicVariableType) )
+    {
+        assert(false);
+        return iDynTree::IndexRange::InvalidRange();
+    }
 
     if (m_options.berdyVariant == ORIGINAL_BERDY_FIXED_BASE) {
         return getRangeOriginalBerdyFixedBase(
@@ -482,10 +482,10 @@ iDynTree::IndexRange
 BerdyHelper::getRangeDOFVariable(BerdyDynamicVariablesTypes dynamicVariableType,
                                  iDynTree::DOFIndex idx) const
 {
-    // if( !isDOFBerdyDynamicVariable(dynamicVariableType) )
-    // {
-    //     return iDynTree::IndexRange::InvalidRange();
-    // }
+    if( !isDOFBerdyDynamicVariable(dynamicVariableType) )
+    {
+        return iDynTree::IndexRange::InvalidRange();
+    }
 
     if (m_options.berdyVariant == ORIGINAL_BERDY_FIXED_BASE) {
         // For a model with all 1-dofs, dof index and joint index matches
