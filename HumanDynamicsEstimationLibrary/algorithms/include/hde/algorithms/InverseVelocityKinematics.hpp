@@ -6,11 +6,11 @@
  * GNU Lesser General Public License v2.1 or any later version.
  */
 
-#ifndef INVERSEVELOCITYKINEMATICS_HPP
-#define INVERSEVELOCITYKINEMATICS_HPP
+#ifndef HDE_INVERSEVELOCITYKINEMATICS_HPP
+#define HDE_INVERSEVELOCITYKINEMATICS_HPP
 
-#include <iDynTree/Core/VectorDynSize.h>
 #include <iDynTree/Core/MatrixDynSize.h>
+#include <iDynTree/Core/VectorDynSize.h>
 #include <iDynTree/Model/Model.h>
 
 #include <map>
@@ -18,7 +18,7 @@
 
 namespace hde::algorithms {
     class InverseVelocityKinematics;
-} // namespace hde
+} // namespace hde::algorithms
 
 class hde::algorithms::InverseVelocityKinematics
 {
@@ -132,4 +132,4 @@ public:
     void clearProblem();
 };
 
-#endif // INVERSEVELOCITYKINEMATICS_HPP
+#endif // HDE_INVERSEVELOCITYKINEMATICS_HPP

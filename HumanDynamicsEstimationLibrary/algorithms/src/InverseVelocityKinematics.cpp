@@ -400,8 +400,7 @@ bool InverseVelocityKinematics::impl::solveIntegrationBasedIK(
             * iDynTree::toEigen(matrix).transpose() * weightInverse.toDenseMatrix()
             * iDynTree::toEigen(inputVector);
     }
-    else if (resolutionMode
-             == ResolutionMode::completeOrthogonalDecomposition) {
+    else if (resolutionMode == ResolutionMode::completeOrthogonalDecomposition) {
         Eigen::CompleteOrthogonalDecomposition<
             Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
             WeightedJacobian = (iDynTree::toEigen(matrix).transpose()
@@ -434,8 +433,7 @@ bool InverseVelocityKinematics::impl::solveIntegrationBasedIK(
                 .solve(iDynTree::toEigen(matrix).transpose() * weightInverse.toDenseMatrix()
                        * iDynTree::toEigen(inputVector));
     }
-    else if (resolutionMode
-             == ResolutionMode::sparseCholeskyDecomposition) {
+    else if (resolutionMode == ResolutionMode::sparseCholeskyDecomposition) {
         Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> solver;
         solver.compute((iDynTree::toEigen(matrix).transpose() * weightInverse.toDenseMatrix()
                             * iDynTree::toEigen(matrix)
@@ -446,8 +444,7 @@ bool InverseVelocityKinematics::impl::solveIntegrationBasedIK(
             solver.solve(iDynTree::toEigen(matrix).transpose() * weightInverse.toDenseMatrix()
                          * iDynTree::toEigen(inputVector));
     }
-    else if (resolutionMode
-             == ResolutionMode::robustCholeskyDecomposition) {
+    else if (resolutionMode == ResolutionMode::robustCholeskyDecomposition) {
         iDynTree::toEigen(outputVector) =
             (iDynTree::toEigen(matrix).transpose() * weightInverse.toDenseMatrix()
                  * iDynTree::toEigen(matrix)
@@ -456,8 +453,7 @@ bool InverseVelocityKinematics::impl::solveIntegrationBasedIK(
                 .solve(iDynTree::toEigen(matrix).transpose() * weightInverse.toDenseMatrix()
                        * iDynTree::toEigen(inputVector));
     }
-    else if (resolutionMode
-             == ResolutionMode::sparseRobustCholeskyDecomposition) {
+    else if (resolutionMode == ResolutionMode::sparseRobustCholeskyDecomposition) {
         Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
         solver.compute((iDynTree::toEigen(matrix).transpose() * weightInverse.toDenseMatrix()
                             * iDynTree::toEigen(matrix)
@@ -1105,8 +1101,7 @@ bool InverseVelocityKinematics::setFloatingBaseOnFrameNamed(
     return pImpl->dynamics.setFloatingBase(floatingBaseFrameName);
 }
 
-bool InverseVelocityKinematics::setResolutionMode(
-    const ResolutionMode& resolutionMode)
+bool InverseVelocityKinematics::setResolutionMode(const ResolutionMode& resolutionMode)
 {
     pImpl->resolutionMode = resolutionMode;
     return true;
@@ -1121,8 +1116,7 @@ bool InverseVelocityKinematics::setResolutionMode(const std::string& resolutionM
         pImpl->resolutionMode = ResolutionMode::moorePenrose;
     }
     else if (resolutionModeName == "completeOrthogonalDecomposition") {
-        pImpl->resolutionMode =
-            ResolutionMode::completeOrthogonalDecomposition;
+        pImpl->resolutionMode = ResolutionMode::completeOrthogonalDecomposition;
     }
     else if (resolutionModeName == "leastSquare") {
         pImpl->resolutionMode = ResolutionMode::leastSquare;
@@ -1131,16 +1125,13 @@ bool InverseVelocityKinematics::setResolutionMode(const std::string& resolutionM
         pImpl->resolutionMode = ResolutionMode::choleskyDecomposition;
     }
     else if (resolutionModeName == "sparseCholeskyDecomposition") {
-        pImpl->resolutionMode =
-            ResolutionMode::sparseCholeskyDecomposition;
+        pImpl->resolutionMode = ResolutionMode::sparseCholeskyDecomposition;
     }
     else if (resolutionModeName == "robustCholeskyDecomposition") {
-        pImpl->resolutionMode =
-            ResolutionMode::robustCholeskyDecomposition;
+        pImpl->resolutionMode = ResolutionMode::robustCholeskyDecomposition;
     }
     else if (resolutionModeName == "sparseRobustCholeskyDecomposition") {
-        pImpl->resolutionMode =
-            ResolutionMode::sparseRobustCholeskyDecomposition;
+        pImpl->resolutionMode = ResolutionMode::sparseRobustCholeskyDecomposition;
     }
     else {
         std::cerr << "[ERROR] Invalid resolution mode: " << resolutionModeName << std::endl;
