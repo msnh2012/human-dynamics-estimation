@@ -1,10 +1,9 @@
-function inverseDynamicsJointTorques = computeIDJointTorques(Data, modelPath, modelFileName, jointOrder)
+function [inverseDynamicsJointTorques, gravityTrqs, biasTrqs, baseWrench] = computeIDJointTorques(Data, modelPath, modelFileName, jointOrder)
 
     timeExt = Data.data.time'/1e9;
     jointPos = Data.data.jointPositions;
     jointVel = Data.data.jointVelocities;
     jointAcc = Data.data.jointAccs;
-
 
     n_joints = size(jointPos, 1);
     
@@ -16,19 +15,23 @@ function inverseDynamicsJointTorques = computeIDJointTorques(Data, modelPath, mo
     rightfootIdx = KinDynModel.kinDynComp.model().getLinkIndex('RightFoot');
     leftfootIdx = KinDynModel.kinDynComp.model().getLinkIndex('LeftFoot');
     
+    righthandIdx = KinDynModel.kinDynComp.model().getLinkIndex('RightHand');
     
     gravity = iDynTree.Vector3();
-    gravity.fromMatlab([0, 0, -9.8]);
+    gravity.fromMatlab([0, 0, -9.81]);
     
     
     gravityTrqs = zeros(size(Data.data.jointTorques));
     inertialTrqs = zeros(size(Data.data.jointTorques));
     inverseDynamicsJointTorques = zeros(size(Data.data.jointTorques));
     
+    baseWrench = [];
+        
     w_H_b = iDynTree.Matrix4x4;
     w_H_b.zero();
     
     baseTF = iDynTree.Transform();
+    baseTF = iDynTree.Transform.Identity();
     
     baseVel = iDynTree.Twist();
     baseVel.zero();
@@ -42,8 +45,7 @@ function inverseDynamicsJointTorques = computeIDJointTorques(Data, modelPath, mo
     
 
     for t = 1 : length(timeExt)
-        
-        
+
         q.fromMatlab((jointPos(:, t)));
 
         dq.fromMatlab((jointVel(:, t)));
@@ -64,6 +66,7 @@ function inverseDynamicsJointTorques = computeIDJointTorques(Data, modelPath, mo
         baseTF.setPosition(iDynTree.Position(basePose(1), basePose(2), basePose(3)));
         baseTF.setRotation(baseRot);
         
+
         KinDynModel.kinDynComp.setRobotState(baseTF, q, baseVel, dq, gravity);
         
         generalizedTrqs = iDynTree.FreeFloatingGeneralizedTorques(KinDynModel.kinDynComp.model());
@@ -97,26 +100,89 @@ function inverseDynamicsJointTorques = computeIDJointTorques(Data, modelPath, mo
         leftContactWrench = linkNetWrench(leftfootIdx);
         rightContactWrench = linkNetWrench(rightfootIdx);
         
-        leftContactWrench.setVal(0, Data.data.task2_wrenchMeasurementsInLinkFrame(1, t));
-        leftContactWrench.setVal(1, Data.data.task2_wrenchMeasurementsInLinkFrame(2, t));
-        leftContactWrench.setVal(2, Data.data.task2_wrenchMeasurementsInLinkFrame(3, t));
-        leftContactWrench.setVal(3, Data.data.task2_wrenchMeasurementsInLinkFrame(4, t));
-        leftContactWrench.setVal(4, Data.data.task2_wrenchMeasurementsInLinkFrame(5, t));
-        leftContactWrench.setVal(5, Data.data.task2_wrenchMeasurementsInLinkFrame(6, t));
+        leftContactWrenchLink = iDynTree.Wrench();
+        leftContactWrenchLink.zero();
         
-        rightContactWrench.setVal(0, Data.data.task2_wrenchMeasurementsInLinkFrame(7, t));
-        rightContactWrench.setVal(1, Data.data.task2_wrenchMeasurementsInLinkFrame(8, t));
-        rightContactWrench.setVal(2, Data.data.task2_wrenchMeasurementsInLinkFrame(9, t));
-        rightContactWrench.setVal(3, Data.data.task2_wrenchMeasurementsInLinkFrame(10, t));
-        rightContactWrench.setVal(4, Data.data.task2_wrenchMeasurementsInLinkFrame(11, t));
-        rightContactWrench.setVal(5, Data.data.task2_wrenchMeasurementsInLinkFrame(12, t));
+        leftContactWrenchLink.setVal(0, Data.data.task2_wrenchMeasurementsInLinkFrame(1, t));
+        leftContactWrenchLink.setVal(1, Data.data.task2_wrenchMeasurementsInLinkFrame(2, t));
+        leftContactWrenchLink.setVal(2, Data.data.task2_wrenchMeasurementsInLinkFrame(3, t));
+        leftContactWrenchLink.setVal(3, Data.data.task2_wrenchMeasurementsInLinkFrame(4, t));
+        leftContactWrenchLink.setVal(4, Data.data.task2_wrenchMeasurementsInLinkFrame(5, t));
+        leftContactWrenchLink.setVal(5, Data.data.task2_wrenchMeasurementsInLinkFrame(6, t));
         
-        leftContactWrench = w_R_leftFoot * leftContactWrench;
-        rightContactWrench = w_R_rightFoot * rightContactWrench;
+        rightContactWrenchLink = iDynTree.Wrench();
+        rightContactWrenchLink.zero();
+        
+        rightContactWrenchLink.setVal(0, Data.data.task2_wrenchMeasurementsInLinkFrame(7, t));
+        rightContactWrenchLink.setVal(1, Data.data.task2_wrenchMeasurementsInLinkFrame(8, t));
+        rightContactWrenchLink.setVal(2, Data.data.task2_wrenchMeasurementsInLinkFrame(9, t));
+        rightContactWrenchLink.setVal(3, Data.data.task2_wrenchMeasurementsInLinkFrame(10, t));
+        rightContactWrenchLink.setVal(4, Data.data.task2_wrenchMeasurementsInLinkFrame(11, t));
+        rightContactWrenchLink.setVal(5, Data.data.task2_wrenchMeasurementsInLinkFrame(12, t));
+        
+        leftContactWrenchLink = w_R_leftFoot * leftContactWrenchLink;
+        rightContactWrenchLink = w_R_rightFoot * rightContactWrenchLink;
+        
+        leftContactWrench.setVal(0, leftContactWrenchLink.getVal(0));
+        leftContactWrench.setVal(1, leftContactWrenchLink.getVal(1));
+        leftContactWrench.setVal(2, leftContactWrenchLink.getVal(2));
+        leftContactWrench.setVal(3, leftContactWrenchLink.getVal(3));
+        leftContactWrench.setVal(4, leftContactWrenchLink.getVal(4));
+        leftContactWrench.setVal(5, leftContactWrenchLink.getVal(5));
+        
+        rightContactWrench.setVal(0, rightContactWrenchLink.getVal(0));
+        rightContactWrench.setVal(1, rightContactWrenchLink.getVal(1));
+        rightContactWrench.setVal(2, rightContactWrenchLink.getVal(2));
+        rightContactWrench.setVal(3, rightContactWrenchLink.getVal(3));
+        rightContactWrench.setVal(4, rightContactWrenchLink.getVal(4));
+        rightContactWrench.setVal(5, rightContactWrenchLink.getVal(5));
+
+
+        rightHandContactWrench = linkNetWrench(righthandIdx);
+        rightHandContactWrench.zero();
+        
+        hand_H_handCom = iDynTree.Transform.Identity();
+        hand_H_handCom.setPosition(iDynTree.Position(0, -0.096206, 0));
+        
+        rightHandComContactWrench = iDynTree.Wrench;
+        rightHandComContactWrench.zero();
+% %         rightHandComContactWrench.setVal(2, 5 * -9.81); %%This is in inertial frame
+
+        
+        rightHandComContactWrench.setVal(0, Data.data.task2_wrenchEstimatesInLinkFrame(19, t));
+        rightHandComContactWrench.setVal(1, Data.data.task2_wrenchEstimatesInLinkFrame(20, t));
+        rightHandComContactWrench.setVal(2, Data.data.task2_wrenchEstimatesInLinkFrame(21, t));
+        rightHandComContactWrench.setVal(3, Data.data.task2_wrenchEstimatesInLinkFrame(22, t));
+        rightHandComContactWrench.setVal(4, Data.data.task2_wrenchEstimatesInLinkFrame(23, t));
+        rightHandComContactWrench.setVal(5, Data.data.task2_wrenchEstimatesInLinkFrame(24, t));
+        
+        
+        wrench = hand_H_handCom.asAdjointTransformWrench.toMatlab * rightHandComContactWrench.toMatlab;
+                
+        rightHandComContactWrench.setVal(0, wrench(1));
+        rightHandComContactWrench.setVal(1, wrench(2));
+        rightHandComContactWrench.setVal(2, wrench(3));
+        rightHandComContactWrench.setVal(3, wrench(4));
+        rightHandComContactWrench.setVal(4, wrench(5));
+        rightHandComContactWrench.setVal(5, wrench(6));
+        
+               
+        w_rpy_rightHand = Data.linkData(20).data.pose(4:6, t);
+        w_R_rightHand = iDynTree.Rotation.RPY(w_rpy_rightHand(1), w_rpy_rightHand(2), w_rpy_rightHand(3));
+        
+        rightHandComContactWrench = w_R_rightHand * rightHandComContactWrench;
+        
+        rightHandContactWrench.setVal(0, rightHandComContactWrench.getVal(0));
+        rightHandContactWrench.setVal(1, rightHandComContactWrench.getVal(1));
+        rightHandContactWrench.setVal(2, rightHandComContactWrench.getVal(2));
+        rightHandContactWrench.setVal(3, rightHandComContactWrench.getVal(3));
+        rightHandContactWrench.setVal(4, rightHandComContactWrench.getVal(4));
+        rightHandContactWrench.setVal(5, rightHandComContactWrench.getVal(5));
         
         baseForceAndJointTorques = iDynTree.FreeFloatingGeneralizedTorques(KinDynModel.kinDynComp.model());
         KinDynModel.kinDynComp.inverseDynamics(baseAcc, d2q, linkNetWrench, baseForceAndJointTorques);
         inverseDynamicsJointTorques(:, t) = baseForceAndJointTorques.jointTorques.toMatlab;
+        baseWrench(:, t) = baseForceAndJointTorques.baseWrench.toMatlab()';
         
         inertialTrqs(:, t) = inverseDynamicsJointTorques(:, t) - gravityTrqs(:, t) - biasTrqs(:, t);
         
