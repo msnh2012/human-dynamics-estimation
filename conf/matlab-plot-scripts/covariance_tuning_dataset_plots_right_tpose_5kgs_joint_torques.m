@@ -63,7 +63,7 @@ for i = 1:size(dataset_dir_names, 2)
 end
 
 
-startIndex = 400;
+startIndex = 500;
 
 %% Get the shortest sample dataset time
 plot_time = time_data(1).time(startIndex:end) - time_data(1).time(startIndex);
@@ -77,7 +77,7 @@ tposeEndIndex   = find(tposeRange, 1, 'last');
 
 
 %% Joint Torque Analysis
-joint_names = covariance_tuning_dataset(1).Data.dynamicsJointNames;
+joint_names = covariance_tuning_dataset(1).Data.dynamicsJointNames(1:66);
 
 joint_torque_estimates = [];
 

@@ -63,7 +63,7 @@ for i = 1:size(dataset_dir_names, 2)
 end
 
 
-startIndex = 400;
+startIndex = 500;
 
 %% Get the shortest sample dataset time
 plot_time = time_data(1).time(startIndex:end) - time_data(1).time(startIndex);
