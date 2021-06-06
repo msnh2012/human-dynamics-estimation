@@ -830,7 +830,6 @@ static bool parsePriorsGroup(const yarp::os::Bottle& priorsGroup,
                              << berdySensorTypeString;
                     return false;
                 }
-                yInfo() << "USING TASK2 Measurement Covariances";
             }
 
 
@@ -2283,6 +2282,7 @@ void HumanDynamicsEstimator::run()
         yError() << LogPrefix << "Links net external wrench estimates extracted from dynamic variables are not consistent with the model provided";
     }
 
+
     // Prepare estimates wrenches vector
     std::vector<double> task1_estimtedWrechesInLinkFrame;
     task1_estimtedWrechesInLinkFrame.resize(6 * pImpl->wrenchSensorsLinkNames.size(), 0.0);
@@ -2311,7 +2311,7 @@ void HumanDynamicsEstimator::run()
                 pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(e).pop_front(); // Remove the oldest sample
             }
 
-            if (linkName == "LeftHand" || linkName == "RightHand")
+            if (linkName == "LeftHandCOM" || linkName == "RightHandCOM")
             {
                 task1_estimtedWrechesInLinkFrame.at(6 * i + e) = pImpl->sgfilter->filter(std::vector<double>(pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(e).begin(),
                                                                                                              pImpl->task1_estimatedWrenchTimeBuffer[linkName].at(e).end()));
@@ -2673,7 +2673,7 @@ void HumanDynamicsEstimator::run()
     for (size_t i = 0; i < pImpl->wrenchSensorsLinkNames.size(); i++)
     {
         std::string linkName = pImpl->wrenchSensorsLinkNames.at(i);
-        if (linkName == "LeftHand" || linkName == "RightHand")
+        if (linkName == "LeftHandCOM" || linkName == "RightHandCOM")
         {
             sumOfHandEstimatedTask2Forces.setVal(0, sumOfHandEstimatedTask2Forces.getVal(0) + pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Estimated].wrenchesInWorldFrame.at(6 * i + 0));
             sumOfHandEstimatedTask2Forces.setVal(1, sumOfHandEstimatedTask2Forces.getVal(1) + pImpl->allWrenchesMap[hde::interfaces::IHumanWrench::TaskType::Task2][hde::interfaces::IHumanWrench::WrenchType::Estimated].wrenchesInWorldFrame.at(6 * i + 1));
@@ -2734,7 +2734,7 @@ void HumanDynamicsEstimator::run()
             pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements[6 * i + 4] = linkNetExternalWrench.getAngularVec3()(1);
             pImpl->linkNetExternalWrenchEstimatesAnalogSensorData.measurements[6 * i + 5] = linkNetExternalWrench.getAngularVec3()(2);
 
-            if (linkName == "LeftHand" || linkName == "RightHand")
+            if (linkName == "LeftHandCOM" || linkName == "RightHandCOM")
             {
 
                 iDynTree::Wrench linkNetExternalWrenchInWorld = kinDynComputations.getWorldTransform(linkName).getRotation() * linkNetExternalWrench;
