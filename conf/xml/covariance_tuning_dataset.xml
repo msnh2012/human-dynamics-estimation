@@ -235,13 +235,13 @@
         </group>
         <group name="DummyLeftHand">
             <param name="sensorName">DummyLeftHandFTSensors</param>
-            <param name="outputFrame">LeftHand</param>
+            <param name="outputFrame">LeftHandCOM</param>
             <param name="type">dummy</param>
             <param name="position">(0.0 0.0 0.0)</param>
         </group>
         <group name="DummyRightHand">
             <param name="sensorName">DummyRightHandFTSensors</param>
-            <param name="outputFrame">RightHand</param>
+            <param name="outputFrame">RightHandCOM</param>
             <param name="type">dummy</param>
             <param name="position">(0.0 0.0 0.0)</param>
         </group>
@@ -260,7 +260,7 @@
         <param name="baseLink">Pelvis</param>
         <param name="wrenchSmoothingFactor">1.0</param>
         <param name="number_of_wrench_sensors">4</param>
-        <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHand RightHand)</param>
+        <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHandCOM RightHandCOM)</param>
         <param name="comConstraintIncludeAllLinks">false</param>
         <param name="removeOffsetOption">source</param>
         <param name="dynamicWrenchOffsetSD">30.0</param>
@@ -275,21 +275,21 @@
            <param name="cov_measurements_COM_ACCELEROMETER_SENSOR">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
            <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
-               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
+               <param name="specific_elements">(LeftFoot RightFoot LeftHandCOM RightHandCOM)</param>
                <param name="LeftFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
                <param name="RightFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
+               <param name="LeftHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="FicticiousWrenchLinks">(LeftHandCOM RightHandCOM)</param>
            </group>
            <group name="cov_task2_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
-               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
+               <param name="specific_elements">(LeftFoot RightFoot LeftHandCOM RightHandCOM)</param>
                <param name="LeftFoot">(1e-2 1e-2 1e-2 1e-2 1e-2 1e-2)</param>
                <param name="RightFoot">(1e-2 1e-2 1e-2 1e-2 1e-2 1e-2)</param>
-               <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
+               <param name="LeftHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="FicticiousWrenchLinks">(LeftHandCOM RightHandCOM)</param>
            </group>
         </group>
         <group name="BERDY_OPTIONS">
@@ -340,7 +340,7 @@
         <param name="baseLink">Pelvis</param>
         <param name="wrenchSmoothingFactor">1.0</param>
         <param name="number_of_wrench_sensors">4</param>
-        <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHand RightHand)</param>
+        <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHandCOM RightHandCOM)</param>
         <param name="comConstraintIncludeAllLinks">false</param>
         <param name="removeOffsetOption">source</param>
         <param name="dynamicWrenchOffsetSD">30.0</param>
@@ -355,21 +355,21 @@
            <param name="cov_measurements_COM_ACCELEROMETER_SENSOR">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
            <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
-               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
+               <param name="specific_elements">(LeftFoot RightFoot LeftHandCOM RightHandCOM)</param>
                <param name="LeftFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
                <param name="RightFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
+               <param name="LeftHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="FicticiousWrenchLinks">(LeftHandCOM RightHandCOM)</param>
            </group>
            <group name="cov_task2_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
-               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
+               <param name="specific_elements">(LeftFoot RightFoot LeftHandCOM RightHandCOM)</param>
                <param name="LeftFoot">(1e-3 1e-3 1e-3 1e-3 1e-3 1e-3)</param>
                <param name="RightFoot">(1e-3 1e-3 1e-3 1e-3 1e-3 1e-3)</param>
-               <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
+               <param name="LeftHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="FicticiousWrenchLinks">(LeftHandCOM RightHandCOM)</param>
            </group>
         </group>
         <group name="BERDY_OPTIONS">
@@ -425,7 +425,7 @@
         <param name="baseLink">Pelvis</param>
         <param name="wrenchSmoothingFactor">1.0</param>
         <param name="number_of_wrench_sensors">4</param>
-        <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHand RightHand)</param>
+        <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHandCOM RightHandCOM)</param>
         <param name="comConstraintIncludeAllLinks">false</param>
         <param name="removeOffsetOption">source</param>
         <param name="dynamicWrenchOffsetSD">30.0</param>
@@ -440,21 +440,21 @@
            <param name="cov_measurements_COM_ACCELEROMETER_SENSOR">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
            <group name="cov_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
-               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
+               <param name="specific_elements">(LeftFoot RightFoot LeftHandCOM RightHandCOM)</param>
                <param name="LeftFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
                <param name="RightFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
+               <param name="LeftHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="FicticiousWrenchLinks">(LeftHandCOM RightHandCOM)</param>
            </group>
            <group name="cov_task2_measurements_NET_EXT_WRENCH_SENSOR">
                <param name="value">1e-6</param>
-               <param name="specific_elements">(LeftFoot RightFoot LeftHand RightHand)</param>
+               <param name="specific_elements">(LeftFoot RightFoot LeftHandCOM RightHandCOM)</param>
                <param name="LeftFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
                <param name="RightFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="LeftHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="RightHand">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="FicticiousWrenchLinks">(LeftHand RightHand)</param>
+               <param name="LeftHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="RightHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
+               <param name="FicticiousWrenchLinks">(LeftHandCOM RightHandCOM)</param>
            </group>
         </group>
         <group name="BERDY_OPTIONS">
