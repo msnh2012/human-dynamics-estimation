@@ -8,7 +8,7 @@
 
 #include "HumanDynamicsWrapper.h"
 #include "IHumanDynamics.h"
-#include <HumanDynamicsEstimation/HumanDynamics.h>
+#include <hde/msgs/HumanDynamics.h>
 
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/LogStream.h>
@@ -27,7 +27,7 @@ class HumanDynamicsWrapper::impl
 public:
     mutable std::mutex mutex;
     hde::interfaces::IHumanDynamics* humanDynamics = nullptr;
-    yarp::os::BufferedPort<human::HumanDynamics> outputPort;
+    yarp::os::BufferedPort<hde::msgs::HumanDynamics> outputPort;
 };
 
 HumanDynamicsWrapper::HumanDynamicsWrapper()
@@ -91,7 +91,7 @@ void HumanDynamicsWrapper::run()
     std::vector<std::string> jointNames = pImpl->humanDynamics->getJointNames();
 
     // Prepare the message
-    human::HumanDynamics& humanDynamicsData = pImpl->outputPort.prepare();
+    hde::msgs::HumanDynamics& humanDynamicsData = pImpl->outputPort.prepare();
 
     // Convert the joint names
     humanDynamicsData.jointNames.resize(jointTorques.size());
@@ -180,21 +180,3 @@ bool HumanDynamicsWrapper::detachAll()
 {
     return detach();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

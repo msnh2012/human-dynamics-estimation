@@ -2630,8 +2630,8 @@ void HumanDynamicsEstimator::run()
                                                                                pImpl->berdyData.estimates.linkNetExternalWrenchEstimates);
 
 
-    pImpl->berdyData.helper.extractJointAccelerationFromDynamicVariables(estimatedDynamicVariables,
-                                                                         pImpl->berdyData.estimates.jointAccelerations);
+    // pImpl->berdyData.helper.extractJointAccelerationFromDynamicVariables(estimatedDynamicVariables,
+    //                                                                      pImpl->berdyData.estimates.jointAccelerations);
 
     // Check to ensure all the task 1 links net external wrenches are extracted correctly
     if (!pImpl->berdyData.estimates.linkNetExternalWrenchEstimates.isConsistent(pImpl->humanModel))
@@ -3104,4 +3104,3 @@ std::vector<double> HumanDynamicsEstimator::getWrenchesInFrame(hde::interfaces::
 
     return {};
 }
-
