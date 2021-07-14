@@ -8,7 +8,7 @@
 
 #include "HumanStateWrapper.h"
 #include "IHumanState.h"
-#include <HumanDynamicsEstimation/HumanState.h>
+#include <hde/msgs/HumanState.h>
 
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/LogStream.h>
@@ -24,7 +24,7 @@ class HumanStateWrapper::impl
 {
 public:
     hde::interfaces::IHumanState* iHumanState = nullptr;
-    yarp::os::BufferedPort<human::HumanState> outputPort;
+    yarp::os::BufferedPort<hde::msgs::HumanState> outputPort;
 };
 
 HumanStateWrapper::HumanStateWrapper()
@@ -94,7 +94,7 @@ void HumanStateWrapper::run()
     std::string baseName = pImpl->iHumanState->getBaseName();
 
     // Prepare the message
-    human::HumanState& humanStateData = pImpl->outputPort.prepare();
+    hde::msgs::HumanState& humanStateData = pImpl->outputPort.prepare();
 
     // Convert the COM position
     humanStateData.CoMPositionWRTGlobal = {
