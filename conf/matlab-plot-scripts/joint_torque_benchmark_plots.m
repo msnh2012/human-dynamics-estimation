@@ -85,7 +85,7 @@ joint_suffix = ["_rotx", "_roty", "_rotz"];
 tl = tiledlayout(4, 2 * size(joint_names_list, 2));
 
 cmap = colormap(parula);
-ID_joint_toruqe_color = cmap(180, :);
+ID_joint_toruqe_color = cmap(200, :);
 
 for l = 1:size(joint_suffix, 2)
     
@@ -113,9 +113,14 @@ for l = 1:size(joint_suffix, 2)
         txt = title(strcat("jLeft",joint_names_list(j), joint_suffix(l)), 'FontSize', fontSize, 'fontweight','bold');
         txt.Interpreter= 'none';
         
-        if j == 1
-            ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+        if j == 1 && (joint_suffix(l) == "_rotx")
+            ylabel("$\tau_x$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+        elseif j == 1 && (joint_suffix(l) == "_roty")
+            ylabel("$\tau_y$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+        elseif j == 1 && (joint_suffix(l) == "_rotz")
+            ylabel("$\tau_z$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize); 
         end
+        
         set (gca, 'FontSize' , fontSize)
         set (gca, 'ColorOrder' , C)
         axis tight
@@ -149,7 +154,24 @@ for l = 1:size(joint_suffix, 2)
         
     end
     
+    if (joint_suffix(l) == "_rotx")
+        lh = legend("$\tau_x$", 'FontSize', legendFontSize,...
+    'Location', 'NorthOutside', 'Orientation','Vertical', 'Interpreter', 'latex', 'Box','off');
+        lh.Layout.Tile = 'North';
+    elseif (joint_suffix(l) == "_roty")
+        lh = legend("$\tau_y$", 'FontSize', legendFontSize,...
+    'Location', 'NorthOutside', 'Orientation','Vertical', 'Interpreter', 'latex', 'Box','off');
+        lh.Layout.Tile = 'North';
+    elseif (joint_suffix(l) == "_rotz")
+        lh = legend("$\tau_z$", 'FontSize', legendFontSize,...
+    'Location', 'NorthOutside', 'Orientation','Vertical', 'Interpreter', 'latex', 'Box','off');
+        lh.Layout.Tile = 'North';
+    end
+    
+    
 end
+
+
 
 
 for j = 1:size(joint_names_list, 2)
@@ -177,15 +199,12 @@ for j = 1:size(joint_names_list, 2)
     end
     
     nexttile
-% %     yline(joint_torques_benchmark(j), '-', num2str(joint_torques_benchmark(j)), 'LineWidth',...
-% %         lineWidth, 'FontSize', fontSize, 'Color', 'k', 'LabelVerticalAlignment', 'bottom', 'FontSize', fontSize);
-% %     hold on;
     plot(plot_time, joint_torque_estimates.(strcat("jLeft", joint_names_list(j))).effort, '-',...
         'LineWidth', lineWidth,...
         'Color', C(6,:));
     hold on;
-    
-    ax1 = plot(plot_time, joint_torque_estimates.(strcat("jLeft", joint_names_list(j))).ID_effort, '--',...
+        
+    ax1 = plot(plot_time, joint_torque_estimates.(strcat("jLeft", joint_names_list(j))).ID_effort, '-',...
         'LineWidth', lineWidth,...
         'Color', ID_joint_toruqe_color);
     hold on;
@@ -197,13 +216,21 @@ for j = 1:size(joint_names_list, 2)
     xline(plot_time(tposeEndIndex), '-.','Tpose End', 'LineWidth', 3, 'FontSize', 14,...
         'LabelVerticalAlignment', 'bottom',  'Color', tposeColor);
     
+% %     yline(joint_torques_benchmark(j), '-', num2str(joint_torques_benchmark(j)), 'LineWidth',...
+% %         lineWidth, 'FontSize', fontSize, 'Color', 'k', 'LabelVerticalAlignment', 'bottom', 'FontSize', fontSize);
+% %     hold on;
     
     title(strcat("jLeft",joint_names_list(j), " Effort"), 'FontSize', fontSize, 'fontweight','bold');
     
     xlabel('Time [S]', 'FontSize', fontSize, 'Interpreter', 'latex');
-    if j == 1
-        ylabel("$\tau$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+    
+    if j == 1 
+        ylabel("$\tau_{effort}$ [$Nm$]", 'Interpreter', 'latex', 'FontSize', fontSize);
+        lh = legend('$\tau_{effort}$', '', '', '', '', 'FontSize', legendFontSize,...
+    'Location', 'NorthOutside', 'Orientation','Vertical', 'Interpreter', 'latex', 'Box','off');
+        lh.Layout.Tile = 'North';
     end
+    
     set (gca, 'FontSize' , fontSize)
     set (gca, 'ColorOrder' , C)
     axis tight
@@ -243,12 +270,12 @@ end
 
 
 lh = legend(ax1, 'Computed Torques', 'FontSize', legendFontSize,...
-    'Location', 'NorthOutside', 'Orientation','Vertical');
+    'Location', 'NorthOutside', 'Orientation','Vertical', 'Box','off');
 lh.Layout.Tile = 'North';
 
 
 lh = legend(ax, 'Baseline Joint Effort', 'FontSize', legendFontSize,...
-    'Location', 'NorthOutside', 'Orientation','Vertical');
+    'Location', 'NorthOutside', 'Orientation','Vertical', 'Box','off');
 lh.Layout.Tile = 'North';
 
 % % txt = title(tl, strcat("Joint Torque Estimation"), 'FontSize', fontSize, 'fontweight','bold');

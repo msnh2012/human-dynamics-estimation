@@ -291,7 +291,7 @@ tl = tiledlayout(6,3);
 
 PlotsColorMap = [autumn(colorSize); summer(colorSize)];
 
-measurementColorIndex = 5;
+measurementColorIndex = 1;
 estimationColorIndex = 15;
 
 covarianceDataIndex = 1;
@@ -301,10 +301,10 @@ ax = [];
 for s = 1:6
     
     ax(s) = nexttile;
-    plot(plot_time, feet_wrench_measurements(covarianceDataIndex).withoutSOT.leftfoot(:, s),'-',...
+    plot(plot_time, feet_wrench_measurements(covarianceDataIndex).withoutSOT.leftfoot(:, s),'-.',...
         'LineWidth', lineWidth, 'Color', PlotsColorMap(measurementColorIndex,:));
     hold on;
-    plot(plot_time, feet_wrench_estimates(covarianceDataIndex).withoutSOT.leftfoot(:, s), '-',...
+    plot(plot_time, feet_wrench_estimates(covarianceDataIndex).withoutSOT.leftfoot(:, s), '-.',...
         'LineWidth', lineWidth, 'Color', PlotsColorMap(estimationColorIndex,:));
     hold on;
     
@@ -323,10 +323,10 @@ for s = 1:6
     end
     
     nexttile;
-    plot(plot_time, feet_wrench_measurements(covarianceDataIndex).withoutSOT.rightfoot(:, s),'-',...
+    plot(plot_time, feet_wrench_measurements(covarianceDataIndex).withoutSOT.rightfoot(:, s),'-.',...
         'LineWidth', lineWidth, 'Color', PlotsColorMap(measurementColorIndex,:));
     hold on;
-    plot(plot_time, feet_wrench_estimates(covarianceDataIndex).withoutSOT.rightfoot(:, s), '-',...
+    plot(plot_time, feet_wrench_estimates(covarianceDataIndex).withoutSOT.rightfoot(:, s), '-.',...
         'LineWidth', lineWidth, 'Color', PlotsColorMap(estimationColorIndex,:));
     hold on;
     
@@ -345,7 +345,7 @@ for s = 1:6
     end
     
     nexttile;
-    plot(plot_time, feet_wrench_measurements(covarianceDataIndex).withoutSOT.sum(:, s),'--',...
+    plot(plot_time, feet_wrench_measurements(covarianceDataIndex).withoutSOT.sum(:, s),'-.',...
         'LineWidth', lineWidth, 'Color', PlotsColorMap(measurementColorIndex,:));
     hold on;
     plot(plot_time, feet_wrench_estimates(covarianceDataIndex).withoutSOT.sum(:, s), '-.',...
