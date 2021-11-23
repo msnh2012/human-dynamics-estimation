@@ -1,6 +1,8 @@
-# HDE xml files installation
 set (HDE_PROJECT_NAME HumanDynamicsEstimation)
-file(GLOB HDE_XML_FILES xml/applications/*.xml)
+
+# HDE xml files installation
+file (GLOB HDE_XML_FILES xml/*.xml)
+
 install(FILES ${HDE_XML_FILES}
              DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${HDE_PROJECT_NAME}/)
 
