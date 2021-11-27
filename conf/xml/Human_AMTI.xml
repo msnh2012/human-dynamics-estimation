@@ -262,13 +262,13 @@
         </group>
         <group name="DummyLeftHand">
             <param name="sensorName">DummyLeftHandFTSensors</param>
-            <param name="outputFrame">LeftHand</param>
+            <param name="outputFrame">LeftHandCOM</param>
             <param name="type">dummy</param>
             <param name="position">(0.0 0.05 0.0)</param>
         </group>
         <group name="DummyRightHand">
             <param name="sensorName">DummyRightHandFTSensors</param>
-            <param name="outputFrame">RightHand</param>
+            <param name="outputFrame">RightHandCOM</param>
             <param name="type">dummy</param>
             <param name="position">(0.0 0.05 0.0)</param>
         </group>
@@ -323,7 +323,7 @@
         <param name="baseLink">Pelvis</param>
         <param name="wrenchSmoothingFactor">0.85</param>
         <param name="number_of_wrench_sensors">4</param>
-        <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHand RightHand)</param>
+        <param name="wrench_sensors_link_name">(LeftFoot RightFoot LeftHandCOM RightHandCOM)</param>
         <param name="comConstraintIncludeAllLinks">false</param>
         <param name="removeOffsetOption">source</param>
         <param name="dynamicWrenchOffsetSD">30.0</param>
@@ -341,7 +341,7 @@
                <param name="specific_elements">(LeftFoot RightFoot LeftHandCOM RightHandCOM)</param>
                <param name="LeftFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
                <param name="RightFoot">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
-               <param name="LeftHandCOM">(1e6 1e6 1e6 1e-6 1e-6 1e-6)</param>
+               <param name="LeftHandCOM">(1e-6 1e-6 1e-6 1e-6 1e-6 1e-6)</param>
                <param name="RightHandCOM">(1e6 1e6 1e6 1e-6 1e-6 1e-6)</param>
                <param name="FicticiousWrenchLinks">(LeftHandCOM RightHandCOM)</param>
            </group>
